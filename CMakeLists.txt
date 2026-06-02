@@ -55,61 +55,61 @@ if(APPLE OR WINDOWS)
 endif()
 # add cross-platforms source files and header files 
 list(APPEND GAME_SOURCE
-     Classes/AppDelegate.cpp
-     Classes/HelloWorldScene.cpp
+     Classes/Scenes/AppDelegate.cpp
+     Classes/Scenes/HelloWorldScene.cpp
 
-     # 基础对象系统
-     Classes/GameObject.cpp
-     Classes/Role.cpp
-     Classes/Player.cpp
-     Classes/MoodSystem.cpp
+     # ??
+     Classes/Core/GameObject.cpp
+     Classes/Core/Role.cpp
+     Classes/Characters/Player.cpp
+     Classes/Systems/MoodSystem.cpp
 
-     # 敌人系统
-     Classes/Enemy.cpp
-     Classes/SleepyMonster.cpp
-     Classes/DDLMonster.cpp
-     Classes/WaveManager.cpp
+     # ??
+     Classes/Characters/Enemy.cpp
+     Classes/Characters/SleepyMonster.cpp
+     Classes/Characters/DDLMonster.cpp
+     Classes/Managers/WaveManager.cpp
 
-     # 武器、子弹、碰撞系统
-     Classes/Bullet.cpp
-     Classes/Weapon.cpp
-     Classes/KeyboardWave.cpp
-     Classes/CoffeeLaser.cpp
-     Classes/CollisionManager.cpp
+     # ????
+     Classes/Weapons/Bullet.cpp
+     Classes/Weapons/Weapon.cpp
+     Classes/Weapons/KeyboardWave.cpp
+     Classes/Weapons/CoffeeLaser.cpp
+     Classes/Managers/CollisionManager.cpp
 
-     # 存档与音频
-     Classes/SaveManager.cpp
-     Classes/AudioManager.cpp
+     # 浵?
+     Classes/Managers/SaveManager.cpp
+     Classes/Managers/AudioManager.cpp
      )
 
 list(APPEND GAME_HEADER
-     Classes/AppDelegate.h
-     Classes/HelloWorldScene.h
+     Classes/Scenes/AppDelegate.h
+     Classes/Scenes/HelloWorldScene.h
 
-     # 基础对象系统
-     Classes/GameObject.h
-     Classes/Role.h
-     Classes/Player.h
-     Classes/MoodSystem.h
+     # ??
+     Classes/Core/GameObject.h
+     Classes/Core/Role.h
+     Classes/Characters/Player.h
+     Classes/Systems/MoodSystem.h
 
-     # 敌人系统
-     Classes/Enemy.h
-     Classes/SleepyMonster.h
-     Classes/DDLMonster.h
-     Classes/WaveManager.h
+     # ??
+     Classes/Characters/Enemy.h
+     Classes/Characters/SleepyMonster.h
+     Classes/Characters/DDLMonster.h
+     Classes/Managers/WaveManager.h
 
-     # 武器、子弹、碰撞系统
-     Classes/Bullet.h
-     Classes/Weapon.h
-     Classes/KeyboardWave.h
-     Classes/CoffeeLaser.h
-     Classes/CollisionManager.h
-     Classes/DamageCalculator.h
+     # ????
+     Classes/Weapons/Bullet.h
+     Classes/Weapons/Weapon.h
+     Classes/Weapons/KeyboardWave.h
+     Classes/Weapons/CoffeeLaser.h
+     Classes/Managers/CollisionManager.h
+     Classes/Core/DamageCalculator.h
 
-     # 存档与音频
-     Classes/PlayerRecord.h
-     Classes/SaveManager.h
-     Classes/AudioManager.h
+     # 浵?
+     Classes/Core/PlayerRecord.h
+     Classes/Managers/SaveManager.h
+     Classes/Managers/AudioManager.h
      )
 if(ANDROID)
     # change APP_NAME to the share library name for Android, it's value depend on AndroidManifest.xml
@@ -179,6 +179,12 @@ endif()
 target_link_libraries(${APP_NAME} cocos2d)
 target_include_directories(${APP_NAME}
         PRIVATE Classes
+        PRIVATE Classes/Core
+        PRIVATE Classes/Characters
+        PRIVATE Classes/Weapons
+        PRIVATE Classes/Managers
+        PRIVATE Classes/Scenes
+        PRIVATE Classes/Systems
         PRIVATE ${COCOS2DX_ROOT_PATH}/cocos
         PRIVATE ${COCOS2DX_ROOT_PATH}/cocos/audio/include/
 )
