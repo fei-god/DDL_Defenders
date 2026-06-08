@@ -57,6 +57,8 @@ endif()
 list(APPEND GAME_SOURCE
      Classes/Scenes/AppDelegate.cpp
      Classes/Scenes/HelloWorldScene.cpp
+     Classes/MainMenuScene.cpp
+     Classes/GameScene.cpp
 
      # ??
      Classes/Core/GameObject.cpp
@@ -77,7 +79,7 @@ list(APPEND GAME_SOURCE
      Classes/Weapons/CoffeeLaser.cpp
      Classes/Managers/CollisionManager.cpp
 
-     # ›Ï?
+     # ï¿½ï¿½?
      Classes/Managers/SaveManager.cpp
      Classes/Managers/AudioManager.cpp
      )
@@ -85,6 +87,8 @@ list(APPEND GAME_SOURCE
 list(APPEND GAME_HEADER
      Classes/Scenes/AppDelegate.h
      Classes/Scenes/HelloWorldScene.h
+     Classes/MainMenuScene.h
+     Classes/GameScene.h
 
      # ??
      Classes/Core/GameObject.h
@@ -106,7 +110,7 @@ list(APPEND GAME_HEADER
      Classes/Managers/CollisionManager.h
      Classes/Core/DamageCalculator.h
 
-     # ›Ï?
+     # ï¿½ï¿½?
      Classes/Core/PlayerRecord.h
      Classes/Managers/SaveManager.h
      Classes/Managers/AudioManager.h
@@ -188,6 +192,11 @@ target_include_directories(${APP_NAME}
         PRIVATE ${COCOS2DX_ROOT_PATH}/cocos
         PRIVATE ${COCOS2DX_ROOT_PATH}/cocos/audio/include/
 )
+
+# Use UTF-8 as source and execution charset on MSVC (fixes Chinese string garbled errors)
+if(MSVC)
+    target_compile_options(${APP_NAME} PRIVATE /utf-8)
+endif()
 
 # mark app resources
 setup_cocos_app_config(${APP_NAME})
