@@ -59,6 +59,7 @@ list(APPEND GAME_SOURCE
      Classes/Scenes/HelloWorldScene.cpp
      Classes/MainMenuScene.cpp
      Classes/GameScene.cpp
+     Classes/GameOverScene.cpp
 
      # ??
      Classes/Core/GameObject.cpp
@@ -89,6 +90,7 @@ list(APPEND GAME_HEADER
      Classes/Scenes/HelloWorldScene.h
      Classes/MainMenuScene.h
      Classes/GameScene.h
+     Classes/GameOverScene.h
 
      # ??
      Classes/Core/GameObject.h

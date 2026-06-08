@@ -66,6 +66,9 @@ private:
     // ==================== Input state ====================
     cocos2d::Vec2 _moveDirection;
     bool _keyW, _keyA, _keyS, _keyD;
+
+    // ==================== Game state ====================
+    bool _isGameOver;
 };
 
 #endif // __GAME_SCENE_H__

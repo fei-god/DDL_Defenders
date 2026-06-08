@@ -1,4 +1,5 @@
 #include "GameScene.h"
+#include "GameOverScene.h"
 #include "Weapons/KeyboardWave.h"
 #include "Managers/CollisionManager.h"
 #include "platform/CCImage.h"
@@ -200,6 +201,7 @@ bool GameScene::init()
     // --- Input ---
     _keyW = _keyA = _keyS = _keyD = false;
     _moveDirection = Vec2::ZERO;
+    _isGameOver = false;
     initInputListeners();
 
     this->scheduleUpdate();
@@ -211,6 +213,24 @@ bool GameScene::init()
 // ---------------------------------------------------------------------------
 void GameScene::update(float dt)
 {
+    // --- Death check ---
+    if (!_isGameOver && m_player && !m_player->isRoleAlive())
+    {
+        _isGameOver = true;
+        // scheduleOnce creates the GameOverScene only when the callback fires,
+        // avoiding a dangling-pointer crash: if we created it here (autoreleased)
+        // and captured the raw pointer in a delayed CallFunc, the autorelease pool
+        // would free the scene before the 0.5s delay elapses.
+        this->scheduleOnce([this](float) {
+            auto gameOverScene = GameOverScene::createScene(m_survivalTime);
+            Director::getInstance()->replaceScene(gameOverScene);
+        }, 0.5f, "game_over_transition");
+        return;
+    }
+
+    // Don't process any game logic after death (waiting for transition)
+    if (_isGameOver) return;
+
     // --- Player ---
     if (m_player)
     {
@@ -258,6 +278,50 @@ void GameScene::update(float dt)
 
     // --- Cleanup ---
     CollisionManager::clearInactiveBullets(_bullets);
+
+    // --- Enemy HP bars ---
+    if (_waveManager)
+    {
+        static const int HP_BAR_TAG = 999;
+        for (auto* enemy : _waveManager->getAliveEnemies())
+        {
+            if (!enemy || !enemy->isRoleAlive() || !enemy->isObjectActive())
+                continue;
+
+            // Find or create HP bar background + fill
+            Node* barNode = enemy->getChildByTag(HP_BAR_TAG);
+            LayerColor* hpFill = dynamic_cast<LayerColor*>(barNode);
+            if (!hpFill)
+            {
+                // Background (dark)
+                auto bg = LayerColor::create(Color4B(40, 40, 40, 255), 32, 4);
+                bg->setPosition(Vec2(-16, 18));
+                enemy->addChild(bg, 1);
+
+                // Fill (green)
+                hpFill = LayerColor::create(Color4B(50, 200, 50, 255), 32, 4);
+                hpFill->setPosition(Vec2(-16, 18));
+                hpFill->setTag(HP_BAR_TAG);
+                enemy->addChild(hpFill, 2);
+            }
+
+            // Update fill width from current HP ratio
+            float hpRatio = enemy->getMaxHp() > 0
+                ? static_cast<float>(enemy->getHp()) / static_cast<float>(enemy->getMaxHp())
+                : 0.0f;
+            if (hpRatio < 0.0f) hpRatio = 0.0f;
+            if (hpRatio > 1.0f) hpRatio = 1.0f;
+
+            float barWidth = 32.0f * hpRatio;
+            hpFill->setContentSize(Size(barWidth, 4));
+
+            Color3B barColor;
+            if      (hpRatio > 0.5f)  barColor = Color3B(50, 200, 50);
+            else if (hpRatio > 0.25f) barColor = Color3B(220, 220, 30);
+            else                       barColor = Color3B(220, 30, 30);
+            hpFill->setColor(barColor);
+        }
+    }
 
     // --- UI ---
     if (m_player)
@@ -386,6 +450,8 @@ void GameScene::fireBullet()
 
     // Direction = same vector the triangle head is pointing
     Vec2 dir = _playerDir;
+    // Negate Y to compensate for screen-to-world coordinate flip
+    dir.y = -dir.y;
 
     // Spawn from triangle head (20 px ahead)
     float headDist = 20.0f;
@@ -395,7 +461,7 @@ void GameScene::fireBullet()
         "ManualBullet", "",
         spawnPos, dir,
         650.0f,   // speed
-        10,       // damage
+        35,       // damage  <- increased from 10 to 35
         1.0f,     // lifetime
         false     // not piercing
     );
