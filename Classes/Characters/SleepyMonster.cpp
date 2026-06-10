@@ -21,16 +21,16 @@ bool SleepyMonster::initSleepyMonster(const std::string& imagePath,
     const Vec2& startPosition,
     Player* target)
 {
-    // î§Ë¯¹ÖÊôĞÔ£ºÑªÁ¿ÖĞµÈ£¬ËÙ¶ÈÂı£¬·ÀÓùµÍ£¬¹¥»÷Á¦µÍ
+    // çŒç¡æ€ªç‰©ï¼šä½è¡€é‡ï¼Œæ…¢é€Ÿåº¦ï¼Œä½æ”»å‡»ï¼Œéšæœºç§»åŠ¨
     bool ok = initEnemy("SleepyMonster",
         imagePath,
         startPosition,
-        80,        // maxHp
-        50.0f,     // speed (Âı)
-        5,         // defense
-        15,        // attackDamage
-        40.0f,     // attackRange
-        30);       // expReward
+        35,        // maxHp       (é™ä½ï¼š80â†’35ï¼Œä¹‹å‰å¤ªè‚‰äº†)
+        55.0f,     // speed       (é™ä½ï¼š50â†’55)
+        3,         // defense     (é™ä½ï¼š5â†’3)
+        10,        // attackDamage (é™ä½ï¼š15â†’10)
+        35.0f,     // attackRange  (é™ä½ï¼š40â†’35)
+        20);       // expReward    (é™ä½ï¼š30â†’20)
     if (!ok) return false;
 
     setTargetPlayer(target);
@@ -51,7 +51,7 @@ void SleepyMonster::move(float dt)
 {
     if (_targetPlayer == nullptr) return;
 
-    // î§Ë¯¹ÖĞĞÎª£ºÃ¿¸ôÒ»¶ÎÊ±¼äÍ£¶Ù»òËæ»úÒÆ¶¯
+    // çŒç¡è¡Œä¸ºï¼šæ¯éš”ä¸€æ®µæ—¶é—´åœé¡¿æˆ–éšæœºç§»åŠ¨
     if (_isPausing)
     {
         _pauseTimer -= dt;
@@ -62,28 +62,35 @@ void SleepyMonster::move(float dt)
         }
         else
         {
-            // Í£¶ÙÆÚ¼ä²»ÒÆ¶¯
+            // åœé¡¿æœŸé—´ä¸ç§»åŠ¨
             return;
         }
     }
     else
     {
-        // Ëæ»úÒÆ¶¯Ò»¶ÎÊ±¼ä
+        // éšæœºç§»åŠ¨ä¸€æ®µæ—¶é—´
         _pauseTimer -= dt;
         if (_pauseTimer <= 0.0f)
         {
-            // Ëæ»úÍ£¶Ù 0.5~1.5 Ãë
+            // éšæœºåœé¡¿ 0.5~1.5 ç§’
             _isPausing = true;
             _pauseTimer = 0.5f + CCRANDOM_0_1() * 1.0f;
             return;
         }
 
-        // °´ÕÕËæ»ú·½ÏòÒÆ¶¯
-        Vec2 newPos = getPosition() + _randomDirection * getSpeed() * dt;
+        // æ²¿éšæœºæ–¹å‘ç¼“æ…¢ç§»åŠ¨
+        // åŒæ—¶ç•¥å¾®å‘ç©å®¶é è¿‘ï¼Œä¸ä¼šå®Œå…¨è·‘å
+        Vec2 dirToPlayer = _targetPlayer->getPosition() - getPosition();
+        dirToPlayer.normalize();
+        Vec2 blendedDir = (_randomDirection * 0.6f + dirToPlayer * 0.4f);
+        blendedDir.normalize();
+        setDirection(blendedDir);
+
+        Vec2 newPos = getPosition() + blendedDir * getSpeed() * dt;
         setPosition(newPos);
     }
 
-    // Å¼¶û£¨1%¸ÅÂÊÃ¿Ö¡£©¸Ä±äËæ»ú·½Ïò£¬Ôö¼Ó²»¿ÉÔ¤²âĞÔ
+    // å¶å°”ï¼ˆ1%æ¦‚ç‡æ¯å¸§ï¼‰æ”¹å˜éšæœºæ–¹å‘ï¼Œå¢åŠ ä¸å¯é¢„æµ‹æ€§
     if (CCRANDOM_0_1() < 0.01f)
     {
         changeRandomDirection();
@@ -93,7 +100,7 @@ void SleepyMonster::move(float dt)
 void SleepyMonster::attack()
 {
     if (_targetPlayer == nullptr) return;
-    // î§Ë¯¹Ö¹¥»÷Á¦½ÏµÍ
+    // çŒç¡æ€ªç‰©æ”»å‡»åŠ›è¾ƒä½
     _targetPlayer->takeDamage(_attackDamage);
-    // ¿ÉÒÔ²¥·ÅÒôĞ§»òÁ£×ÓĞ§¹û£¨ºóĞøÓÉÆäËû×éÔ±ÊµÏÖ£©
+    // å¯ä»¥æ·»åŠ å‡é€Ÿæ•ˆæœï¼Œç”±å…¶ä»–ç»„å‘˜å®ç°
 }

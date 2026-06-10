@@ -1,6 +1,7 @@
 #include "WaveManager.h"
 #include "SleepyMonster.h"
 #include "DDLMonster.h"
+#include "BossMonster.h"
 #include "cocos2d.h"
 
 USING_NS_CC;
@@ -22,30 +23,66 @@ bool WaveManager::init(Player* player, Node* parentLayer)
     _player = player;
     _parentLayer = parentLayer;
     _currentWave = 0;
+    _totalWaves = 10;              // æ€»å…±10æ³¢
     _enemiesToSpawn = 0;
     _spawnTimer = 0.0f;
     _spawnInterval = 1.5f;
     _isSpawning = false;
     _totalEnemiesThisWave = 0;
+    _enemiesSpawnedCount = 0;
+    _killCount = 0;
+    _isBossWave = false;
+    _bossSpawned = false;
+    _waveDelayTimer = 0.0f;
+    _waitingForNextWave = false;
+
     return true;
+}
+
+int WaveManager::getEnemyCountForWave(int wave)
+{
+    // æ¯æ³¢æ•Œäººæ•°é‡ = 3 + wave * 2ï¼Œä¸Šé™25ä¸ª
+    int count = 3 + wave * 2;
+    if (count > 25) count = 25;
+    return count;
 }
 
 void WaveManager::startWave(int waveIndex)
 {
     _currentWave = waveIndex;
-    // ¸ù¾İ²¨´Î¾ö¶¨Éú³ÉÄÄĞ©µĞÈË
-    // »ù´¡ÊıÁ¿£º²¨´Î * 2 ¸öµĞÈË£¬ÉÏÏŞ10
-    int baseCount = 3 + waveIndex / 2;
-    if (baseCount > 12) baseCount = 12;
-    _totalEnemiesThisWave = baseCount;
-    _enemiesToSpawn = baseCount;
-    _spawnTimer = 0.0f;
+    _enemiesSpawnedCount = 0;
+    _waitingForNextWave = false;
+    _waveDelayTimer = 0.0f;
+
+    // æ¸…ç†ä¸Šä¸€æ³¢æ®‹ç•™
+    _aliveEnemies.clear();
+    _bossSpawned = false;
+
+    // Bossæ³¢ï¼šæ¯5æ³¢å‡ºç°ä¸€æ¬¡
+    _isBossWave = (waveIndex % 5 == 0);
+
+    if (_isBossWave)
+    {
+        // Bossæ³¢ï¼šBoss + å°‘é‡å°å…µ
+        _totalEnemiesThisWave = 4 + waveIndex / 2;  // éšæ³¢æ¬¡å¢åŠ å°å…µæ•°é‡
+        if (_totalEnemiesThisWave > 15) _totalEnemiesThisWave = 15;
+        CCLOG("=== BOSS WAVE %d! ===", waveIndex);
+        if (_bossWaveCallback)
+            _bossWaveCallback(waveIndex);
+    }
+    else
+    {
+        _totalEnemiesThisWave = getEnemyCountForWave(waveIndex);
+    }
+
+    _enemiesToSpawn = _totalEnemiesThisWave;
+    _spawnTimer = 1.0f;  // ç¬¬ä¸€åªæ•Œäºº1ç§’åç”Ÿæˆ
     _isSpawning = true;
 
-    // Çå¿Õ¾ÉµÄ´æ»î¼ÇÂ¼£¨ÀíÂÛÉÏÒÑ¾­È«ËÀÁË£©
-    _aliveEnemies.clear();
+    showWaveAnnouncement(waveIndex);
 
-    CCLOG("Wave %d started, will spawn %d enemies", waveIndex, _enemiesToSpawn);
+    CCLOG("Wave %d started: %d enemies (Boss:%s)",
+        waveIndex, _totalEnemiesThisWave, _isBossWave ? "YES" : "NO");
 }
 
 void WaveManager::stopSpawn()
@@ -54,66 +91,203 @@ void WaveManager::stopSpawn()
     _enemiesToSpawn = 0;
 }
 
-std::vector<Enemy*>& WaveManager::getAliveEnemies()
+void WaveManager::showWaveAnnouncement(int wave)
 {
-    return _aliveEnemies;
+    // åœ¨å±å¹•ä¸Šæ˜¾ç¤ºæ³¢æ¬¡å…¬å‘Š
+    // ä½¿ç”¨Labelæ˜¾ç¤ºï¼ŒæŒç»­2ç§’åæ¶ˆå¤±
+    auto visibleSize = Director::getInstance()->getVisibleSize();
+
+    std::string waveText;
+    if (_isBossWave)
+    {
+        waveText = "!!! BOSS WAVE " + std::to_string(wave) + " !!!";
+    }
+    else
+    {
+        waveText = "Wave " + std::to_string(wave);
+    }
+
+    auto label = Label::createWithSystemFont(waveText, "Arial", 36);
+    label->setPosition(Vec2(visibleSize.width / 2, visibleSize.height / 2 + 100));
+    label->setOpacity(0);
+    _parentLayer->addChild(label, 100);  // é«˜å±‚çº§ç¡®ä¿æ˜¾ç¤ºåœ¨æœ€å‰
+
+    // æ·¡å…¥ â†’ åœç•™ â†’ æ·¡å‡º â†’ ç§»é™¤
+    auto fadeIn = FadeIn::create(0.3f);
+    auto delay = DelayTime::create(1.5f);
+    auto fadeOut = FadeOut::create(0.5f);
+    auto remove = RemoveSelf::create();
+    label->runAction(Sequence::create(fadeIn, delay, fadeOut, remove, nullptr));
+}
+
+Enemy* WaveManager::createEnemyByType(int enemyType, const Vec2& pos, int waveLevel)
+{
+    Enemy* enemy = nullptr;
+
+    switch (enemyType)
+    {
+    case 0: // SleepyMonster - åŸºç¡€æ•Œäºº
+        enemy = SleepyMonster::create("enemy_sleepy.png", pos, _player);
+        break;
+    case 1: // DDLMonster - å†²é”‹æ•Œäºº
+        enemy = DDLMonster::create("enemy_ddl.png", pos, _player);
+        break;
+    case 2: // BossMonster
+        enemy = BossMonster::create("enemy_boss.png", pos, _player, waveLevel);
+        break;
+    }
+
+    // æ ¹æ®æ³¢æ¬¡ç»™æ•Œäººå¢åŠ å±æ€§åŠ æˆï¼ˆéš¾åº¦é€’å¢ï¼‰
+    if (enemy && enemyType != 2)  // Bossæœ‰è‡ªå·±çš„å±æ€§è®¡ç®—
+    {
+        float hpScale = 1.0f + (waveLevel - 1) * 0.1f;     // æ¯æ³¢HP+10%
+        float atkScale = 1.0f + (waveLevel - 1) * 0.08f;   // æ¯æ³¢æ”»å‡»+8%
+        float spdScale = 1.0f + (waveLevel - 1) * 0.03f;   // æ¯æ³¢é€Ÿåº¦+3%
+
+        int scaledHp = static_cast<int>(enemy->getMaxHp() * hpScale);
+        enemy->setMaxHp(scaledHp);
+        enemy->setHp(scaledHp);
+
+        int scaledAtk = static_cast<int>(enemy->getAttackDamage() * atkScale);
+        enemy->setAttackDamage(scaledAtk);
+
+        float scaledSpd = enemy->getSpeed() * spdScale;
+        enemy->setSpeed(scaledSpd);
+    }
+
+    return enemy;
 }
 
 void WaveManager::spawnEnemy()
 {
     if (!_player || !_player->isRoleAlive()) return;
 
-    // Ëæ»úÉú³ÉÎ»ÖÃ£ºÔÚÆÁÄ»±ßÔµ
+    // éšæœºç”Ÿæˆä½ç½®ï¼ˆå±å¹•è¾¹ç¼˜ï¼‰
     auto visibleSize = Director::getInstance()->getVisibleSize();
     Vec2 spawnPos;
     int edge = rand() % 4;
-    if (edge == 0) // ×ó±ß
-        spawnPos = Vec2(0, rand() % (int)visibleSize.height);
-    else if (edge == 1) // ÓÒ±ß
-        spawnPos = Vec2(visibleSize.width, rand() % (int)visibleSize.height);
-    else if (edge == 2) // ÏÂ±ß
-        spawnPos = Vec2(rand() % (int)visibleSize.width, 0);
-    else // ÉÏ±ß
-        spawnPos = Vec2(rand() % (int)visibleSize.width, visibleSize.height);
+    switch (edge)
+    {
+    case 0: // å·¦è¾¹
+        spawnPos = Vec2(-20, rand() % (int)visibleSize.height);
+        break;
+    case 1: // å³è¾¹
+        spawnPos = Vec2(visibleSize.width + 20, rand() % (int)visibleSize.height);
+        break;
+    case 2: // ä¸‹è¾¹
+        spawnPos = Vec2(rand() % (int)visibleSize.width, -20);
+        break;
+    case 3: // ä¸Šè¾¹
+    default:
+        spawnPos = Vec2(rand() % (int)visibleSize.width, visibleSize.height + 20);
+        break;
+    }
 
     Enemy* enemy = nullptr;
-    // Ã¿²¨µÚ 5 ¸öµĞÈË¹Ì¶¨Îª DDLMonster£¬»òÕßËæ»ú
-    bool isSpecial = (_totalEnemiesThisWave - _enemiesToSpawn) % 5 == 0;
-    if (isSpecial || (_currentWave >= 3 && rand() % 100 < 40))
+    _enemiesSpawnedCount++;
+
+    if (_isBossWave && !_bossSpawned)
     {
-        enemy = DDLMonster::create("enemy_ddl.png", spawnPos, _player);
+        // Bossæ³¢ï¼šæœ€åä¸€ä¸ªç”Ÿæˆçš„å¿…ç„¶æ˜¯Boss
+        bool isLastEnemy = (_enemiesToSpawn <= 0);
+
+        if (isLastEnemy)
+        {
+            // Bossä»å±å¹•é¡¶éƒ¨ä¸­å¤®å‡ºç°
+            spawnPos = Vec2(visibleSize.width / 2, visibleSize.height + 50);
+            enemy = createEnemyByType(2, spawnPos, _currentWave);  // Boss
+            _bossSpawned = true;
+            CCLOG("BOSS spawned at wave %d!", _currentWave);
+        }
+        else
+        {
+            // Bossæ³¢å°å…µï¼šDDLMonsterä¸ºä¸»
+            int type = (rand() % 100 < 60) ? 1 : 0;  // 60% DDL, 40% Sleepy
+            enemy = createEnemyByType(type, spawnPos, _currentWave);
+        }
     }
     else
     {
-        enemy = SleepyMonster::create("enemy_sleepy.png", spawnPos, _player);
+        // æ™®é€šæ³¢ï¼šæ ¹æ®æ³¢æ¬¡å†³å®šæ•Œäººç±»å‹æ¯”ä¾‹
+        int randVal = rand() % 100;
+
+        if (_currentWave <= 2)
+        {
+            // å‰2æ³¢ï¼šåªæœ‰SleepyMonsterï¼ˆè®©ç©å®¶é€‚åº”ï¼‰
+            enemy = createEnemyByType(0, spawnPos, _currentWave);
+        }
+        else if (_currentWave <= 4)
+        {
+            // 3-4æ³¢ï¼š30% DDLMonster, 70% SleepyMonster
+            if (randVal < 30)
+                enemy = createEnemyByType(1, spawnPos, _currentWave);
+            else
+                enemy = createEnemyByType(0, spawnPos, _currentWave);
+        }
+        else
+        {
+            // 5æ³¢ä»¥åï¼š50% DDL, 50% Sleepy
+            if (randVal < 50)
+                enemy = createEnemyByType(1, spawnPos, _currentWave);
+            else
+                enemy = createEnemyByType(0, spawnPos, _currentWave);
+        }
     }
 
     if (enemy)
     {
-        _parentLayer->addChild(enemy);
+        // ç»™æ•Œäººæ·»åŠ å‡ºç°æ—¶çš„ç¼©æ”¾åŠ¨ç”»
+        enemy->setScale(0.1f);
+        auto scaleUp = ScaleTo::create(0.3f, (_isBossWave && _bossSpawned) ? 1.5f : 1.0f);
+        enemy->runAction(scaleUp);
+
+        _parentLayer->addChild(enemy, 10);  // æ·»åŠ åˆ°æ¸¸æˆå±‚
         _aliveEnemies.push_back(enemy);
-        // ¼àÌıµĞÈËËÀÍöÊÂ¼ş£¨¼òµ¥ÂÖÑ¯£¬Ò²¿ÉÒÔÊ¹ÓÃ»Øµ÷£©
     }
     else
     {
-        CCLOG("Failed to create enemy!");
+        CCLOG("ERROR: Failed to create enemy!");
+        _enemiesSpawnedCount--;
     }
 }
 
 void WaveManager::update(float dt)
 {
-    if (!_isSpawning)
+    // å¦‚æœåœ¨ç­‰å¾…ä¸‹ä¸€æ³¢ï¼Œè®¡æ—¶
+    if (_waitingForNextWave)
+    {
+        _waveDelayTimer -= dt;
+        if (_waveDelayTimer <= 0.0f)
+        {
+            _waitingForNextWave = false;
+            if (_currentWave < _totalWaves)
+            {
+                startWave(_currentWave + 1);
+            }
+            else
+            {
+                // æ‰€æœ‰æ³¢æ¬¡å®Œæˆï¼
+                CCLOG("ALL WAVES CLEARED! Victory!");
+                if (_allWavesClearedCallback)
+                    _allWavesClearedCallback();
+            }
+        }
+        return;
+    }
+
+    if (!_isSpawning && _aliveEnemies.empty())
     {
         return;
     }
 
+    // æ£€æŸ¥ç©å®¶æ˜¯å¦å­˜æ´»
     if (_player == nullptr || !_player->isRoleAlive())
     {
         stopSpawn();
         return;
     }
 
-    // µÚ1²½£º¸üĞÂµ±Ç°ÒÑ¾­Éú³É³öÀ´µÄµĞÈË
+    // æ›´æ–°æ‰€æœ‰å­˜æ´»çš„æ•Œäºº
     for (auto it = _aliveEnemies.begin(); it != _aliveEnemies.end(); )
     {
         Enemy* enemy = *it;
@@ -124,22 +298,28 @@ void WaveManager::update(float dt)
             continue;
         }
 
-        // Èç¹ûµĞÈËÒÑ¾­ËÀÍö»ò·Ç¼¤»î£¬¾Í´Ó³¡¾°ÖĞÒÆ³ı£¬²¢´Ó_aliveEnemiesÁĞ±íÖĞÉ¾³ı
+        // æ£€æŸ¥æ•Œäººæ˜¯å¦æ­»äº¡æˆ–éæ´»è·ƒ
         if (!enemy->isRoleAlive() || !enemy->isObjectActive())
         {
+            // å¦‚æœæ•Œäººè¿˜æ´»ç€ä½†ä»åœºæ™¯ç§»é™¤äº†ï¼Œæ‰§è¡Œæ­»äº¡é€»è¾‘
+            if (enemy->isRoleAlive())
+            {
+                enemy->die();
+            }
             enemy->removeFromParent();
+            _killCount++;
             it = _aliveEnemies.erase(it);
             continue;
         }
 
-        // µĞÈËµÄÒÆ¶¯¡¢¹¥»÷ÀäÈ´¡¢×·×ÙÍæ¼Ò¶¼ÔÚupdateEnemy(dt)ÖĞÍê³É¡£
+        // æ›´æ–°æ•ŒäººAI
         enemy->updateEnemy(dt);
 
-        // ¸üĞÂÖ®ºóÔÙÅĞ¶ÏÒ»´Î¡£
-        // ÒòÎªµĞÈË¿ÉÄÜÔÚÕâÒ»Ö¡±»ÆäËûÂß¼­ÉèÖÃÎªËÀÍö»ò·Ç¼¤»î¡£
+        // æ›´æ–°åå†æ¬¡æ£€æŸ¥
         if (!enemy->isRoleAlive() || !enemy->isObjectActive())
         {
             enemy->removeFromParent();
+            _killCount++;
             it = _aliveEnemies.erase(it);
         }
         else
@@ -148,7 +328,7 @@ void WaveManager::update(float dt)
         }
     }
 
-    // µÚ2²½£º°´¼ä¸ô¼ÌĞøË¢¹Ö
+    // ç”Ÿæˆæ–°æ•Œäºº
     if (_enemiesToSpawn > 0)
     {
         _spawnTimer -= dt;
@@ -157,11 +337,15 @@ void WaveManager::update(float dt)
         {
             spawnEnemy();
             _enemiesToSpawn--;
-            _spawnTimer = _spawnInterval;
+
+            // åŠ¨æ€ç”Ÿæˆé—´éš”ï¼šæ•Œäººè¶Šå¤šé—´éš”è¶ŠçŸ­ï¼ˆæœ€å°‘0.8ç§’ï¼‰
+            float dynamicInterval = 1.8f - (_totalEnemiesThisWave - _enemiesToSpawn) * 0.05f;
+            if (dynamicInterval < 0.8f) dynamicInterval = 0.8f;
+            _spawnTimer = dynamicInterval;
         }
     }
 
-    // µÚ3²½£ºÅĞ¶ÏÕâÒ»²¨ÊÇ·ñ½áÊø
+    // åˆ¤æ–­å½“å‰æ³¢æ˜¯å¦å®Œæˆ
     if (_enemiesToSpawn <= 0 && _aliveEnemies.empty())
     {
         onWaveCleared();
@@ -171,12 +355,32 @@ void WaveManager::update(float dt)
 void WaveManager::onWaveCleared()
 {
     _isSpawning = false;
-    CCLOG("Wave %d cleared!", _currentWave);
-    // ×Ô¶¯½øÈëÏÂÒ»²¨£¨ÑÓ³Ù 3 Ãë£©
-    auto delay = DelayTime::create(3.0f);
-    auto call = CallFunc::create([this]() {
-        // ½øÈëÏÂÒ»²¨£¬¿ÉÒÔÔö¼ÓÒ»Ğ©½±Àø
-        startWave(_currentWave + 1);
-        });
-    _parentLayer->runAction(Sequence::create(delay, call, nullptr));
+    CCLOG("=== Wave %d CLEARED! (Total kills: %d) ===", _currentWave, _killCount);
+
+    if (_waveClearedCallback)
+        _waveClearedCallback(_currentWave);
+
+    // æ³¢æ¬¡é—´å»¶è¿Ÿ3ç§’
+    _waitingForNextWave = true;
+    _waveDelayTimer = 3.0f;
+}
+
+void WaveManager::setWaveClearedCallback(std::function<void(int)> callback)
+{
+    _waveClearedCallback = callback;
+}
+
+void WaveManager::setAllWavesClearedCallback(std::function<void()> callback)
+{
+    _allWavesClearedCallback = callback;
+}
+
+void WaveManager::setBossWaveCallback(std::function<void(int)> callback)
+{
+    _bossWaveCallback = callback;
+}
+
+std::vector<Enemy*>& WaveManager::getAliveEnemies()
+{
+    return _aliveEnemies;
 }

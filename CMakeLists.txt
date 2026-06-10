@@ -68,6 +68,7 @@ list(APPEND GAME_SOURCE
      Classes/Characters/Enemy.cpp
      Classes/Characters/SleepyMonster.cpp
      Classes/Characters/DDLMonster.cpp
+     Classes/Characters/BossMonster.cpp
      Classes/Managers/WaveManager.cpp
 
      # ????
@@ -77,7 +78,7 @@ list(APPEND GAME_SOURCE
      Classes/Weapons/CoffeeLaser.cpp
      Classes/Managers/CollisionManager.cpp
 
-     # ›Ï?
+     # ï¿½ï¿½?
      Classes/Managers/SaveManager.cpp
      Classes/Managers/AudioManager.cpp
      )
@@ -96,6 +97,7 @@ list(APPEND GAME_HEADER
      Classes/Characters/Enemy.h
      Classes/Characters/SleepyMonster.h
      Classes/Characters/DDLMonster.h
+     Classes/Characters/BossMonster.h
      Classes/Managers/WaveManager.h
 
      # ????
@@ -106,7 +108,7 @@ list(APPEND GAME_HEADER
      Classes/Managers/CollisionManager.h
      Classes/Core/DamageCalculator.h
 
-     # ›Ï?
+     # ï¿½ï¿½?
      Classes/Core/PlayerRecord.h
      Classes/Managers/SaveManager.h
      Classes/Managers/AudioManager.h
