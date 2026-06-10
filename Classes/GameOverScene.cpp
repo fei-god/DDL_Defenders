@@ -1,6 +1,7 @@
 #include "GameOverScene.h"
 #include "GameScene.h"
 #include "MainMenuScene.h"
+#include "Managers/LanguageManager.h"
 
 USING_NS_CC;
 
@@ -23,16 +24,21 @@ bool GameOverScene::init()
 {
     if (!Scene::init()) return false;
 
+    auto* lm = LanguageManager::getInstance();
     auto visibleSize = Director::getInstance()->getVisibleSize();
     Vec2 origin = Director::getInstance()->getVisibleOrigin();
+    auto winSize = Director::getInstance()->getWinSize();
 
-    // --- Background ---
-    auto bg = LayerColor::create(Color4B(30, 20, 25, 255), visibleSize.width, visibleSize.height);
+    // UI scale factor
+    float s = winSize.height / 640.0f;
+
+    // --- Background (covers full design resolution to avoid gaps) ---
+    auto bg = LayerColor::create(Color4B(30, 20, 25, 255), winSize.width, winSize.height);
     bg->setPosition(Vec2::ZERO);
     this->addChild(bg, -1);
 
     // --- Game Over title ---
-    auto title = Label::createWithSystemFont("Game Over", "Arial", 56);
+    auto title = Label::createWithSystemFont(lm->getString("gameover_title"), "Arial", 56.0f * s);
     title->setColor(Color3B(220, 60, 60));
     title->setPosition(Vec2(
         origin.x + visibleSize.width / 2,
@@ -41,9 +47,8 @@ bool GameOverScene::init()
     this->addChild(title, 1);
 
     // --- Survival time ---
-    char buf[32];
-    snprintf(buf, sizeof(buf), "Survival Time: %.1fs", _survivalTime);
-    auto timeLabel = Label::createWithSystemFont(buf, "Arial", 28);
+    std::string timeStr = lm->getStringF("survival_time_fmt", _survivalTime);
+    auto timeLabel = Label::createWithSystemFont(timeStr, "Arial", 28.0f * s);
     timeLabel->setColor(Color3B(200, 200, 210));
     timeLabel->setPosition(Vec2(
         origin.x + visibleSize.width / 2,
@@ -52,13 +57,13 @@ bool GameOverScene::init()
     this->addChild(timeLabel, 1);
 
     // --- Restart button ---
-    auto restartLabel = Label::createWithSystemFont("Restart", "Arial", 34);
+    auto restartLabel = Label::createWithSystemFont(lm->getString("restart"), "Arial", 34.0f * s);
     restartLabel->setColor(Color3B(100, 220, 100));
     auto restartItem = MenuItemLabel::create(restartLabel,
         CC_CALLBACK_1(GameOverScene::onRestartClicked, this));
 
     // --- Title button ---
-    auto titleLabel = Label::createWithSystemFont("Back to Title", "Arial", 34);
+    auto titleLabel = Label::createWithSystemFont(lm->getString("back_to_title"), "Arial", 34.0f * s);
     titleLabel->setColor(Color3B(200, 180, 120));
     auto titleItem = MenuItemLabel::create(titleLabel,
         CC_CALLBACK_1(GameOverScene::onTitleClicked, this));
@@ -70,7 +75,7 @@ bool GameOverScene::init()
             origin.x + visibleSize.width / 2,
             origin.y + visibleSize.height * 0.35f
         ));
-        menu->alignItemsVerticallyWithPadding(30.0f);
+        menu->alignItemsVerticallyWithPadding(30.0f * s);
         this->addChild(menu, 2);
     }
 

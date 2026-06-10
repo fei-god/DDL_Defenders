@@ -60,6 +60,7 @@ list(APPEND GAME_SOURCE
      Classes/MainMenuScene.cpp
      Classes/GameScene.cpp
      Classes/GameOverScene.cpp
+     Classes/SettingsScene.cpp
 
      # ??
      Classes/Core/GameObject.cpp
@@ -72,6 +73,7 @@ list(APPEND GAME_SOURCE
      Classes/Characters/SleepyMonster.cpp
      Classes/Characters/DDLMonster.cpp
      Classes/Managers/WaveManager.cpp
+     Classes/Managers/LanguageManager.cpp
 
      # ????
      Classes/Weapons/Bullet.cpp
@@ -91,6 +93,7 @@ list(APPEND GAME_HEADER
      Classes/MainMenuScene.h
      Classes/GameScene.h
      Classes/GameOverScene.h
+     Classes/SettingsScene.h
 
      # ??
      Classes/Core/GameObject.h
@@ -103,6 +106,7 @@ list(APPEND GAME_HEADER
      Classes/Characters/SleepyMonster.h
      Classes/Characters/DDLMonster.h
      Classes/Managers/WaveManager.h
+     Classes/Managers/LanguageManager.h
 
      # ????
      Classes/Weapons/Bullet.h
@@ -194,6 +198,15 @@ target_include_directories(${APP_NAME}
         PRIVATE ${COCOS2DX_ROOT_PATH}/cocos
         PRIVATE ${COCOS2DX_ROOT_PATH}/cocos/audio/include/
 )
+
+# GLFW include path for window management (display mode switching)
+if(WINDOWS)
+    target_include_directories(${APP_NAME} PRIVATE ${COCOS2DX_ROOT_PATH}/external/glfw3/include/win32)
+elseif(APPLE)
+    target_include_directories(${APP_NAME} PRIVATE ${COCOS2DX_ROOT_PATH}/external/glfw3/include/mac)
+elseif(LINUX)
+    target_include_directories(${APP_NAME} PRIVATE ${COCOS2DX_ROOT_PATH}/external/glfw3/include/linux)
+endif()
 
 # Use UTF-8 as source and execution charset on MSVC (fixes Chinese string garbled errors)
 if(MSVC)

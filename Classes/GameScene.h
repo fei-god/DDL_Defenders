@@ -67,6 +67,25 @@ private:
     cocos2d::Vec2 _moveDirection;
     bool _keyW, _keyA, _keyS, _keyD;
 
+    // Key bindings (loaded from UserDefault, can be rebound in Settings)
+    cocos2d::EventKeyboard::KeyCode _keyMoveUp;
+    cocos2d::EventKeyboard::KeyCode _keyMoveDown;
+    cocos2d::EventKeyboard::KeyCode _keyMoveLeft;
+    cocos2d::EventKeyboard::KeyCode _keyMoveRight;
+
+    void loadKeyBindings();
+
+    // ==================== Pause ====================
+    bool _isPaused;
+    cocos2d::Node* _pauseLayer;
+
+    void showPauseMenu();
+    void hidePauseMenu();
+    void onPauseResumeClicked(cocos2d::Ref* sender);
+    void onPauseRestartClicked(cocos2d::Ref* sender);
+    void onPauseSettingsClicked(cocos2d::Ref* sender);
+    void onPauseTitleClicked(cocos2d::Ref* sender);
+
     // ==================== Game state ====================
     bool _isGameOver;
 };

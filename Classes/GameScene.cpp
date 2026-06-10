@@ -1,9 +1,13 @@
 #include "GameScene.h"
 #include "GameOverScene.h"
+#include "MainMenuScene.h"
+#include "SettingsScene.h"
 #include "Weapons/KeyboardWave.h"
 #include "Managers/CollisionManager.h"
+#include "Managers/LanguageManager.h"
 #include "platform/CCImage.h"
 #include "renderer/CCTextureCache.h"
+#include "base/CCUserDefault.h"
 #include <new>
 #include <cmath>
 
@@ -84,9 +88,13 @@ bool GameScene::init()
 
     auto visibleSize = Director::getInstance()->getVisibleSize();
     Vec2 origin = Director::getInstance()->getVisibleOrigin();
+    auto winSize = Director::getInstance()->getWinSize();
 
-    // --- Background ---
-    auto bg = LayerColor::create(Color4B(22, 28, 40, 255), visibleSize.width, visibleSize.height);
+    // UI scale factor — keeps in-game UI proportional across resolutions
+    float s = winSize.height / 640.0f;
+
+    // --- Background (covers full design resolution to avoid gaps) ---
+    auto bg = LayerColor::create(Color4B(22, 28, 40, 255), winSize.width, winSize.height);
     bg->setPosition(Vec2::ZERO);
     this->addChild(bg, -10);
 
@@ -118,7 +126,7 @@ bool GameScene::init()
         _playerDir = Vec2(1.0f, 0.0f); // default: facing right
 
         // Name tag
-        auto nameTag = Label::createWithSystemFont("You", "Arial", 14);
+        auto nameTag = Label::createWithSystemFont("You", "Arial", 14.0f * s);
         nameTag->setColor(Color3B(200, 230, 255));
         nameTag->setPosition(Vec2(0, 22));
         m_player->addChild(nameTag);
@@ -154,10 +162,10 @@ bool GameScene::init()
         _waveManager->startWave(1);
 
     // --- HP bar ---
-    float hpBarWidth  = 220.0f;
-    float hpBarHeight = 22.0f;
-    float marginX = 20.0f;
-    float marginY = 20.0f;
+    float hpBarWidth  = 220.0f * s;
+    float hpBarHeight = 22.0f * s;
+    float marginX = 20.0f * s;
+    float marginY = 20.0f * s;
 
     float hpBarLeft = origin.x + marginX;
     float hpBarTop  = origin.y + visibleSize.height - marginY;
@@ -175,26 +183,26 @@ bool GameScene::init()
     this->addChild(_hpBarFill, 10);
     _hpBarMaxWidth = hpBarWidth;
 
-    auto hpLabel = Label::createWithSystemFont("HP", "Arial", 18);
+    auto hpLabel = Label::createWithSystemFont("HP", "Arial", 18.0f * s);
     hpLabel->setColor(Color3B(200, 200, 210));
     hpLabel->setAnchorPoint(Vec2(1.0f, 0.5f));
-    hpLabel->setPosition(Vec2(hpBarLeft - 8, hpBarTop - hpBarHeight / 2));
+    hpLabel->setPosition(Vec2(hpBarLeft - 8.0f * s, hpBarTop - hpBarHeight / 2));
     this->addChild(hpLabel, 10);
 
     // --- Mood label ---
-    _moodLabel = Label::createWithSystemFont("Mood: Normal", "Arial", 24);
+    _moodLabel = Label::createWithSystemFont("Mood: Normal", "Arial", 24.0f * s);
     _moodLabel->setColor(Color3B(210, 210, 220));
     _moodLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
-    _moodLabel->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight - 28));
+    _moodLabel->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight - 28.0f * s));
     this->addChild(_moodLabel, 10);
 
     // --- Survival time ---
     m_survivalTime = 0.0f;
-    _survivalTimeLabel = Label::createWithSystemFont("Time: 0.0s", "Arial", 36);
+    _survivalTimeLabel = Label::createWithSystemFont("Time: 0.0s", "Arial", 36.0f * s);
     _survivalTimeLabel->setColor(Color3B(230, 230, 240));
     _survivalTimeLabel->setPosition(Vec2(
         origin.x + visibleSize.width / 2,
-        origin.y + visibleSize.height - 30.0f
+        origin.y + visibleSize.height - 30.0f * s
     ));
     this->addChild(_survivalTimeLabel, 10);
 
@@ -202,6 +210,9 @@ bool GameScene::init()
     _keyW = _keyA = _keyS = _keyD = false;
     _moveDirection = Vec2::ZERO;
     _isGameOver = false;
+    _isPaused = false;
+    _pauseLayer = nullptr;
+    loadKeyBindings();
     initInputListeners();
 
     this->scheduleUpdate();
@@ -217,19 +228,22 @@ void GameScene::update(float dt)
     if (!_isGameOver && m_player && !m_player->isRoleAlive())
     {
         _isGameOver = true;
-        // scheduleOnce creates the GameOverScene only when the callback fires,
-        // avoiding a dangling-pointer crash: if we created it here (autoreleased)
-        // and captured the raw pointer in a delayed CallFunc, the autorelease pool
-        // would free the scene before the 0.5s delay elapses.
-        this->scheduleOnce([this](float) {
+        // Use a delay then create the GameOverScene lazily *inside* the callback,
+        // so there is no autoreleased-scene-dangling-pointer issue.
+        auto delay = DelayTime::create(0.5f);
+        auto call = CallFunc::create([this]() {
             auto gameOverScene = GameOverScene::createScene(m_survivalTime);
             Director::getInstance()->replaceScene(gameOverScene);
-        }, 0.5f, "game_over_transition");
+        });
+        this->runAction(Sequence::create(delay, call, nullptr));
         return;
     }
 
     // Don't process any game logic after death (waiting for transition)
     if (_isGameOver) return;
+
+    // Don't process game logic while paused
+    if (_isPaused) return;
 
     // --- Player ---
     if (m_player)
@@ -379,30 +393,38 @@ void GameScene::updateSurvivalTime(float dt)
 // ---------------------------------------------------------------------------
 void GameScene::initInputListeners()
 {
-    // ---- Keyboard (WASD) ----
+    // ---- Keyboard (movement + pause) ----
     auto* kbListener = EventListenerKeyboard::create();
     kbListener->onKeyPressed = [this](EventKeyboard::KeyCode code, Event*)
     {
-        switch (code)
+        // ESC toggles pause (only if game is still active)
+        if (code == EventKeyboard::KeyCode::KEY_ESCAPE)
         {
-        case EventKeyboard::KeyCode::KEY_W: _keyW = true; break;
-        case EventKeyboard::KeyCode::KEY_A: _keyA = true; break;
-        case EventKeyboard::KeyCode::KEY_S: _keyS = true; break;
-        case EventKeyboard::KeyCode::KEY_D: _keyD = true; break;
-        default: break;
+            if (!_isGameOver)
+            {
+                if (_isPaused) hidePauseMenu();
+                else           showPauseMenu();
+            }
+            return;
         }
+
+        // Ignore movement keys while paused
+        if (_isPaused) return;
+
+        if (code == _keyMoveUp)    _keyW = true;
+        if (code == _keyMoveDown)  _keyS = true;
+        if (code == _keyMoveLeft)  _keyA = true;
+        if (code == _keyMoveRight) _keyD = true;
         updateMoveDirection();
     };
     kbListener->onKeyReleased = [this](EventKeyboard::KeyCode code, Event*)
     {
-        switch (code)
-        {
-        case EventKeyboard::KeyCode::KEY_W: _keyW = false; break;
-        case EventKeyboard::KeyCode::KEY_A: _keyA = false; break;
-        case EventKeyboard::KeyCode::KEY_S: _keyS = false; break;
-        case EventKeyboard::KeyCode::KEY_D: _keyD = false; break;
-        default: break;
-        }
+        if (_isPaused) return;
+
+        if (code == _keyMoveUp)    _keyW = false;
+        if (code == _keyMoveDown)  _keyS = false;
+        if (code == _keyMoveLeft)  _keyA = false;
+        if (code == _keyMoveRight) _keyD = false;
         updateMoveDirection();
     };
     _eventDispatcher->addEventListenerWithSceneGraphPriority(kbListener, this);
@@ -420,6 +442,8 @@ void GameScene::initInputListeners()
     mouseListener->onMouseDown = [this](EventMouse* mouseEv)
     {
         if (mouseEv->getMouseButton() != EventMouse::MouseButton::BUTTON_LEFT)
+            return;
+        if (_isPaused || _isGameOver)
             return;
         if (!m_player || !m_player->isRoleAlive())
             return;
@@ -479,4 +503,113 @@ void GameScene::fireBullet()
         _bulletLayer->addChild(bullet);
         _bullets.push_back(bullet);
     }
+}
+
+// ---------------------------------------------------------------------------
+// Key bindings (loaded from UserDefault — see SettingsScene for rebinding)
+// ---------------------------------------------------------------------------
+void GameScene::loadKeyBindings()
+{
+    auto ud = UserDefault::getInstance();
+    _keyMoveUp    = static_cast<EventKeyboard::KeyCode>(
+        ud->getIntegerForKey("key_move_up",    static_cast<int>(EventKeyboard::KeyCode::KEY_W)));
+    _keyMoveDown  = static_cast<EventKeyboard::KeyCode>(
+        ud->getIntegerForKey("key_move_down",  static_cast<int>(EventKeyboard::KeyCode::KEY_S)));
+    _keyMoveLeft  = static_cast<EventKeyboard::KeyCode>(
+        ud->getIntegerForKey("key_move_left",  static_cast<int>(EventKeyboard::KeyCode::KEY_A)));
+    _keyMoveRight = static_cast<EventKeyboard::KeyCode>(
+        ud->getIntegerForKey("key_move_right", static_cast<int>(EventKeyboard::KeyCode::KEY_D)));
+}
+
+// ---------------------------------------------------------------------------
+// Pause menu
+// ---------------------------------------------------------------------------
+void GameScene::showPauseMenu()
+{
+    if (_isPaused || _pauseLayer) return;
+    _isPaused = true;
+
+    auto* lm = LanguageManager::getInstance();
+    auto visibleSize = Director::getInstance()->getVisibleSize();
+    Vec2 origin = Director::getInstance()->getVisibleOrigin();
+    auto winSize = Director::getInstance()->getWinSize();
+    float s = winSize.height / 640.0f;
+    float cx = origin.x + visibleSize.width / 2;
+    float cy = origin.y + visibleSize.height / 2;
+
+    // Semi-transparent overlay (covers full design resolution to avoid gaps)
+    _pauseLayer = LayerColor::create(Color4B(0, 0, 0, 160), winSize.width, winSize.height);
+    _pauseLayer->setPosition(Vec2::ZERO);
+    this->addChild(_pauseLayer, 100);
+
+    // Pause title
+    auto title = Label::createWithSystemFont(lm->getString("pause_title"), "Arial", 48.0f * s);
+    title->setColor(Color3B(220, 220, 240));
+    title->setPosition(Vec2(cx, cy + 120.0f * s));
+    _pauseLayer->addChild(title);
+
+    // Resume button
+    auto resumeLabel = Label::createWithSystemFont(lm->getString("resume"), "Arial", 32.0f * s);
+    resumeLabel->setColor(Color3B(100, 220, 100));
+    auto resumeItem = MenuItemLabel::create(resumeLabel,
+        CC_CALLBACK_1(GameScene::onPauseResumeClicked, this));
+
+    // Restart button
+    auto restartLabel = Label::createWithSystemFont(lm->getString("restart"), "Arial", 32.0f * s);
+    restartLabel->setColor(Color3B(220, 200, 100));
+    auto restartItem = MenuItemLabel::create(restartLabel,
+        CC_CALLBACK_1(GameScene::onPauseRestartClicked, this));
+
+    // Settings button
+    auto settingsLabel = Label::createWithSystemFont(lm->getString("settings"), "Arial", 32.0f * s);
+    settingsLabel->setColor(Color3B(160, 180, 220));
+    auto settingsItem = MenuItemLabel::create(settingsLabel,
+        CC_CALLBACK_1(GameScene::onPauseSettingsClicked, this));
+
+    // Back to title button
+    auto titleLabel = Label::createWithSystemFont(lm->getString("back_to_title"), "Arial", 32.0f * s);
+    titleLabel->setColor(Color3B(200, 140, 120));
+    auto titleItem = MenuItemLabel::create(titleLabel,
+        CC_CALLBACK_1(GameScene::onPauseTitleClicked, this));
+
+    if (resumeItem && restartItem && settingsItem && titleItem)
+    {
+        auto menu = Menu::create(resumeItem, restartItem, settingsItem, titleItem, nullptr);
+        menu->setPosition(Vec2(cx, cy));
+        menu->alignItemsVerticallyWithPadding(28.0f * s);
+        _pauseLayer->addChild(menu);
+    }
+}
+
+void GameScene::hidePauseMenu()
+{
+    if (!_isPaused) return;
+    _isPaused = false;
+
+    if (_pauseLayer)
+    {
+        _pauseLayer->removeFromParent();
+        _pauseLayer = nullptr;
+    }
+}
+
+void GameScene::onPauseResumeClicked(Ref*)
+{
+    hidePauseMenu();
+}
+
+void GameScene::onPauseRestartClicked(Ref*)
+{
+    Director::getInstance()->replaceScene(GameScene::createScene());
+}
+
+void GameScene::onPauseSettingsClicked(Ref*)
+{
+    auto settingsScene = SettingsScene::createScene(SettingsScene::Entry::PAUSE_MENU);
+    Director::getInstance()->pushScene(settingsScene);
+}
+
+void GameScene::onPauseTitleClicked(Ref*)
+{
+    Director::getInstance()->replaceScene(MainMenuScene::createScene());
 }

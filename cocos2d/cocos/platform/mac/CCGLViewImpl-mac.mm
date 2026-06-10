@@ -590,6 +590,22 @@ void GLViewImpl::setWindowed(int width, int height) {
     }
 }
 
+void GLViewImpl::setBorderless()
+{
+    auto* monitor = glfwGetPrimaryMonitor();
+    if (!monitor) return;
+    const GLFWvidmode* videoMode = glfwGetVideoMode(monitor);
+    if (!videoMode) return;
+
+    // Get the monitor's actual position (not always 0,0 with multi-monitor)
+    int mx, my;
+    glfwGetMonitorPos(monitor, &mx, &my);
+
+    glfwSetWindowAttrib(_mainWindow, GLFW_DECORATED, GLFW_FALSE);
+    glfwSetWindowMonitor(_mainWindow, nullptr, mx, my, videoMode->width, videoMode->height, GLFW_DONT_CARE);
+    _monitor = nullptr;
+}
+
 int GLViewImpl::getMonitorCount() const {
     int count = 0;
     glfwGetMonitors(&count);

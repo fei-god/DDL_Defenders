@@ -24,6 +24,12 @@
 
 #include "AppDelegate.h"
 #include "MainMenuScene.h"
+#include "base/CCUserDefault.h"
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32) || (CC_TARGET_PLATFORM == CC_PLATFORM_LINUX)
+#include "platform/desktop/CCGLViewImpl-desktop.h"
+#else
+#include "platform/mac/CCGLViewImpl-mac.h"
+#endif
 
 // #define USE_AUDIO_ENGINE 1
 
@@ -35,9 +41,6 @@ using namespace cocos2d::experimental;
 USING_NS_CC;
 
 static cocos2d::Size designResolutionSize = cocos2d::Size(960, 640);
-static cocos2d::Size smallResolutionSize = cocos2d::Size(960, 640);
-static cocos2d::Size mediumResolutionSize = cocos2d::Size(1280, 720);
-static cocos2d::Size largeResolutionSize = cocos2d::Size(1920, 1080);
 
 AppDelegate::AppDelegate()
 {
@@ -71,9 +74,16 @@ bool AppDelegate::applicationDidFinishLaunching() {
     // initialize director
     auto director = Director::getInstance();
     auto glview = director->getOpenGLView();
+
+    // Read saved resolution from UserDefault (set by SettingsScene)
+    auto ud = UserDefault::getInstance();
+    int savedW = ud->getIntegerForKey("resolution_width", 960);
+    int savedH = ud->getIntegerForKey("resolution_height", 640);
+    designResolutionSize = cocos2d::Size(static_cast<float>(savedW), static_cast<float>(savedH));
+
     if(!glview) {
 #if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32) || (CC_TARGET_PLATFORM == CC_PLATFORM_MAC) || (CC_TARGET_PLATFORM == CC_PLATFORM_LINUX)
-        glview = GLViewImpl::createWithRect("DDL_Defenders", cocos2d::Rect(0, 0, designResolutionSize.width, designResolutionSize.height));
+        glview = GLViewImpl::createWithRect("DDL_Defenders", cocos2d::Rect(0, 0, designResolutionSize.width, designResolutionSize.height), 1.0f, true);
 #else
         glview = GLViewImpl::create("DDL_Defenders");
 #endif
@@ -88,21 +98,25 @@ bool AppDelegate::applicationDidFinishLaunching() {
 
     // Set the design resolution
     glview->setDesignResolutionSize(designResolutionSize.width, designResolutionSize.height, ResolutionPolicy::NO_BORDER);
-    auto frameSize = glview->getFrameSize();
-    // if the frame's height is larger than the height of medium size.
-    if (frameSize.height > mediumResolutionSize.height)
-    {        
-        director->setContentScaleFactor(MIN(largeResolutionSize.height/designResolutionSize.height, largeResolutionSize.width/designResolutionSize.width));
-    }
-    // if the frame's height is larger than the height of small size.
-    else if (frameSize.height > smallResolutionSize.height)
-    {        
-        director->setContentScaleFactor(MIN(mediumResolutionSize.height/designResolutionSize.height, mediumResolutionSize.width/designResolutionSize.width));
-    }
-    // if the frame's height is smaller than the height of medium size.
-    else
-    {        
-        director->setContentScaleFactor(MIN(smallResolutionSize.height/designResolutionSize.height, smallResolutionSize.width/designResolutionSize.width));
+
+    // Content scale factor is kept at 1.0 (default).
+    // Font sizes and UI layout are scaled directly by desH / 640 in each scene.
+    // This avoids redundant CSF multiplication (CSF makes glyph textures larger
+    // then divides back to the same logical size — wasteful for non-Retina displays).
+
+    // Apply saved display mode
+    int savedMode = ud->getIntegerForKey("display_mode", 0);
+    auto* glviewImpl = dynamic_cast<GLViewImpl*>(glview);
+    if (glviewImpl)
+    {
+        if (savedMode == 1) // Borderless
+        {
+            glviewImpl->setBorderless();
+        }
+        else if (savedMode == 2) // Fullscreen
+        {
+            glviewImpl->setFullscreen();
+        }
     }
 
     register_all_packages();

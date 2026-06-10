@@ -86,6 +86,7 @@ public:
     void setFullscreen(int monitorIndex);
     void setFullscreen(const GLFWvidmode &videoMode, GLFWmonitor *monitor);
     void setWindowed(int width, int height);
+    void setBorderless();
     int getMonitorCount() const;
     Size getMonitorSize() const;
 
