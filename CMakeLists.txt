@@ -72,6 +72,7 @@ list(APPEND GAME_SOURCE
      Classes/Characters/Enemy.cpp
      Classes/Characters/SleepyMonster.cpp
      Classes/Characters/DDLMonster.cpp
+     Classes/Characters/BossMonster.cpp
      Classes/Managers/WaveManager.cpp
      Classes/Managers/LanguageManager.cpp
 
@@ -105,6 +106,7 @@ list(APPEND GAME_HEADER
      Classes/Characters/Enemy.h
      Classes/Characters/SleepyMonster.h
      Classes/Characters/DDLMonster.h
+     Classes/Characters/BossMonster.h
      Classes/Managers/WaveManager.h
      Classes/Managers/LanguageManager.h
 
