@@ -57,6 +57,10 @@ endif()
 list(APPEND GAME_SOURCE
      Classes/Scenes/AppDelegate.cpp
      Classes/Scenes/HelloWorldScene.cpp
+     Classes/MainMenuScene.cpp
+     Classes/GameScene.cpp
+     Classes/GameOverScene.cpp
+     Classes/SettingsScene.cpp
 
      # ??
      Classes/Core/GameObject.cpp
@@ -68,7 +72,9 @@ list(APPEND GAME_SOURCE
      Classes/Characters/Enemy.cpp
      Classes/Characters/SleepyMonster.cpp
      Classes/Characters/DDLMonster.cpp
+     Classes/Characters/BossMonster.cpp
      Classes/Managers/WaveManager.cpp
+     Classes/Managers/LanguageManager.cpp
 
      # ????
      Classes/Weapons/Bullet.cpp
@@ -77,7 +83,7 @@ list(APPEND GAME_SOURCE
      Classes/Weapons/CoffeeLaser.cpp
      Classes/Managers/CollisionManager.cpp
 
-     # ›Ï?
+     # ï¿½ï¿½?
      Classes/Managers/SaveManager.cpp
      Classes/Managers/AudioManager.cpp
      )
@@ -85,6 +91,10 @@ list(APPEND GAME_SOURCE
 list(APPEND GAME_HEADER
      Classes/Scenes/AppDelegate.h
      Classes/Scenes/HelloWorldScene.h
+     Classes/MainMenuScene.h
+     Classes/GameScene.h
+     Classes/GameOverScene.h
+     Classes/SettingsScene.h
 
      # ??
      Classes/Core/GameObject.h
@@ -96,7 +106,9 @@ list(APPEND GAME_HEADER
      Classes/Characters/Enemy.h
      Classes/Characters/SleepyMonster.h
      Classes/Characters/DDLMonster.h
+     Classes/Characters/BossMonster.h
      Classes/Managers/WaveManager.h
+     Classes/Managers/LanguageManager.h
 
      # ????
      Classes/Weapons/Bullet.h
@@ -106,7 +118,7 @@ list(APPEND GAME_HEADER
      Classes/Managers/CollisionManager.h
      Classes/Core/DamageCalculator.h
 
-     # ›Ï?
+     # ï¿½ï¿½?
      Classes/Core/PlayerRecord.h
      Classes/Managers/SaveManager.h
      Classes/Managers/AudioManager.h
@@ -188,6 +200,20 @@ target_include_directories(${APP_NAME}
         PRIVATE ${COCOS2DX_ROOT_PATH}/cocos
         PRIVATE ${COCOS2DX_ROOT_PATH}/cocos/audio/include/
 )
+
+# GLFW include path for window management (display mode switching)
+if(WINDOWS)
+    target_include_directories(${APP_NAME} PRIVATE ${COCOS2DX_ROOT_PATH}/external/glfw3/include/win32)
+elseif(APPLE)
+    target_include_directories(${APP_NAME} PRIVATE ${COCOS2DX_ROOT_PATH}/external/glfw3/include/mac)
+elseif(LINUX)
+    target_include_directories(${APP_NAME} PRIVATE ${COCOS2DX_ROOT_PATH}/external/glfw3/include/linux)
+endif()
+
+# Use UTF-8 as source and execution charset on MSVC (fixes Chinese string garbled errors)
+if(MSVC)
+    target_compile_options(${APP_NAME} PRIVATE /utf-8)
+endif()
 
 # mark app resources
 setup_cocos_app_config(${APP_NAME})

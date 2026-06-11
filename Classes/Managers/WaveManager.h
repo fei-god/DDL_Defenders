@@ -1,5 +1,4 @@
 #pragma once
-#pragma once
 #ifndef __WAVE_MANAGER_H__
 #define __WAVE_MANAGER_H__
 
@@ -7,6 +6,7 @@
 #include "Enemy.h"
 #include "Player.h"
 #include <vector>
+#include <functional>
 
 class WaveManager : public cocos2d::Ref
 {
@@ -14,25 +14,57 @@ public:
     static WaveManager* create(Player* player, cocos2d::Node* parentLayer);
     bool init(Player* player, cocos2d::Node* parentLayer);
 
-    void update(float dt);          // ĞèÒªÔÚ GameScene µÄ update ÖĞµ÷ÓÃ
-    void startWave(int waveIndex);  // ¿ªÊ¼µÚ¼¸²¨
-    void stopSpawn();               // Í£Ö¹Ë¢¹Ö£¨ÓÎÏ·½áÊø»òÍ¨¹ØÊ±£©
-    std::vector<Enemy*>& getAliveEnemies();  // »ñÈ¡µ±Ç°»î×ÅµÄµĞÈËÁĞ±í£¬¸øÎäÆ÷ºÍÅö×²¼ì²âÊ¹ÓÃ
+    void update(float dt);          // åœ¨ GameScene çš„ update ä¸­è°ƒç”¨
+    void startWave(int waveIndex);  // å¼€å§‹ç¬¬å‡ æ³¢
+    void stopSpawn();               // åœæ­¢åˆ·æ€ªï¼ˆæ¸¸æˆç»“æŸ/é€šå…³æ—¶ï¼‰
+    std::vector<Enemy*>& getAliveEnemies();  // è·å–å½“å‰å­˜æ´»çš„æ•Œäººåˆ—è¡¨
+
+    // æ³¢æ¬¡ä¿¡æ¯
+    int getCurrentWave() const { return _currentWave; }
+    int getTotalWaves() const { return _totalWaves; }
+    int getKillCount() const { return _killCount; }
+    bool isWaveActive() const { return _isSpawning || !_aliveEnemies.empty(); }
+    bool isBossWave() const { return _isBossWave; }
+
+    // å›è°ƒï¼šæ³¢æ¬¡æ¸…ç†å®Œæˆæ—¶è°ƒç”¨
+    void setWaveClearedCallback(std::function<void(int)> callback);
+    // å›è°ƒï¼šæ‰€æœ‰æ³¢æ¬¡å®Œæˆï¼ˆé€šå…³ï¼‰æ—¶è°ƒç”¨
+    void setAllWavesClearedCallback(std::function<void()> callback);
+    // å›è°ƒï¼šBossæ³¢å¼€å§‹
+    void setBossWaveCallback(std::function<void(int)> callback);
 
 private:
-    void spawnEnemy();              // Éú³ÉÒ»¸öµĞÈË
-    void onWaveCleared();           // µ±Ç°²¨´ÎËùÓĞµĞÈË¶¼ËÀÍöºóµ÷ÓÃ
+    void spawnEnemy();              // ç”Ÿæˆä¸€ä¸ªæ•Œäºº
+    Enemy* createEnemyByType(int enemyType, const cocos2d::Vec2& pos, int waveLevel);
+    void onWaveCleared();           // å½“å‰æ³¢æ‰€æœ‰æ•Œäººè¢«æ¶ˆç­
+    void showWaveAnnouncement(int wave); // æ˜¾ç¤ºæ³¢æ¬¡å…¬å‘Š
+    int getEnemyCountForWave(int wave);  // æ ¹æ®æ³¢æ¬¡è®¡ç®—æ•Œäººæ•°é‡
 
     Player* _player;
-    cocos2d::Node* _parentLayer;   // ÓÃÓÚÌí¼ÓµĞÈËµ½³¡¾°ÖĞ
+    cocos2d::Node* _parentLayer;   // æ•Œäººæ·»åŠ åˆ°çš„å±‚
 
-    int _currentWave;               // µ±Ç°²¨´Î£¨´Ó1¿ªÊ¼£©
-    int _enemiesToSpawn;            // ±¾²¨»¹ĞèÒªÉú³ÉµÄµĞÈËÊıÁ¿
-    float _spawnTimer;              // Éú³ÉµĞÈËµÄ¼ÆÊ±Æ÷
-    float _spawnInterval;           // Éú³É¼ä¸ô£¨Ãë£©
-    bool _isSpawning;               // ÊÇ·ñÕıÔÚÉú³ÉÖĞ
+    int _currentWave;               // å½“å‰æ³¢æ¬¡ï¼ˆä»1å¼€å§‹ï¼‰
+    int _totalWaves;                // æ€»æ³¢æ¬¡æ•°ï¼ˆé»˜è®¤10æ³¢ï¼‰
+    int _enemiesToSpawn;            // æœ¬æ³¢è¿˜éœ€ç”Ÿæˆçš„æ•Œäººæ•°
+    float _spawnTimer;              // ç”Ÿæˆè®¡æ—¶å™¨
+    float _spawnInterval;           // ç”Ÿæˆé—´éš”ï¼ˆç§’ï¼‰
+    bool _isSpawning;               // æ˜¯å¦æ­£åœ¨ç”Ÿæˆ
 
-    std::vector<Enemy*> _aliveEnemies; // µ±Ç°´æ»îµÄµĞÈËÁĞ±í£¨½öÓÃÓÚ¼ÆÊı£©
-    int _totalEnemiesThisWave;          // ±¾²¨µĞÈË×ÜÊı
+    std::vector<Enemy*> _aliveEnemies; // å½“å‰å­˜æ´»çš„æ•Œäººåˆ—è¡¨
+    int _totalEnemiesThisWave;      // æœ¬æ³¢æ€»æ•Œäººæ•°
+    int _enemiesSpawnedCount;       // æœ¬æ³¢å·²ç”Ÿæˆçš„æ•Œäººæ•°
+
+    int _killCount;                 // æœ¬å±€æ€»å‡»æ€æ•°
+    bool _isBossWave;               // å½“å‰æ³¢æ˜¯å¦ä¸ºBossæ³¢
+    bool _bossSpawned;              // Bossæ˜¯å¦å·²ç”Ÿæˆ
+
+    float _waveDelayTimer;          // æ³¢æ¬¡é—´å»¶è¿Ÿè®¡æ—¶å™¨
+    bool _waitingForNextWave;       // æ˜¯å¦åœ¨ç­‰å¾…ä¸‹ä¸€æ³¢
+
+    // å›è°ƒå‡½æ•°
+    std::function<void(int)> _waveClearedCallback;
+    std::function<void()> _allWavesClearedCallback;
+    std::function<void(int)> _bossWaveCallback;
 };
+
 #endif

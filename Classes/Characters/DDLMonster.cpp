@@ -20,16 +20,16 @@ bool DDLMonster::initDDLMonster(const std::string& imagePath,
     const Vec2& startPosition,
     Player* target)
 {
-    // ³å´Ì¹ÖÊôĞÔ£º¸ß¹¥¸ßËÙµ«ÑªÁ¿ÉÔµÍ
+    // å†²é”‹å‹æ€ªç‰©ï¼šä¸­ç­‰è¡€é‡ï¼Œè¾ƒå¿«é€Ÿåº¦ï¼Œä¸­ç­‰æ”»å‡»
     bool ok = initEnemy("DDLMonster",
         imagePath,
         startPosition,
-        60,        // maxHp
-        200.0f,    // speed (¿ì)
-        10,        // defense
-        35,        // attackDamage
-        60.0f,     // attackRange
-        80);       // expReward
+        50,        // maxHp       (é™ä½ï¼š60â†’50)
+        80.0f,     // speed       (é™ä½ï¼š200â†’80ï¼Œä¹‹å‰å¤ªå¿«äº†)
+        5,         // defense     (é™ä½ï¼š10â†’5)
+        20,        // attackDamage (é™ä½ï¼š35â†’20)
+        55.0f,     // attackRange  (é™ä½ï¼š60â†’55)
+        50);       // expReward    (é™ä½ï¼š80â†’50)
     if (!ok) return false;
 
     setTargetPlayer(target);
@@ -43,40 +43,41 @@ void DDLMonster::move(float dt)
 {
     if (_targetPlayer == nullptr) return;
 
-    // ³å´ÌÀäÈ´¸üĞÂ
+    // å†·å´è®¡æ—¶
     if (_chargeCooldown > 0.0f)
         _chargeCooldown -= dt;
 
     if (_isCharging)
     {
-        // ³å´Ì×´Ì¬£º¸ßËÙÖ±ÏßÒÆ¶¯Ò»¶ÎÊ±¼ä
+        // å†²é”‹çŠ¶æ€ï¼šæ²¿å†²é”‹æ–¹å‘å¿«é€Ÿç§»åŠ¨
         float chargeSpeed = getSpeed() * 2.5f;
         Vec2 newPos = getPosition() + _chargeDirection * chargeSpeed * dt;
         setPosition(newPos);
-        // ¼òµ¥³å´Ì³ÖĞøÊ±¼ä 0.4 Ãëºó½áÊø
+
+        // å†²é”‹æŒç»­ 0.4 ç§’
         if (_chargeCooldown <= 0.0f)
         {
             _isCharging = false;
+            _chargeCooldown = 1.5f;  // å†²é”‹ç»“æŸåå†·å´ 1.5 ç§’
         }
         return;
     }
     else
     {
-        // ÆÕÍ¨×´Ì¬£º³¯Íæ¼ÒÒÆ¶¯
+        // æ™®é€šçŠ¶æ€ï¼šå‘ç©å®¶ç§»åŠ¨
         Vec2 dir = _targetPlayer->getPosition() - getPosition();
         dir.normalize();
         setDirection(dir);
         Vec2 newPos = getPosition() + dir * getSpeed() * dt;
         setPosition(newPos);
 
-        // Ã¿¸ô 1.5 Ãë³¢ÊÔ·¢¶¯³å´Ì£¨¾àÀëÍæ¼Ò½Ï½üÊ±£©
-        if (_chargeCooldown <= 0.0f && getPosition().distance(_targetPlayer->getPosition()) < 150.0f)
+        // å†·å´ç»“æŸä¸”ç©å®¶è¾ƒè¿‘æ—¶ï¼Œå°è¯•å‘èµ·å†²é”‹
+        float distToPlayer = getPosition().distance(_targetPlayer->getPosition());
+        if (_chargeCooldown <= 0.0f && distToPlayer < 150.0f)
         {
             _isCharging = true;
             _chargeDirection = dir;
-            _chargeCooldown = 0.4f;   // ³å´Ì³ÖĞø 0.4 Ãë
-            // ¶îÍâÔÙÉèÖÃÒ»¸öÀäÈ´£¬·ÀÖ¹Á¬Ğø³å´Ì
-            _chargeCooldown = 1.5f;
+            _chargeCooldown = 0.4f;  // å†²é”‹æŒç»­ 0.4 ç§’
         }
     }
 }
@@ -84,6 +85,6 @@ void DDLMonster::move(float dt)
 void DDLMonster::attack()
 {
     if (_targetPlayer == nullptr) return;
-    // ³å´Ì¹Ö¹¥»÷Á¦¸ß
+    // å†²é”‹æ€ªç‰©è¿‘æˆ˜æ”»å‡»
     _targetPlayer->takeDamage(_attackDamage);
 }
