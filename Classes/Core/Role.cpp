@@ -1,5 +1,10 @@
 #include "Role.h"
 
+#include <algorithm>
+#include <sstream>
+#include <cstdlib>
+#include <cmath>
+
 USING_NS_CC;
 
 Role::Role()
@@ -9,6 +14,20 @@ Role::Role()
     , direction(Vec2::ZERO)
     , isAlive(true)
     , defense(0)
+    , armor(0)
+    , baseDamage(0)
+    , meleeDamage(0)
+    , rangedDamage(0)
+    , elementalDamage(0)
+    , attackSpeed(1.0f)
+    , critChance(0.0f)
+    , critDamageMultiplier(2.0f)
+    , dodgeChance(0.0f)
+    , lifeStealChance(0.0f)
+    , knockbackResistance(0.0f)
+    , invincibleTimer(0.0f)
+    , hurtCooldown(0.3f)
+    , hurtCooldownTimer(0.0f)
 {
 }
 
@@ -31,19 +50,102 @@ bool Role::initRole(
         return false;
     }
 
-    this->maxHp = maxHp;
-    this->hp = maxHp;
-    this->speed = speed;
-    this->defense = defense;
+    this->maxHp = std::max(1, maxHp);
+    this->hp = this->maxHp;
+
+    this->speed = std::max(0.0f, speed);
+    this->defense = std::max(0, defense);
+    this->armor = this->defense;
+
     this->direction = Vec2::ZERO;
     this->isAlive = true;
+
+    this->baseDamage = 1;
+    this->meleeDamage = 0;
+    this->rangedDamage = 0;
+    this->elementalDamage = 0;
+
+    this->attackSpeed = 1.0f;
+    this->critChance = 0.0f;
+    this->critDamageMultiplier = 2.0f;
+    this->dodgeChance = 0.0f;
+    this->lifeStealChance = 0.0f;
+    this->knockbackResistance = 0.0f;
+
+    this->invincibleTimer = 0.0f;
+    this->hurtCooldown = 0.3f;
+    this->hurtCooldownTimer = 0.0f;
+
+    if (type == GameObjectType::Player)
+    {
+        setObjectCamp(GameObjectCamp::Player);
+        addTag("Player");
+        addTag("Role");
+    }
+    else if (type == GameObjectType::Enemy)
+    {
+        setObjectCamp(GameObjectCamp::Enemy);
+        addTag("Enemy");
+        addTag("Role");
+    }
+    else
+    {
+        addTag("Role");
+    }
+
+    setMoveSpeed(this->speed);
 
     return true;
 }
 
+void Role::updateObject(float dt)
+{
+    if (!isObjectActive() || !isUpdateEnabled())
+    {
+        return;
+    }
+
+    GameObject::updateObject(dt);
+
+    if (!isAlive)
+    {
+        return;
+    }
+
+    if (invincibleTimer > 0.0f)
+    {
+        invincibleTimer -= dt;
+        if (invincibleTimer < 0.0f)
+        {
+            invincibleTimer = 0.0f;
+        }
+    }
+
+    if (hurtCooldownTimer > 0.0f)
+    {
+        hurtCooldownTimer -= dt;
+        if (hurtCooldownTimer < 0.0f)
+        {
+            hurtCooldownTimer = 0.0f;
+        }
+    }
+
+    updateStatusEffects(dt);
+    move(dt);
+}
+
+// =========================
+// 移动
+// =========================
+
 void Role::move(float dt)
 {
     if (!isAlive || !isObjectActive())
+    {
+        return;
+    }
+
+    if (isStunned())
     {
         return;
     }
@@ -54,14 +156,22 @@ void Role::move(float dt)
     }
 
     Vec2 normalizedDirection = direction.getNormalized();
-    Vec2 newPosition = getPosition() + normalizedDirection * speed * dt;
+    Vec2 newPosition = getPosition() + normalizedDirection * getCurrentSpeed() * dt;
 
     setPosition(newPosition);
+
+    // 同步 GameObject 的方向，方便武器、朝向、调试使用
+    GameObject::setDirection(normalizedDirection);
 }
 
 void Role::setDirection(const Vec2& direction)
 {
     this->direction = direction;
+
+    if (direction != Vec2::ZERO)
+    {
+        GameObject::setDirection(direction);
+    }
 }
 
 Vec2 Role::getDirection() const
@@ -69,21 +179,61 @@ Vec2 Role::getDirection() const
     return direction;
 }
 
+void Role::stopMove()
+{
+    direction = Vec2::ZERO;
+    setVelocity(Vec2::ZERO);
+}
+
+// =========================
+// 受伤、回血、死亡
+// =========================
+
 void Role::takeDamage(int damage)
+{
+    takeDamage(damage, DamageType::Normal, nullptr);
+}
+
+void Role::takeDamage(int damage, DamageType damageType, Role* attacker)
 {
     if (!isAlive || !isObjectActive())
     {
         return;
     }
 
-    int finalDamage = damage - defense;
+    if (!canTakeDamage())
+    {
+        return;
+    }
 
-    if (finalDamage < 1)
+    if (damageType != DamageType::TrueDamage)
+    {
+        if (rollDodge())
+        {
+            // 闪避成功，不受伤
+            setInvincible(0.1f);
+            return;
+        }
+    }
+
+    int finalDamage = calculateFinalDamage(damage, damageType);
+
+    if (finalDamage <= 0)
     {
         finalDamage = 1;
     }
 
     hp -= finalDamage;
+
+    hurtCooldownTimer = hurtCooldown;
+    setInvincible(0.1f);
+
+    flashWhenHit();
+
+    if (attacker != nullptr)
+    {
+        attacker->tryLifeSteal(finalDamage);
+    }
 
     if (hp <= 0)
     {
@@ -92,9 +242,50 @@ void Role::takeDamage(int damage)
     }
 }
 
+int Role::calculateFinalDamage(int damage, DamageType damageType) const
+{
+    if (damageType == DamageType::TrueDamage)
+    {
+        return std::max(1, damage);
+    }
+
+    int finalDamage = damage;
+
+    // defense 是固定减伤，保留你原来的逻辑
+    finalDamage -= defense;
+
+    // armor 做成百分比减伤，贴近 Brotato 的“护甲越高越抗打”
+    // 这里用简单公式：每点护甲约 4% 抗性，但不会超过 70%
+    float reduction = armor * 0.04f;
+
+    if (reduction < 0.0f)
+    {
+        reduction = 0.0f;
+    }
+
+    if (reduction > 0.7f)
+    {
+        reduction = 0.7f;
+    }
+
+    finalDamage = static_cast<int>(std::ceil(finalDamage * (1.0f - reduction)));
+
+    if (finalDamage < 1)
+    {
+        finalDamage = 1;
+    }
+
+    return finalDamage;
+}
+
 void Role::heal(int amount)
 {
     if (!isAlive || !isObjectActive())
+    {
+        return;
+    }
+
+    if (amount <= 0)
     {
         return;
     }
@@ -105,6 +296,17 @@ void Role::heal(int amount)
     {
         hp = maxHp;
     }
+}
+
+void Role::healByPercent(float percent)
+{
+    if (percent <= 0.0f)
+    {
+        return;
+    }
+
+    int amount = static_cast<int>(maxHp * percent);
+    heal(amount);
 }
 
 bool Role::isDead() const
@@ -118,8 +320,41 @@ void Role::die()
     hp = 0;
     direction = Vec2::ZERO;
 
-    setActive(false);
+    clearStatusEffects();
+    setCollisionEnabled(false);
+    setUpdateEnabled(false);
+
+    markForDestroy();
 }
+
+bool Role::canTakeDamage() const
+{
+    if (invincibleTimer > 0.0f)
+    {
+        return false;
+    }
+
+    if (hurtCooldownTimer > 0.0f)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+void Role::setInvincible(float duration)
+{
+    invincibleTimer = std::max(invincibleTimer, duration);
+}
+
+bool Role::isInvincibleNow() const
+{
+    return invincibleTimer > 0.0f || hasStatusEffect(RoleStatusType::Invincible);
+}
+
+// =========================
+// HP
+// =========================
 
 int Role::getHp() const
 {
@@ -149,13 +384,27 @@ int Role::getMaxHp() const
 
 void Role::setMaxHp(int maxHp)
 {
-    this->maxHp = maxHp;
+    this->maxHp = std::max(1, maxHp);
 
     if (hp > this->maxHp)
     {
         hp = this->maxHp;
     }
 }
+
+float Role::getHpPercent() const
+{
+    if (maxHp <= 0)
+    {
+        return 0.0f;
+    }
+
+    return static_cast<float>(hp) / static_cast<float>(maxHp);
+}
+
+// =========================
+// 基础属性
+// =========================
 
 float Role::getSpeed() const
 {
@@ -164,7 +413,35 @@ float Role::getSpeed() const
 
 void Role::setSpeed(float speed)
 {
-    this->speed = speed;
+    this->speed = std::max(0.0f, speed);
+    setMoveSpeed(this->speed);
+}
+
+float Role::getCurrentSpeed() const
+{
+    float currentSpeed = speed;
+
+    for (const auto& effect : statusEffects)
+    {
+        if (effect.type == RoleStatusType::Slow)
+        {
+            float slowPercent = effect.value;
+
+            if (slowPercent < 0.0f)
+            {
+                slowPercent = 0.0f;
+            }
+
+            if (slowPercent > 0.95f)
+            {
+                slowPercent = 0.95f;
+            }
+
+            currentSpeed *= (1.0f - slowPercent);
+        }
+    }
+
+    return std::max(0.0f, currentSpeed);
 }
 
 int Role::getDefense() const
@@ -174,10 +451,525 @@ int Role::getDefense() const
 
 void Role::setDefense(int defense)
 {
-    this->defense = defense;
+    this->defense = std::max(0, defense);
+}
+
+int Role::getArmor() const
+{
+    return armor;
+}
+
+void Role::setArmor(int armor)
+{
+    this->armor = std::max(0, armor);
 }
 
 bool Role::isRoleAlive() const
 {
     return isAlive;
+}
+
+// =========================
+// Brotato 风格战斗属性
+// =========================
+
+int Role::getBaseDamage() const
+{
+    return baseDamage;
+}
+
+void Role::setBaseDamage(int damage)
+{
+    this->baseDamage = damage;
+}
+
+int Role::getMeleeDamage() const
+{
+    return meleeDamage;
+}
+
+void Role::setMeleeDamage(int damage)
+{
+    this->meleeDamage = damage;
+}
+
+int Role::getRangedDamage() const
+{
+    return rangedDamage;
+}
+
+void Role::setRangedDamage(int damage)
+{
+    this->rangedDamage = damage;
+}
+
+int Role::getElementalDamage() const
+{
+    return elementalDamage;
+}
+
+void Role::setElementalDamage(int damage)
+{
+    this->elementalDamage = damage;
+}
+
+float Role::getAttackSpeed() const
+{
+    return attackSpeed;
+}
+
+void Role::setAttackSpeed(float attackSpeed)
+{
+    this->attackSpeed = std::max(0.1f, attackSpeed);
+}
+
+float Role::getCritChance() const
+{
+    return critChance;
+}
+
+void Role::setCritChance(float critChance)
+{
+    if (critChance < 0.0f)
+    {
+        critChance = 0.0f;
+    }
+
+    if (critChance > 1.0f)
+    {
+        critChance = 1.0f;
+    }
+
+    this->critChance = critChance;
+}
+
+float Role::getCritDamageMultiplier() const
+{
+    return critDamageMultiplier;
+}
+
+void Role::setCritDamageMultiplier(float multiplier)
+{
+    this->critDamageMultiplier = std::max(1.0f, multiplier);
+}
+
+float Role::getDodgeChance() const
+{
+    return dodgeChance;
+}
+
+void Role::setDodgeChance(float dodgeChance)
+{
+    if (dodgeChance < 0.0f)
+    {
+        dodgeChance = 0.0f;
+    }
+
+    if (dodgeChance > 0.8f)
+    {
+        dodgeChance = 0.8f;
+    }
+
+    this->dodgeChance = dodgeChance;
+}
+
+float Role::getLifeStealChance() const
+{
+    return lifeStealChance;
+}
+
+void Role::setLifeStealChance(float chance)
+{
+    if (chance < 0.0f)
+    {
+        chance = 0.0f;
+    }
+
+    if (chance > 1.0f)
+    {
+        chance = 1.0f;
+    }
+
+    this->lifeStealChance = chance;
+}
+
+float Role::getKnockbackResistance() const
+{
+    return knockbackResistance;
+}
+
+void Role::setKnockbackResistance(float resistance)
+{
+    if (resistance < 0.0f)
+    {
+        resistance = 0.0f;
+    }
+
+    if (resistance > 1.0f)
+    {
+        resistance = 1.0f;
+    }
+
+    this->knockbackResistance = resistance;
+}
+
+int Role::getDamageBonusByType(DamageType damageType) const
+{
+    switch (damageType)
+    {
+    case DamageType::Melee:
+        return meleeDamage;
+
+    case DamageType::Ranged:
+        return rangedDamage;
+
+    case DamageType::Elemental:
+    case DamageType::Burning:
+        return elementalDamage;
+
+    default:
+        return 0;
+    }
+}
+
+bool Role::rollCritical() const
+{
+    if (critChance <= 0.0f)
+    {
+        return false;
+    }
+
+    float randomValue = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+    return randomValue <= critChance;
+}
+
+int Role::calculateOutgoingDamage(int baseDamage, DamageType damageType) const
+{
+    int damage = baseDamage;
+
+    damage += this->baseDamage;
+    damage += getDamageBonusByType(damageType);
+
+    if (damage < 1)
+    {
+        damage = 1;
+    }
+
+    if (rollCritical())
+    {
+        damage = static_cast<int>(std::ceil(damage * critDamageMultiplier));
+    }
+
+    return std::max(1, damage);
+}
+
+bool Role::rollDodge() const
+{
+    if (dodgeChance <= 0.0f)
+    {
+        return false;
+    }
+
+    float randomValue = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+    return randomValue <= dodgeChance;
+}
+
+void Role::tryLifeSteal(int damageDealt)
+{
+    if (!isAlive || damageDealt <= 0)
+    {
+        return;
+    }
+
+    if (lifeStealChance <= 0.0f)
+    {
+        return;
+    }
+
+    float randomValue = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+
+    if (randomValue <= lifeStealChance)
+    {
+        // 类似 Brotato，生命偷取通常不是按伤害全额吸血，这里简单回 1 点
+        heal(1);
+    }
+}
+
+// =========================
+// 状态效果
+// =========================
+
+void Role::addStatusEffect(RoleStatusType type, float duration, float value, float tickInterval)
+{
+    if (type == RoleStatusType::None || duration <= 0.0f)
+    {
+        return;
+    }
+
+    for (auto& effect : statusEffects)
+    {
+        if (effect.type == type)
+        {
+            // 同类型状态刷新持续时间，保留更强的数值
+            effect.duration = std::max(effect.duration, duration);
+            effect.timer = 0.0f;
+            effect.value = std::max(effect.value, value);
+            effect.tickInterval = tickInterval;
+            effect.tickTimer = 0.0f;
+            return;
+        }
+    }
+
+    statusEffects.push_back(RoleStatusEffect(type, duration, value, tickInterval));
+}
+
+void Role::removeStatusEffect(RoleStatusType type)
+{
+    statusEffects.erase(
+        std::remove_if(
+            statusEffects.begin(),
+            statusEffects.end(),
+            [type](const RoleStatusEffect& effect)
+            {
+                return effect.type == type;
+            }
+        ),
+        statusEffects.end()
+    );
+}
+
+bool Role::hasStatusEffect(RoleStatusType type) const
+{
+    for (const auto& effect : statusEffects)
+    {
+        if (effect.type == type)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void Role::clearStatusEffects()
+{
+    statusEffects.clear();
+}
+
+void Role::updateStatusEffects(float dt)
+{
+    for (auto& effect : statusEffects)
+    {
+        effect.timer += dt;
+        effect.tickTimer += dt;
+
+        if (effect.type == RoleStatusType::Burning)
+        {
+            if (effect.tickTimer >= effect.tickInterval)
+            {
+                effect.tickTimer = 0.0f;
+                takeDamage(static_cast<int>(effect.value), DamageType::Burning, nullptr);
+            }
+        }
+        else if (effect.type == RoleStatusType::Poison)
+        {
+            if (effect.tickTimer >= effect.tickInterval)
+            {
+                effect.tickTimer = 0.0f;
+                takeDamage(static_cast<int>(effect.value), DamageType::Poison, nullptr);
+            }
+        }
+    }
+
+    statusEffects.erase(
+        std::remove_if(
+            statusEffects.begin(),
+            statusEffects.end(),
+            [](const RoleStatusEffect& effect)
+            {
+                return effect.timer >= effect.duration;
+            }
+        ),
+        statusEffects.end()
+    );
+}
+
+void Role::applyBurning(float duration, float damagePerTick)
+{
+    addStatusEffect(RoleStatusType::Burning, duration, damagePerTick, 1.0f);
+}
+
+void Role::applyPoison(float duration, float damagePerTick)
+{
+    addStatusEffect(RoleStatusType::Poison, duration, damagePerTick, 1.0f);
+}
+
+void Role::applySlow(float duration, float slowPercent)
+{
+    addStatusEffect(RoleStatusType::Slow, duration, slowPercent, 1.0f);
+}
+
+void Role::applyStun(float duration)
+{
+    addStatusEffect(RoleStatusType::Stun, duration, 1.0f, 1.0f);
+}
+
+bool Role::isStunned() const
+{
+    return hasStatusEffect(RoleStatusType::Stun);
+}
+
+bool Role::isSlowed() const
+{
+    return hasStatusEffect(RoleStatusType::Slow);
+}
+
+// =========================
+// 受击反馈
+// =========================
+
+void Role::applyKnockback(const Vec2& fromPosition, float force)
+{
+    if (force <= 0.0f)
+    {
+        return;
+    }
+
+    Vec2 dir = getPosition() - fromPosition;
+
+    if (dir == Vec2::ZERO)
+    {
+        return;
+    }
+
+    dir.normalize();
+
+    float finalForce = force * (1.0f - knockbackResistance);
+
+    if (finalForce <= 0.0f)
+    {
+        return;
+    }
+
+    setPosition(getPosition() + dir * finalForce);
+}
+
+void Role::flashWhenHit()
+{
+    // 简单受击闪烁，避免和动画系统强绑定
+    this->setOpacity(120);
+
+    auto delay = DelayTime::create(0.08f);
+    auto recover = CallFunc::create([this]()
+        {
+            if (this != nullptr && this->isObjectActive())
+            {
+                this->setOpacity(255);
+            }
+        });
+
+    this->runAction(Sequence::create(delay, recover, nullptr));
+}
+
+// =========================
+// 属性修改接口
+// =========================
+
+void Role::addMaxHp(int value)
+{
+    maxHp += value;
+
+    if (maxHp < 1)
+    {
+        maxHp = 1;
+    }
+
+    if (value > 0)
+    {
+        hp += value;
+    }
+
+    if (hp > maxHp)
+    {
+        hp = maxHp;
+    }
+
+    if (hp <= 0)
+    {
+        hp = 1;
+    }
+}
+
+void Role::addDefense(int value)
+{
+    setDefense(defense + value);
+}
+
+void Role::addArmor(int value)
+{
+    setArmor(armor + value);
+}
+
+void Role::addSpeed(float value)
+{
+    setSpeed(speed + value);
+}
+
+void Role::addBaseDamage(int value)
+{
+    baseDamage += value;
+}
+
+void Role::addMeleeDamage(int value)
+{
+    meleeDamage += value;
+}
+
+void Role::addRangedDamage(int value)
+{
+    rangedDamage += value;
+}
+
+void Role::addElementalDamage(int value)
+{
+    elementalDamage += value;
+}
+
+void Role::addAttackSpeed(float value)
+{
+    setAttackSpeed(attackSpeed + value);
+}
+
+void Role::addCritChance(float value)
+{
+    setCritChance(critChance + value);
+}
+
+void Role::addDodgeChance(float value)
+{
+    setDodgeChance(dodgeChance + value);
+}
+
+// =========================
+// 调试
+// =========================
+
+std::string Role::getDebugInfo() const
+{
+    std::ostringstream oss;
+
+    oss << "[Role]"
+        << " id=" << getObjectId()
+        << " name=" << getObjectName()
+        << " hp=" << hp << "/" << maxHp
+        << " speed=" << speed
+        << " armor=" << armor
+        << " defense=" << defense
+        << " baseDamage=" << baseDamage
+        << " melee=" << meleeDamage
+        << " ranged=" << rangedDamage
+        << " elemental=" << elementalDamage
+        << " alive=" << (isAlive ? "true" : "false");
+
+    return oss.str();
 }
