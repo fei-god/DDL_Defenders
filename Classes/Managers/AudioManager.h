@@ -20,7 +20,7 @@
  *
  * In code, use paths like:
  *
- *     "audio/sfx_button_click.wav"
+ *     "audio/button_click.wav"
  */
 
 class AudioManager

@@ -1,4 +1,4 @@
-#ifndef __MAIN_MENU_SCENE_H__
+﻿#ifndef __MAIN_MENU_SCENE_H__
 #define __MAIN_MENU_SCENE_H__
 
 #include "cocos2d.h"
@@ -11,8 +11,11 @@ public:
     virtual bool init() override;
 
     void onStartGameClicked(cocos2d::Ref* sender);
+    void onLevelClicked(cocos2d::Ref* sender);
+    void onEndlessClicked(cocos2d::Ref* sender);
     void onExitGameClicked(cocos2d::Ref* sender);
     void onSettingsClicked(cocos2d::Ref* sender);
+    void onLeaderboardClicked(cocos2d::Ref* sender);
 
     CREATE_FUNC(MainMenuScene);
 };

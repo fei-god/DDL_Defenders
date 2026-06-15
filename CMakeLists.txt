@@ -60,6 +60,8 @@ list(APPEND GAME_SOURCE
      Classes/MainMenuScene.cpp
      Classes/GameScene.cpp
      Classes/GameOverScene.cpp
+     Classes/VictoryScene.cpp
+     Classes/LeaderboardScene.cpp
      Classes/SettingsScene.cpp
 
      # ??
@@ -71,16 +73,24 @@ list(APPEND GAME_SOURCE
      # ??
      Classes/Characters/Enemy.cpp
      Classes/Characters/SleepyMonster.cpp
+     Classes/Characters/PhoneMonster.cpp
      Classes/Characters/DDLMonster.cpp
      Classes/Characters/BossMonster.cpp
+     Classes/Characters/ThesisBoss.cpp
      Classes/Managers/WaveManager.cpp
      Classes/Managers/LanguageManager.cpp
+     Classes/Environment/EnvironmentZone.cpp
 
      # ????
      Classes/Weapons/Bullet.cpp
+     Classes/Weapons/BulletPool.cpp
      Classes/Weapons/Weapon.cpp
+     Classes/Weapons/CoffeeGun.cpp
      Classes/Weapons/KeyboardWave.cpp
      Classes/Weapons/CoffeeLaser.cpp
+     Classes/Weapons/KeyboardWeap.cpp
+     Classes/Weapons/DeskLampLaser.cpp
+     Classes/Weapons/CoffeeBlast.cpp
      Classes/Managers/CollisionManager.cpp
 
      # ��?
@@ -94,9 +104,12 @@ list(APPEND GAME_HEADER
      Classes/MainMenuScene.h
      Classes/GameScene.h
      Classes/GameOverScene.h
+     Classes/VictoryScene.h
+     Classes/LeaderboardScene.h
      Classes/SettingsScene.h
 
      # ??
+     Classes/Core/AssetPaths.h
      Classes/Core/GameObject.h
      Classes/Core/Role.h
      Classes/Characters/Player.h
@@ -105,16 +118,24 @@ list(APPEND GAME_HEADER
      # ??
      Classes/Characters/Enemy.h
      Classes/Characters/SleepyMonster.h
+     Classes/Characters/PhoneMonster.h
      Classes/Characters/DDLMonster.h
      Classes/Characters/BossMonster.h
+     Classes/Characters/ThesisBoss.h
      Classes/Managers/WaveManager.h
      Classes/Managers/LanguageManager.h
+     Classes/Environment/EnvironmentZone.h
 
      # ????
      Classes/Weapons/Bullet.h
+     Classes/Weapons/BulletPool.h
      Classes/Weapons/Weapon.h
+     Classes/Weapons/CoffeeGun.h
      Classes/Weapons/KeyboardWave.h
      Classes/Weapons/CoffeeLaser.h
+     Classes/Weapons/KeyboardWeap.h
+     Classes/Weapons/DeskLampLaser.h
+     Classes/Weapons/CoffeeBlast.h
      Classes/Managers/CollisionManager.h
      Classes/Core/DamageCalculator.h
 
@@ -195,6 +216,7 @@ target_include_directories(${APP_NAME}
         PRIVATE Classes/Characters
         PRIVATE Classes/Weapons
         PRIVATE Classes/Managers
+        PRIVATE Classes/Environment
         PRIVATE Classes/Scenes
         PRIVATE Classes/Systems
         PRIVATE ${COCOS2DX_ROOT_PATH}/cocos

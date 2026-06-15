@@ -1,5 +1,6 @@
 #include "CollisionManager.h"
 #include "DamageCalculator.h"
+#include "AudioManager.h"
 #include <algorithm>
 
 void CollisionManager::checkBulletEnemyCollision(
@@ -63,7 +64,13 @@ void CollisionManager::checkBulletEnemyCollision(
                 );
 
                 // 敌人受到伤害
+                bool wasAlive = enemy->isRoleAlive();
                 enemy->takeDamage(finalDamage);
+                if (wasAlive)
+                {
+                    if (enemy->isDead()) AudioManager::getInstance()->playEnemyDie();
+                    else AudioManager::getInstance()->playEnemyHit();
+                }
 
                 // 记录这个子弹已经打中过这个敌人
                 bullet->recordHitObject(enemy);

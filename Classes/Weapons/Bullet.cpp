@@ -1,4 +1,4 @@
-#include "Bullet.h"
+ï»¿#include "Bullet.h"
 #include <algorithm>
 #include <new>
 
@@ -63,8 +63,8 @@ bool Bullet::initBullet(
 )
 {
 
-    // ÏÈÓÃ¿ÕÍ¼Æ¬³õÊ¼»¯×Óµ¯¶ÔÏó£¬±£Ö¤×Óµ¯¶ÔÏóÒ»¶¨ÄÜ´´½¨³öÀ´¡£
-    // ºóÃæÔÙ³¢ÊÔ¼ÓÔØÍ¼Æ¬¡£ÕâÑù¼´Ê¹Í¼Æ¬²»´æÔÚ£¬Ò²²»Ó°Ïì×Óµ¯ÒÆ¶¯ºÍÅö×²²âÊÔ¡£
+    // å…ˆç”¨ç©ºå›¾ç‰‡åˆå§‹åŒ–å­å¼¹å¯¹è±¡ï¼Œä¿è¯å­å¼¹å¯¹è±¡ä¸€å®šèƒ½åˆ›å»ºå‡ºæ¥ã€‚
+    // åé¢å†å°è¯•åŠ è½½å›¾ç‰‡ã€‚è¿™æ ·å³ä½¿å›¾ç‰‡ä¸å­˜åœ¨ï¼Œä¹Ÿä¸å½±å“å­å¼¹ç§»åŠ¨å’Œç¢°æ’æµ‹è¯•ã€‚
     if (!GameObject::initObject(
         name,
         GameObjectType::Bullet,
@@ -75,7 +75,7 @@ bool Bullet::initBullet(
         return false;
     }
 
-    // ÓĞÍ¼Æ¬¾Í¼ÓÔØÍ¼Æ¬£»Í¼Æ¬²»´æÔÚ¾Í¸øÒ»¸ö18¡Á18µÄÅö×²¾ØĞÎ¶µµ×¡£
+    // æœ‰å›¾ç‰‡å°±åŠ è½½å›¾ç‰‡ï¼›å›¾ç‰‡ä¸å­˜åœ¨å°±ç»™ä¸€ä¸ª18Ã—18çš„ç¢°æ’çŸ©å½¢å…œåº•ã€‚
     if (!imagePath.empty())
     {
         if (!setObjectImage(imagePath))
@@ -110,6 +110,46 @@ bool Bullet::initBullet(
     return true;
 }
 
+void Bullet::resetBullet(
+    const std::string& name,
+    const std::string& imagePath,
+    const Vec2& startPosition,
+    const Vec2& direction,
+    float speed,
+    int damage,
+    float lifeTime,
+    bool canPierce
+)
+{
+    setObjectName(name);
+    setObjectPosition(startPosition);
+
+    if (!imagePath.empty())
+    {
+        if (!setObjectImage(imagePath))
+        {
+            setTextureRect(Rect(0, 0, 18, 18));
+        }
+    }
+    else
+    {
+        setTextureRect(Rect(0, 0, 18, 18));
+    }
+
+    _direction = direction.lengthSquared() < 0.0001f ? Vec2(1, 0) : direction.getNormalized();
+    _speed = speed;
+    _damage = damage;
+    _lifeTime = lifeTime;
+    _timer = 0.0f;
+    _canPierce = canPierce;
+    _expired = false;
+    _hitObjects.clear();
+
+    setRotation(-CC_RADIANS_TO_DEGREES(_direction.getAngle()));
+    setActive(true);
+    setVisible(true);
+}
+
 void Bullet::updateObject(float dt)
 {
     if (!isObjectActive() || _expired)
@@ -117,7 +157,7 @@ void Bullet::updateObject(float dt)
         return;
     }
 
-    // Î»ÒÆ = ·½Ïò ¡Á ËÙ¶È ¡Á Ê±¼ä
+    // ä½ç§» = æ–¹å‘ Ã— é€Ÿåº¦ Ã— æ—¶é—´
     Vec2 newPosition = getPosition() + _direction * _speed * dt;
     setPosition(newPosition);
 
@@ -163,7 +203,7 @@ bool Bullet::isPiercing() const
 
 void Bullet::markHit()
 {
-    // ·Ç´©Í¸×Óµ¯ÃüÖĞºóÊ§Ğ§£»´©Í¸×Óµ¯ÃüÖĞºó¼ÌĞø·É¡£
+    // éç©¿é€å­å¼¹å‘½ä¸­åå¤±æ•ˆï¼›ç©¿é€å­å¼¹å‘½ä¸­åç»§ç»­é£ã€‚
     if (!_canPierce)
     {
         _expired = true;

@@ -1,4 +1,4 @@
-#include "SleepyMonster.h"
+﻿#include "SleepyMonster.h"
 #include "cocos2d.h"
 
 USING_NS_CC;
@@ -21,20 +21,20 @@ bool SleepyMonster::initSleepyMonster(const std::string& imagePath,
     const Vec2& startPosition,
     Player* target)
 {
-    // 瞌睡怪物：低血量，慢速度，低攻击，随机移动
+    // 鐬岀潯鎬墿锛氫綆琛€閲忥紝鎱㈤€熷害锛屼綆鏀诲嚮锛岄殢鏈虹Щ鍔?
     bool ok = initEnemy("SleepyMonster",
         imagePath,
         startPosition,
-        35,        // maxHp       (降低：80→35，之前太肉了)
-        55.0f,     // speed       (降低：50→55)
-        3,         // defense     (降低：5→3)
-        10,        // attackDamage (降低：15→10)
-        35.0f,     // attackRange  (降低：40→35)
-        20);       // expReward    (降低：30→20)
+        20,        // maxHp
+        82.0f,     // speed
+        0,         // defense
+        7,         // attackDamage
+        35.0f,     // attackRange  (闄嶄綆锛?0鈫?5)
+        20);       // expReward    (闄嶄綆锛?0鈫?0)
     if (!ok) return false;
 
     setTargetPlayer(target);
-    _pauseTimer = 0.0f;
+    _pauseTimer = 0.7f;
     _isPausing = false;
     changeRandomDirection();
     return true;
@@ -51,7 +51,7 @@ void SleepyMonster::move(float dt)
 {
     if (_targetPlayer == nullptr) return;
 
-    // 瞌睡行为：每隔一段时间停顿或随机移动
+    // 鐬岀潯琛屼负锛氭瘡闅斾竴娈垫椂闂村仠椤挎垨闅忔満绉诲姩
     if (_isPausing)
     {
         _pauseTimer -= dt;
@@ -62,27 +62,33 @@ void SleepyMonster::move(float dt)
         }
         else
         {
-            // 停顿期间不移动
+            Vec2 dirToPlayer = _targetPlayer->getPosition() - getPosition();
+            if (dirToPlayer.lengthSquared() > 0.0001f)
+            {
+                dirToPlayer.normalize();
+                setDirection(dirToPlayer);
+                setPosition(getPosition() + dirToPlayer * getSpeed() * 0.35f * dt);
+            }
             return;
         }
     }
     else
     {
-        // 随机移动一段时间
+        // 闅忔満绉诲姩涓€娈垫椂闂?
         _pauseTimer -= dt;
         if (_pauseTimer <= 0.0f)
         {
-            // 随机停顿 0.5~1.5 秒
+            // 闅忔満鍋滈】 0.5~1.5 绉?
             _isPausing = true;
-            _pauseTimer = 0.5f + CCRANDOM_0_1() * 1.0f;
+            _pauseTimer = 0.12f + CCRANDOM_0_1() * 0.18f;
             return;
         }
 
-        // 沿随机方向缓慢移动
-        // 同时略微向玩家靠近，不会完全跑偏
+        // 娌块殢鏈烘柟鍚戠紦鎱㈢Щ鍔?
+        // 鍚屾椂鐣ュ井鍚戠帺瀹堕潬杩戯紝涓嶄細瀹屽叏璺戝亸
         Vec2 dirToPlayer = _targetPlayer->getPosition() - getPosition();
         dirToPlayer.normalize();
-        Vec2 blendedDir = (_randomDirection * 0.6f + dirToPlayer * 0.4f);
+        Vec2 blendedDir = (_randomDirection * 0.18f + dirToPlayer * 0.82f);
         blendedDir.normalize();
         setDirection(blendedDir);
 
@@ -90,7 +96,7 @@ void SleepyMonster::move(float dt)
         setPosition(newPos);
     }
 
-    // 偶尔（1%概率每帧）改变随机方向，增加不可预测性
+    // 鍋跺皵锛?%姒傜巼姣忓抚锛夋敼鍙橀殢鏈烘柟鍚戯紝澧炲姞涓嶅彲棰勬祴鎬?
     if (CCRANDOM_0_1() < 0.01f)
     {
         changeRandomDirection();
@@ -100,7 +106,9 @@ void SleepyMonster::move(float dt)
 void SleepyMonster::attack()
 {
     if (_targetPlayer == nullptr) return;
-    // 瞌睡怪物攻击力较低
+    // 鐬岀潯鎬墿鏀诲嚮鍔涜緝浣?
     _targetPlayer->takeDamage(_attackDamage);
-    // 可以添加减速效果，由其他组员实现
+    // 鍙互娣诲姞鍑忛€熸晥鏋滐紝鐢卞叾浠栫粍鍛樺疄鐜?
 }
+
+

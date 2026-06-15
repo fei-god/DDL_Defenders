@@ -8,6 +8,8 @@
 #include "Managers/WaveManager.h"
 #include "Weapons/Weapon.h"
 #include "Weapons/Bullet.h"
+#include "Weapons/BulletPool.h"
+#include "Environment/EnvironmentZone.h"
 
 class GameScene : public cocos2d::Scene
 {
@@ -24,24 +26,94 @@ public:
     CREATE_FUNC(GameScene);
 
 private:
+    enum class RewardType
+    {
+        Coffee,
+        Power,
+        Pen,
+        FreezeDevice
+    };
+
+    struct RewardPickup
+    {
+        cocos2d::Node* node;
+        RewardType type;
+    };
+
+    struct WeaponOption
+    {
+        int id;
+        std::string name;
+        std::string imagePath;
+    };
+
     // --- Placeholder textures ---
     void createPlaceholderTextures();
+    void applySpriteFit(cocos2d::Sprite* sprite, float maxWidth, float maxHeight);
 
     // --- Coordinate conversion ---
     cocos2d::Vec2 viewToGameCoords(const cocos2d::Vec2& viewPos) const;
+    cocos2d::Vec2 screenToWorldCoords(const cocos2d::Vec2& screenPos) const;
 
     // --- Input ---
     void initInputListeners();
     void updateMoveDirection();
+    void updatePlayerMovement(float dt);
+    void updateCamera();
     void fireBullet();
+    void applyAimWeaponDamage();
+    void updateEnemyPlayerContact(float dt);
+    void switchWeapon(int index);
+    Weapon* createWeaponById(int weaponId);
+    std::vector<WeaponOption> getWeaponOptions() const;
+    void rebuildWeaponLoadout();
+    void showEquipmentMenu();
+    void hideEquipmentMenu();
+    void assignWeaponToSlot(int weaponId);
+    cocos2d::Node* createEquipmentIcon(const WeaponOption& option, const cocos2d::Size& boxSize, bool selected);
+    void updateWeaponEnergyUI();
+    void initLevelTask();
+    void showLevelIntro();
+    void hideLevelIntro();
+    void initEnvironmentZones();
+    void updateEnvironmentEffects(float dt);
+    void updateAssignmentProgress(float dt);
+    void spawnRewardForEnemy(Enemy* enemy);
+    void spawnReward(RewardType type, const cocos2d::Vec2& position);
+    cocos2d::Node* createRewardNode(RewardType type);
+    void updateRewards(float dt);
+    void applyReward(RewardType type);
+    void updateFreezeEffect(float dt);
+    void updatePlayerMoodVisual();
+    std::string getMoodPlayerImagePath(MoodType mood) const;
+    void goToGameOver();
+    void goToVictory();
+    int calculateScore() const;
 
     // ==================== UI ====================
     cocos2d::LayerColor* _hpBarBg;
     cocos2d::LayerColor* _hpBarFill;
     float _hpBarMaxWidth;
     cocos2d::Label* _moodLabel;
+    cocos2d::Label* _weaponLabel;
+    cocos2d::LayerColor* _weaponEnergyBg;
+    cocos2d::LayerColor* _weaponEnergyFill;
+    float _weaponEnergyBarMaxWidth;
+    cocos2d::Label* _progressLabel;
+    cocos2d::Label* _taskLabel;
+    cocos2d::LayerColor* _taskBarBg;
+    cocos2d::LayerColor* _taskBarFill;
+    float _taskBarMaxWidth;
+    cocos2d::Label* _environmentLabel;
     cocos2d::Label* _survivalTimeLabel;
+    cocos2d::Label* _topHintLabel;
     float m_survivalTime;
+
+    // ==================== World / Camera ====================
+    cocos2d::Node* _worldLayer;
+    cocos2d::Size _worldSize;
+    float _worldScale;
+    bool _cameraInitialized;
 
     // ==================== Player ====================
     Player* m_player;
@@ -57,8 +129,14 @@ private:
 
     // ==================== Combat ====================
     Weapon* _currentWeapon;
+    std::vector<Weapon*> _weapons;
+    std::vector<int> _weaponLoadoutIds;
+    int _currentWeaponIndex;
+    int _nextEquipmentSlot;
+    cocos2d::Node* _equipmentLayer;
     std::vector<Bullet*> _bullets;
     cocos2d::Node* _bulletLayer;
+    BulletPool _bulletPool;
 
     // ==================== Wave / Spawning ====================
     WaveManager* _waveManager;
@@ -88,6 +166,29 @@ private:
 
     // ==================== Game state ====================
     bool _isGameOver;
+    bool _isVictory;
+    bool _isEndlessMode;
+    int _levelNumber;
+    float _ddlTimeLimit;
+    float _ddlTimeRemaining;
+    int _completedDdlCount;
+    float _deskStayRequired;
+    float _deskStayProgress;
+    bool _levelIntroActive;
+    float _levelIntroTimer;
+    cocos2d::Node* _levelIntroLayer;
+    float _assignmentProgress;
+    bool _nearDesk;
+    bool _nearPowerSocket;
+    int _lastKillCount;
+    float _enemyContactDamageCooldown;
+    float _lowHpMoodTimer;
+    float _freezeTimer;
+    float _rewardSpawnTimer;
+    std::string _currentPlayerMoodImage;
+    std::vector<EnvironmentZone*> _environmentZones;
+    int _lastUiLanguageIndex;
+    std::vector<RewardPickup> _rewardPickups;
 };
 
 #endif // __GAME_SCENE_H__

@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #ifndef WEAPON_H
 #define WEAPON_H
 
@@ -6,6 +6,7 @@
 #include "Player.h"
 #include "Enemy.h"
 #include "Bullet.h"
+#include "BulletPool.h"
 #include <vector>
 #include <string>
 using namespace std;
@@ -24,40 +25,71 @@ public:
         float cooldownTime
     );
 
-    //°ó¶¨Õ½¶·Êı¾İ
+    //ç»‘å®šæˆ˜æ–—æ•°æ®
     void bindBattleData(
         vector<Enemy*>* enemyList,
         vector<Bullet*>* bulletList,
         cocos2d::Node* bulletLayer
     );
+    void bindBulletPool(BulletPool* bulletPool);
 
-    // Ã¿Ö¡¸üĞÂÎäÆ÷ÀäÈ´£¬ÀäÈ´½áÊøºó×Ô¶¯¿ª»ğ¡£
+    // æ¯å¸§æ›´æ–°æ­¦å™¨å†·å´ï¼Œå†·å´ç»“æŸåè‡ªåŠ¨å¼€ç«ã€‚
     virtual void updateObject(float dt) override;
+    void updateCooldown(float dt);
+    void readyNow();
 
     virtual void fire() = 0;
+
+    void configureEnergy(float maxEnergy, float energyCost, float recoverPerSecond);
+    bool isReadyToFire() const;
+    bool hasEnoughEnergy() const;
+    float getEnergyRatio() const;
+    float getCurrentEnergy() const;
+    float getMaxEnergy() const;
+    float getEnergyCost() const;
+
+    void setAimDirection(const cocos2d::Vec2& direction);
+    cocos2d::Vec2 getAimDirection() const;
+    std::string getWeaponName() const;
+    int getModifiedAttackPower() const;
 
     int getAttackPower() const;
     float getCooldownTime() const;
 
 protected:
     bool canFire() const;
+    bool consumeEnergyForShot();
     void resetCooldown();
 
     Enemy* findNearestEnemy() const;
     cocos2d::Vec2 getDirectionToEnemy(Enemy* enemy) const;
+    Bullet* spawnBullet(const std::string& name,
+        const std::string& imagePath,
+        const cocos2d::Vec2& startPosition,
+        const cocos2d::Vec2& direction,
+        float speed,
+        int damage,
+        float lifeTime,
+        bool canPierce);
 
 protected:
-    Player* _owner;                       // ÎäÆ÷ÓµÓĞÕß£¬Í¨³£ÊÇÍæ¼Ò
-    vector<Enemy*>* _enemyList;           // µĞÈËÁĞ±í
-    vector<Bullet*>* _bulletList;           // ×Óµ¯ÁĞ±í
-    cocos2d::Node* _bulletLayer;           // ×Óµ¯ËùÔÚ²ã
+    Player* _owner;                       // æ­¦å™¨æ‹¥æœ‰è€…ï¼Œé€šå¸¸æ˜¯ç©å®¶
+    vector<Enemy*>* _enemyList;           // æ•Œäººåˆ—è¡¨
+    vector<Bullet*>* _bulletList;           // å­å¼¹åˆ—è¡¨
+    cocos2d::Node* _bulletLayer;           // å­å¼¹æ‰€åœ¨å±‚
+    BulletPool* _bulletPool;
 
-    int _attackPower;                      // ÎäÆ÷¹¥»÷Á¦
-    float _cooldownTime;                   // »ù´¡ÀäÈ´Ê±¼ä
-    float _cooldownTimer;                  // µ±Ç°Ê£ÓàÀäÈ´
+    int _attackPower;                      // æ­¦å™¨æ”»å‡»åŠ›
+    float _cooldownTime;                   // åŸºç¡€å†·å´æ—¶é—´
+    float _cooldownTimer;                  // å½“å‰å‰©ä½™å†·å´
+    float _maxEnergy;
+    float _currentEnergy;
+    float _energyCost;
+    float _energyRecoverPerSecond;
 
-    float _bulletSpeed;                    // ×Óµ¯ËÙ¶È
-	string _bulletImagePath;               //×Óµ¯Í¼Æ¬Â·¾¶
+    float _bulletSpeed;                    // å­å¼¹é€Ÿåº¦
+	string _bulletImagePath;               //å­å¼¹å›¾ç‰‡è·¯å¾„
+    cocos2d::Vec2 _aimDirection;
 };
 
 #endif

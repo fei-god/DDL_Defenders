@@ -1,9 +1,10 @@
-#include "KeyboardWave.h"
+ï»¿#include "KeyboardWave.h"
+#include <algorithm>
 #include <cmath>
 
 USING_NS_CC;
 
-//ÎäÆ÷ÌØµã£º·¶Î§¿í£¬µ¥·¢ÉËº¦µÍ£¬´©Í¸Á¦µÍ£¬ÊÊºÏÇåÀíĞ¡¹ÖºÍ½ü¾àÀëÕ½¶·¡£
+//æ­¦å™¨ç‰¹ç‚¹ï¼šèŒƒå›´å®½ï¼Œå•å‘ä¼¤å®³ä½ï¼Œç©¿é€åŠ›ä½ï¼Œé€‚åˆæ¸…ç†å°æ€ªå’Œè¿‘è·ç¦»æˆ˜æ–—ã€‚
 
 KeyboardWave* KeyboardWave::create(Player* owner)
 {
@@ -22,20 +23,21 @@ KeyboardWave* KeyboardWave::create(Player* owner)
 bool KeyboardWave::initKeyboardWave(Player* owner)
 {
     if (!initWeapon(
-        "KeyboardWave",    // ÎäÆ÷Ãû×Ö
-        "",                // ÎäÆ÷±¾Ìå
-        owner,             // ÎäÆ÷ËùÊôÍæ¼Ò
-        18,                // ¹¥»÷Á¦
-        0.55f              // ÀäÈ´Ê±¼ä
+        "KeyboardWave",    // æ­¦å™¨åå­—
+        "",                // æ­¦å™¨æœ¬ä½“
+        owner,             // æ­¦å™¨æ‰€å±ç©å®¶
+        26,                // æ”»å‡»åŠ›
+        0.42f              // å†·å´æ—¶é—´
     ))
     {
         return false;
     }
 
     _bulletSpeed = 520.0f;
+    configureEnergy(100.0f, 18.0f, 24.0f);
 
-    // ÄãĞèÒª°ÑÍ¼Æ¬·Åµ½ Resources/weapon/keyboard_wave.png
-    // Èç¹ûÍ¼Æ¬²»´æÔÚ£¬Bullet ÀïÃæÓĞ¶µµ×Âß¼­£¬µ«½¨Òé»¹ÊÇ·ÅÍ¼Æ¬¡£
+    // ä½ éœ€è¦æŠŠå›¾ç‰‡æ”¾åˆ° Resources/weapon/keyboard_wave.png
+    // å¦‚æœå›¾ç‰‡ä¸å­˜åœ¨ï¼ŒBullet é‡Œé¢æœ‰å…œåº•é€»è¾‘ï¼Œä½†å»ºè®®è¿˜æ˜¯æ”¾å›¾ç‰‡ã€‚
     _bulletImagePath = "weapon/keyboard_wave.png";
 
     return true;
@@ -43,42 +45,46 @@ bool KeyboardWave::initKeyboardWave(Player* owner)
 
 void KeyboardWave::fire()
 {
-    Enemy* target = findNearestEnemy();
+    if (!canFire()) return;
+    if (!consumeEnergyForShot()) return;
 
-    if (target == nullptr)
+    Vec2 baseDir = getAimDirection();
+    if (baseDir.lengthSquared() < 0.0001f)
     {
-        return;
+        Enemy* target = findNearestEnemy();
+        baseDir = target ? getDirectionToEnemy(target) : Vec2(1, 0);
     }
-
-    Vec2 baseDir = getDirectionToEnemy(target);
     Vec2 startPos = _owner->getObjectPosition();
 
-    // Èı·¢×Óµ¯·Ö±ğÆ«×ª -12¡ã¡¢0¡ã¡¢12¡ã£¬ĞÎ³ÉÉÈĞÎ¹¥»÷¡£
+    // ä¸‰å‘å­å¼¹åˆ†åˆ«åè½¬ -12Â°ã€0Â°ã€12Â°ï¼Œå½¢æˆæ‰‡å½¢æ”»å‡»ã€‚
     float angles[3] = { -12.0f, 0.0f, 12.0f };
 
     for (int i = 0; i < 3; i++)
     {
         Vec2 dir = rotateDirection(baseDir, angles[i]);
 
-        Bullet* bullet = Bullet::createBullet(
+        Bullet* bullet = spawnBullet(
             "KeyboardWaveBullet",
             _bulletImagePath,
             startPos,
             dir,
             _bulletSpeed,
-            _attackPower,
+            getModifiedAttackPower(),
             1.4f,
             false
         );
 
-        if (bullet != nullptr)
+        if (bullet)
         {
-            _bulletLayer->addChild(bullet);
-            _bulletList->push_back(bullet);
+            auto size = bullet->getContentSize();
+            if (size.width > 0.0f && size.height > 0.0f)
+            {
+                bullet->setScale(std::min(28.0f / size.width, 28.0f / size.height));
+            }
         }
     }
 
-    // ·¢Éäºó½øÈëÀäÈ´£¬·ÀÖ¹Ã¿Ò»Ö¡¶¼·è¿ñ·¢Éä¡£
+    // å‘å°„åè¿›å…¥å†·å´ï¼Œé˜²æ­¢æ¯ä¸€å¸§éƒ½ç–¯ç‹‚å‘å°„ã€‚
     resetCooldown();
 }
 
@@ -89,9 +95,9 @@ Vec2 KeyboardWave::rotateDirection(const Vec2& dir, float degree)
     float cosValue = std::cos(rad);
     float sinValue = std::sin(rad);
 
-    // ¶şÎ¬ÏòÁ¿Ğı×ª¹«Ê½£º
-    // x' = x cos¦È - y sin¦È
-    // y' = x sin¦È + y cos¦È
+    // äºŒç»´å‘é‡æ—‹è½¬å…¬å¼ï¼š
+    // x' = x cosÎ¸ - y sinÎ¸
+    // y' = x sinÎ¸ + y cosÎ¸
     return Vec2(
         dir.x * cosValue - dir.y * sinValue,
         dir.x * sinValue + dir.y * cosValue

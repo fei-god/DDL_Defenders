@@ -1,8 +1,13 @@
-#include "WaveManager.h"
+﻿#include "WaveManager.h"
 #include "SleepyMonster.h"
 #include "DDLMonster.h"
 #include "BossMonster.h"
+#include "PhoneMonster.h"
+#include "ThesisBoss.h"
+#include "Core/AssetPaths.h"
 #include "cocos2d.h"
+#include <algorithm>
+#include <cmath>
 
 USING_NS_CC;
 
@@ -23,10 +28,13 @@ bool WaveManager::init(Player* player, Node* parentLayer)
     _player = player;
     _parentLayer = parentLayer;
     _currentWave = 0;
-    _totalWaves = 10;              // 总共10波
+    _totalWaves = 1000000;
     _enemiesToSpawn = 0;
     _spawnTimer = 0.0f;
-    _spawnInterval = 1.5f;
+    _spawnInterval = 2.45f;
+    _spawnElapsed = 0.0f;
+    _waveTimer = 0.0f;
+    _waveDuration = 30.0f;
     _isSpawning = false;
     _totalEnemiesThisWave = 0;
     _enemiesSpawnedCount = 0;
@@ -35,15 +43,15 @@ bool WaveManager::init(Player* player, Node* parentLayer)
     _bossSpawned = false;
     _waveDelayTimer = 0.0f;
     _waitingForNextWave = false;
+    _isFrozen = false;
 
     return true;
 }
 
 int WaveManager::getEnemyCountForWave(int wave)
 {
-    // 每波敌人数量 = 3 + wave * 2，上限25个
-    int count = 3 + wave * 2;
-    if (count > 25) count = 25;
+    int count = 8 + wave * 3;
+    if (count > 42) count = 42;
     return count;
 }
 
@@ -53,36 +61,17 @@ void WaveManager::startWave(int waveIndex)
     _enemiesSpawnedCount = 0;
     _waitingForNextWave = false;
     _waveDelayTimer = 0.0f;
-
-    // 清理上一波残留
-    _aliveEnemies.clear();
+    _spawnElapsed = 0.0f;
+    _waveTimer = 0.0f;
     _bossSpawned = false;
-
-    // Boss波：每5波出现一次
-    _isBossWave = (waveIndex % 5 == 0);
-
-    if (_isBossWave)
-    {
-        // Boss波：Boss + 少量小兵
-        _totalEnemiesThisWave = 4 + waveIndex / 2;  // 随波次增加小兵数量
-        if (_totalEnemiesThisWave > 15) _totalEnemiesThisWave = 15;
-        CCLOG("=== BOSS WAVE %d! ===", waveIndex);
-        if (_bossWaveCallback)
-            _bossWaveCallback(waveIndex);
-    }
-    else
-    {
-        _totalEnemiesThisWave = getEnemyCountForWave(waveIndex);
-    }
-
-    _enemiesToSpawn = _totalEnemiesThisWave;
-    _spawnTimer = 1.0f;  // 第一只敌人1秒后生成
+    _isBossWave = (waveIndex > 0 && waveIndex % 3 == 0);
+    _totalEnemiesThisWave = 0;
+    _enemiesToSpawn = 0;
+    _spawnTimer = 1.0f;
     _isSpawning = true;
 
-    showWaveAnnouncement(waveIndex);
-
-    CCLOG("Wave %d started: %d enemies (Boss:%s)",
-        waveIndex, _totalEnemiesThisWave, _isBossWave ? "YES" : "NO");
+    showWaveAnnouncement(_currentWave);
+    CCLOG("Wave %d continuous spawning started.", _currentWave);
 }
 
 void WaveManager::stopSpawn()
@@ -95,12 +84,17 @@ void WaveManager::showWaveAnnouncement(int wave)
 {
     // 在屏幕上显示波次公告
     // 使用Label显示，持续2秒后消失
-    auto visibleSize = Director::getInstance()->getVisibleSize();
+    Size visibleSize = Director::getInstance()->getVisibleSize();
+    if (_parentLayer && _parentLayer->getContentSize().width > 0.0f &&
+        _parentLayer->getContentSize().height > 0.0f)
+    {
+        visibleSize = _parentLayer->getContentSize();
+    }
 
     std::string waveText;
     if (_isBossWave)
     {
-        waveText = "!!! BOSS WAVE " + std::to_string(wave) + " !!!";
+        waveText = "Wave " + std::to_string(wave) + ": Thesis Boss";
     }
     else
     {
@@ -108,7 +102,12 @@ void WaveManager::showWaveAnnouncement(int wave)
     }
 
     auto label = Label::createWithSystemFont(waveText, "Arial", 36);
-    label->setPosition(Vec2(visibleSize.width / 2, visibleSize.height / 2 + 100));
+    Vec2 labelPos(visibleSize.width / 2, visibleSize.height / 2 + 100);
+    if (_player)
+    {
+        labelPos = _player->getPosition() + Vec2(0, 120);
+    }
+    label->setPosition(labelPos);
     label->setOpacity(0);
     _parentLayer->addChild(label, 100);  // 高层级确保显示在最前
 
@@ -127,32 +126,33 @@ Enemy* WaveManager::createEnemyByType(int enemyType, const Vec2& pos, int waveLe
     switch (enemyType)
     {
     case 0: // SleepyMonster - 基础敌人
-        enemy = SleepyMonster::create("enemy_sleepy.png", pos, _player);
+        {
+            std::string path = AssetPaths::resolve("art/monsters/sleepy_monster.png");
+            enemy = SleepyMonster::create(path.empty() ? "enemy_sleepy.png" : path, pos, _player);
+        }
         break;
     case 1: // DDLMonster - 冲锋敌人
-        enemy = DDLMonster::create("enemy_ddl.png", pos, _player);
+        {
+            std::string path = AssetPaths::resolve("art/monsters/ddl_monster.png");
+            enemy = DDLMonster::create(path.empty() ? "enemy_ddl.png" : path, pos, _player);
+        }
         break;
-    case 2: // BossMonster
-        enemy = BossMonster::create("enemy_boss.png", pos, _player, waveLevel);
+    case 2: // ThesisBoss
+        {
+            std::string path = AssetPaths::resolve("art/monsters/thesis_monster.png");
+            if (path.empty())
+            {
+                path = AssetPaths::resolve("art/monsters/thesis_boss.png");
+            }
+            enemy = ThesisBoss::create(path.empty() ? "enemy_boss.png" : path, pos, _player, waveLevel);
+        }
         break;
-    }
-
-    // 根据波次给敌人增加属性加成（难度递增）
-    if (enemy && enemyType != 2)  // Boss有自己的属性计算
-    {
-        float hpScale = 1.0f + (waveLevel - 1) * 0.1f;     // 每波HP+10%
-        float atkScale = 1.0f + (waveLevel - 1) * 0.08f;   // 每波攻击+8%
-        float spdScale = 1.0f + (waveLevel - 1) * 0.03f;   // 每波速度+3%
-
-        int scaledHp = static_cast<int>(enemy->getMaxHp() * hpScale);
-        enemy->setMaxHp(scaledHp);
-        enemy->setHp(scaledHp);
-
-        int scaledAtk = static_cast<int>(enemy->getAttackDamage() * atkScale);
-        enemy->setAttackDamage(scaledAtk);
-
-        float scaledSpd = enemy->getSpeed() * spdScale;
-        enemy->setSpeed(scaledSpd);
+    case 3: // PhoneMonster
+        {
+            std::string path = AssetPaths::resolve("art/monsters/phone_monster.png");
+            enemy = PhoneMonster::create(path.empty() ? "enemy_phone.png" : path, pos, _player);
+        }
+        break;
     }
 
     return enemy;
@@ -162,86 +162,72 @@ void WaveManager::spawnEnemy()
 {
     if (!_player || !_player->isRoleAlive()) return;
 
-    // 随机生成位置（屏幕边缘）
-    auto visibleSize = Director::getInstance()->getVisibleSize();
-    Vec2 spawnPos;
-    int edge = rand() % 4;
-    switch (edge)
+    Size visibleSize = Director::getInstance()->getVisibleSize();
+    if (_parentLayer && _parentLayer->getContentSize().width > 0.0f &&
+        _parentLayer->getContentSize().height > 0.0f)
     {
-    case 0: // 左边
-        spawnPos = Vec2(-20, rand() % (int)visibleSize.height);
-        break;
-    case 1: // 右边
-        spawnPos = Vec2(visibleSize.width + 20, rand() % (int)visibleSize.height);
-        break;
-    case 2: // 下边
-        spawnPos = Vec2(rand() % (int)visibleSize.width, -20);
-        break;
-    case 3: // 上边
-    default:
-        spawnPos = Vec2(rand() % (int)visibleSize.width, visibleSize.height + 20);
-        break;
+        visibleSize = _parentLayer->getContentSize();
     }
+    Vec2 playerPos = _player->getPosition();
+    float angle = CCRANDOM_0_1() * 2.0f * static_cast<float>(M_PI);
+    float distance = 230.0f + CCRANDOM_0_1() * 200.0f;
+    Vec2 spawnPos = playerPos + Vec2(std::cos(angle), std::sin(angle)) * distance;
+    spawnPos.x = std::max(45.0f, std::min(visibleSize.width - 45.0f, spawnPos.x));
+    spawnPos.y = std::max(45.0f, std::min(visibleSize.height - 45.0f, spawnPos.y));
 
     Enemy* enemy = nullptr;
     _enemiesSpawnedCount++;
 
-    if (_isBossWave && !_bossSpawned)
+    int type = 0;
+    if (_isBossWave && !_bossSpawned && _waveTimer >= 6.0f)
     {
-        // Boss波：最后一个生成的必然是Boss
-        bool isLastEnemy = (_enemiesToSpawn <= 0);
-
-        if (isLastEnemy)
-        {
-            // Boss从屏幕顶部中央出现
-            spawnPos = Vec2(visibleSize.width / 2, visibleSize.height + 50);
-            enemy = createEnemyByType(2, spawnPos, _currentWave);  // Boss
-            _bossSpawned = true;
-            CCLOG("BOSS spawned at wave %d!", _currentWave);
-        }
-        else
-        {
-            // Boss波小兵：DDLMonster为主
-            int type = (rand() % 100 < 60) ? 1 : 0;  // 60% DDL, 40% Sleepy
-            enemy = createEnemyByType(type, spawnPos, _currentWave);
-        }
+        type = 2;
+        _bossSpawned = true;
+        spawnPos = playerPos + Vec2(0.0f, 320.0f);
+        spawnPos.x = std::max(80.0f, std::min(visibleSize.width - 80.0f, spawnPos.x));
+        spawnPos.y = std::max(80.0f, std::min(visibleSize.height - 80.0f, spawnPos.y));
     }
     else
     {
-        // 普通波：根据波次决定敌人类型比例
         int randVal = rand() % 100;
-
-        if (_currentWave <= 2)
-        {
-            // 前2波：只有SleepyMonster（让玩家适应）
-            enemy = createEnemyByType(0, spawnPos, _currentWave);
-        }
-        else if (_currentWave <= 4)
-        {
-            // 3-4波：30% DDLMonster, 70% SleepyMonster
-            if (randVal < 30)
-                enemy = createEnemyByType(1, spawnPos, _currentWave);
-            else
-                enemy = createEnemyByType(0, spawnPos, _currentWave);
-        }
-        else
-        {
-            // 5波以后：50% DDL, 50% Sleepy
-            if (randVal < 50)
-                enemy = createEnemyByType(1, spawnPos, _currentWave);
-            else
-                enemy = createEnemyByType(0, spawnPos, _currentWave);
-        }
+        int ddlChance = std::min(34, 12 + _currentWave * 4);
+        int phoneChance = std::min(30, 14 + _currentWave * 3);
+        if (randVal < 48 - std::min(16, _currentWave * 2)) type = 0;
+        else if (randVal < 48 - std::min(16, _currentWave * 2) + phoneChance) type = 3;
+        else if (randVal < 92) type = 1;
+        else type = 0;
     }
+    enemy = createEnemyByType(type, spawnPos, _currentWave);
 
     if (enemy)
     {
-        // 给敌人添加出现时的缩放动画
-        enemy->setScale(0.1f);
-        auto scaleUp = ScaleTo::create(0.3f, (_isBossWave && _bossSpawned) ? 1.5f : 1.0f);
+        bool isBossEnemy = enemy->hasTag("Boss") || enemy->getObjectName() == "ThesisBoss" ||
+            enemy->getObjectName() == "BossMonster";
+        float targetSize = isBossEnemy ? 240.0f : 114.0f;
+        Size enemySize = enemy->getContentSize();
+        float targetScale = 1.0f;
+        if (enemySize.width > 0.0f && enemySize.height > 0.0f)
+        {
+            targetScale = std::min(targetSize / enemySize.width, targetSize / enemySize.height);
+        }
+
+        enemy->setScale(targetScale * 0.1f);
+        auto scaleUp = ScaleTo::create(0.3f, targetScale);
         enemy->runAction(scaleUp);
 
         _parentLayer->addChild(enemy, 10);  // 添加到游戏层
+
+        auto nameLabel = Label::createWithSystemFont(enemy->getObjectName(), "Arial", 13);
+        if (nameLabel)
+        {
+            nameLabel->setColor(isBossEnemy ? Color3B(255, 180, 90) : Color3B(235, 235, 245));
+            nameLabel->enableOutline(Color4B(0, 0, 0, 210), 2);
+            float labelY = enemySize.height * 0.5f + 16.0f / std::max(0.1f, targetScale);
+            nameLabel->setPosition(Vec2(0.0f, labelY));
+            nameLabel->setScale(1.0f / std::max(0.1f, targetScale));
+            enemy->addChild(nameLabel, 20);
+        }
+
         _aliveEnemies.push_back(enemy);
     }
     else
@@ -253,29 +239,7 @@ void WaveManager::spawnEnemy()
 
 void WaveManager::update(float dt)
 {
-    // 如果在等待下一波，计时
-    if (_waitingForNextWave)
-    {
-        _waveDelayTimer -= dt;
-        if (_waveDelayTimer <= 0.0f)
-        {
-            _waitingForNextWave = false;
-            if (_currentWave < _totalWaves)
-            {
-                startWave(_currentWave + 1);
-            }
-            else
-            {
-                // 所有波次完成！
-                CCLOG("ALL WAVES CLEARED! Victory!");
-                if (_allWavesClearedCallback)
-                    _allWavesClearedCallback();
-            }
-        }
-        return;
-    }
-
-    if (!_isSpawning && _aliveEnemies.empty())
+    if (!_isSpawning)
     {
         return;
     }
@@ -306,6 +270,10 @@ void WaveManager::update(float dt)
             {
                 enemy->die();
             }
+            if (_enemyKilledCallback)
+            {
+                _enemyKilledCallback(enemy);
+            }
             enemy->removeFromParent();
             _killCount++;
             it = _aliveEnemies.erase(it);
@@ -313,11 +281,18 @@ void WaveManager::update(float dt)
         }
 
         // 更新敌人AI
-        enemy->updateEnemy(dt);
+        if (!_isFrozen)
+        {
+            enemy->updateEnemy(dt);
+        }
 
         // 更新后再次检查
         if (!enemy->isRoleAlive() || !enemy->isObjectActive())
         {
+            if (_enemyKilledCallback)
+            {
+                _enemyKilledCallback(enemy);
+            }
             enemy->removeFromParent();
             _killCount++;
             it = _aliveEnemies.erase(it);
@@ -328,27 +303,32 @@ void WaveManager::update(float dt)
         }
     }
 
-    // 生成新敌人
-    if (_enemiesToSpawn > 0)
+    if (!_isFrozen)
     {
+        _spawnElapsed += dt;
+        _waveTimer += dt;
         _spawnTimer -= dt;
 
         if (_spawnTimer <= 0.0f)
         {
-            spawnEnemy();
-            _enemiesToSpawn--;
+            int aliveCap = std::min(_isBossWave ? 34 : 30, 12 + _currentWave * 3);
+            if (static_cast<int>(_aliveEnemies.size()) < aliveCap)
+            {
+                spawnEnemy();
+            }
 
-            // 动态生成间隔：敌人越多间隔越短（最少0.8秒）
-            float dynamicInterval = 1.8f - (_totalEnemiesThisWave - _enemiesToSpawn) * 0.05f;
-            if (dynamicInterval < 0.8f) dynamicInterval = 0.8f;
+            float waveDifficulty = std::min(0.85f, (_currentWave - 1) * 0.12f);
+            float linearPressure = std::min(0.55f, _waveTimer * 0.012f);
+            float dynamicInterval = _spawnInterval - waveDifficulty - linearPressure;
+            if (_isBossWave) dynamicInterval += 0.25f;
+            if (dynamicInterval < 0.78f) dynamicInterval = 0.78f;
             _spawnTimer = dynamicInterval;
         }
-    }
 
-    // 判断当前波是否完成
-    if (_enemiesToSpawn <= 0 && _aliveEnemies.empty())
-    {
-        onWaveCleared();
+        if (_waveTimer >= _waveDuration)
+        {
+            startWave(_currentWave + 1);
+        }
     }
 }
 
@@ -360,9 +340,9 @@ void WaveManager::onWaveCleared()
     if (_waveClearedCallback)
         _waveClearedCallback(_currentWave);
 
-    // 波次间延迟3秒
+    // Keep pressure continuous between waves.
     _waitingForNextWave = true;
-    _waveDelayTimer = 3.0f;
+    _waveDelayTimer = 0.8f;
 }
 
 void WaveManager::setWaveClearedCallback(std::function<void(int)> callback)
@@ -378,6 +358,16 @@ void WaveManager::setAllWavesClearedCallback(std::function<void()> callback)
 void WaveManager::setBossWaveCallback(std::function<void(int)> callback)
 {
     _bossWaveCallback = callback;
+}
+
+void WaveManager::setEnemyKilledCallback(std::function<void(Enemy*)> callback)
+{
+    _enemyKilledCallback = callback;
+}
+
+void WaveManager::setFrozen(bool frozen)
+{
+    _isFrozen = frozen;
 }
 
 std::vector<Enemy*>& WaveManager::getAliveEnemies()

@@ -5,6 +5,11 @@
 #include <ctime>
 #include <fstream>
 #include <iostream>
+#include "platform/CCFileUtils.h"
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 SaveManager* SaveManager::s_instance = nullptr;
 
@@ -20,6 +25,15 @@ SaveManager* SaveManager::getInstance()
 SaveManager::SaveManager()
     : m_saveFilePath("player_records.dat")
 {
+    auto* fileUtils = cocos2d::FileUtils::getInstance();
+    if (fileUtils)
+    {
+        const std::string writablePath = fileUtils->getWritablePath();
+        if (!writablePath.empty())
+        {
+            m_saveFilePath = writablePath + "player_records.dat";
+        }
+    }
 }
 
 const std::string& SaveManager::getSaveFilePath() const
@@ -112,6 +126,66 @@ void SaveManager::fillCurrentTime(char dest[20]) const
 
 bool SaveManager::initSaveFile()
 {
+    auto hasUsedRecord = [](const std::string& path) -> bool
+    {
+        std::ifstream input(path, std::ios::binary);
+        if (!input.is_open())
+        {
+            return false;
+        }
+
+        for (int i = 0; i < MAX_PLAYER_COUNT; ++i)
+        {
+            PlayerRecord record;
+            input.read(reinterpret_cast<char*>(&record), sizeof(PlayerRecord));
+            if (!input.good())
+            {
+                break;
+            }
+            if (record.isUsed == 1)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    };
+
+    auto copyFileBinary = [](const std::string& from, const std::string& to) -> bool
+    {
+        std::ifstream input(from, std::ios::binary);
+        if (!input.is_open())
+        {
+            return false;
+        }
+
+        std::ofstream output(to, std::ios::binary | std::ios::trunc);
+        if (!output.is_open())
+        {
+            return false;
+        }
+
+        output << input.rdbuf();
+        return output.good();
+    };
+
+    std::vector<std::string> legacyPaths;
+    legacyPaths.push_back("player_records.dat");
+
+#ifdef _WIN32
+    char modulePath[MAX_PATH] = { 0 };
+    DWORD moduleLength = GetModuleFileNameA(nullptr, modulePath, MAX_PATH);
+    if (moduleLength > 0 && moduleLength < MAX_PATH)
+    {
+        std::string exePath(modulePath);
+        std::size_t slash = exePath.find_last_of("\\/");
+        if (slash != std::string::npos)
+        {
+            legacyPaths.push_back(exePath.substr(0, slash + 1) + "player_records.dat");
+        }
+    }
+#endif
+
     // Check if file exists and has enough size.
     {
         std::ifstream input(m_saveFilePath, std::ios::binary);
@@ -123,6 +197,28 @@ bool SaveManager::initSaveFile()
                 static_cast<std::streamoff>(MAX_PLAYER_COUNT) * sizeof(PlayerRecord);
 
             if (fileSize >= expectedSize)
+            {
+                if (!hasUsedRecord(m_saveFilePath))
+                {
+                    for (const auto& legacyPath : legacyPaths)
+                    {
+                        if (m_saveFilePath != legacyPath && hasUsedRecord(legacyPath))
+                        {
+                            copyFileBinary(legacyPath, m_saveFilePath);
+                            break;
+                        }
+                    }
+                }
+                return true;
+            }
+        }
+    }
+
+    for (const auto& legacyPath : legacyPaths)
+    {
+        if (m_saveFilePath != legacyPath && hasUsedRecord(legacyPath))
+        {
+            if (copyFileBinary(legacyPath, m_saveFilePath))
             {
                 return true;
             }

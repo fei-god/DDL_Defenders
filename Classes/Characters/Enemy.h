@@ -41,6 +41,8 @@ public:
 
     // 敌人死亡时，给玩家增加经验
     virtual void die() override;
+    virtual void takeDamage(int damage) override;
+    virtual void takeDamage(int damage, DamageType damageType, Role* attacker = nullptr) override;
 
     // 供外部调用，每帧更新敌人的移动和攻击冷却
     void updateEnemy(float dt);
@@ -50,6 +52,10 @@ protected:
     int _attackDamage;          // 攻击力
     float _attackRange;         // 攻击范围
     int _expReward;             // 击败后奖励的经验值
+    int _hitCount;
+    int _hitsToDie;
+
+    virtual int getHitsToDieForPlayer(Player* player) const;
 
     float _attackCooldown;      // 攻击冷却剩余时间
     float _attackCooldownMax;   // 攻击冷却最大值（默认为1秒）

@@ -25,10 +25,10 @@ bool BossMonster::initBossMonster(const std::string& imagePath,
 {
     // Boss属性：高血量，慢速度，高攻击，高防御
     // 根据波次等级调整基础属性
-    int baseHp = 200 + waveLevel * 30;
+    int baseHp = 85 + waveLevel * 10;
     float baseSpeed = 40.0f + waveLevel * 3.0f;
-    int baseDefense = 12 + waveLevel * 2;
-    int baseAttack = 30 + waveLevel * 5;
+    int baseDefense = 2 + waveLevel / 2;
+    int baseAttack = 18 + waveLevel * 3;
     float baseRange = 70.0f;
     int baseExp = 200 + waveLevel * 50;
 

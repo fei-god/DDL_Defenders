@@ -1,6 +1,7 @@
 #include "AudioManager.h"
 
 #include "audio/include/AudioEngine.h"
+#include "platform/CCFileUtils.h"
 
 #include <algorithm>
 #include <chrono>
@@ -24,12 +25,12 @@ namespace
     // ------------------------------------------------------------
 
     // BGM
-    const char* BGM_MENU       = "audio/bgm_menu.mp3";
-    const char* BGM_GAME       = "audio/bgm_dorm_night.mp3";
+    const char* BGM_MENU       = "audio/start_bgm.mp3";
+    const char* BGM_GAME       = "audio/game_bgm.mp3";
     const char* BGM_BOSS       = "audio/bgm_boss.mp3";
 
     // UI
-    const char* SFX_BUTTON_CLICK = "audio/sfx_button_click.wav";
+    const char* SFX_BUTTON_CLICK = "audio/button_click.wav";
     const char* SFX_BUTTON_HOVER = "audio/sfx_button_hover.wav";
     const char* SFX_MENU_OPEN    = "audio/sfx_menu_open.wav";
     const char* SFX_MENU_CLOSE   = "audio/sfx_menu_close.wav";
@@ -51,7 +52,7 @@ namespace
 
     // Enemies
     const char* SFX_ENEMY_SPAWN = "audio/sfx_enemy_spawn.wav";
-    const char* SFX_ENEMY_HIT   = "audio/sfx_enemy_hit.wav";
+    const char* SFX_ENEMY_HIT   = "audio/monster_hit.wav";
     const char* SFX_ENEMY_DIE   = "audio/sfx_enemy_die.wav";
 
     const char* SFX_SLEEPY_MONSTER = "audio/sfx_sleepy_monster_spawn.wav";
@@ -160,7 +161,10 @@ void AudioManager::preloadAll()
 
     for (const char* file : audioFiles)
     {
-        AudioEngine::preload(file);
+        if (cocos2d::FileUtils::getInstance()->isFileExist(file))
+        {
+            AudioEngine::preload(file);
+        }
     }
 }
 
@@ -458,8 +462,35 @@ int AudioManager::playEffect(const std::string& path, float volume)
         return INVALID_AUDIO_ID;
     }
 
+    std::string actualPath = path;
+    if (!cocos2d::FileUtils::getInstance()->isFileExist(actualPath))
+    {
+        std::string fallbackPath = actualPath;
+        size_t dot = fallbackPath.find_last_of('.');
+        if (dot != std::string::npos)
+        {
+            std::string extension = fallbackPath.substr(dot);
+            if (extension == ".wav")
+            {
+                fallbackPath.replace(dot, extension.length(), ".mp3");
+            }
+            else if (extension == ".mp3")
+            {
+                fallbackPath.replace(dot, extension.length(), ".wav");
+            }
+        }
+
+        if (fallbackPath == actualPath ||
+            !cocos2d::FileUtils::getInstance()->isFileExist(fallbackPath))
+        {
+            return INVALID_AUDIO_ID;
+        }
+
+        actualPath = fallbackPath;
+    }
+
     float finalVolume = clampVolume(sfxVolume_ * volume);
-    return AudioEngine::play2d(path, false, finalVolume);
+    return AudioEngine::play2d(actualPath, false, finalVolume);
 }
 
 int AudioManager::playEffectWithCooldown(const std::string& path, int cooldownMs)
@@ -492,6 +523,12 @@ int AudioManager::playBGM(const std::string& path, bool loop)
     }
 
     stopBGM();
+
+    if (!cocos2d::FileUtils::getInstance()->isFileExist(path))
+    {
+        currentBGMPath_.clear();
+        return INVALID_AUDIO_ID;
+    }
 
     float finalVolume = muted_ ? 0.0f : bgmVolume_;
     bgmAudioId_ = AudioEngine::play2d(path, loop, finalVolume);

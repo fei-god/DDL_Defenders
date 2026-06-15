@@ -715,7 +715,7 @@ void SettingsScene::refreshKeyLabels()
 // ---------------------------------------------------------------------------
 void SettingsScene::onLanguageLeft(Ref*)
 {
-    int total = static_cast<int>(LanguageManager::Language::COUNT);
+    int total = 2;
     _currentLangIndex = (_currentLangIndex - 1 + total) % total;
 
     LanguageManager::getInstance()->setLanguage(
@@ -734,7 +734,7 @@ void SettingsScene::onLanguageLeft(Ref*)
 
 void SettingsScene::onLanguageRight(Ref*)
 {
-    int total = static_cast<int>(LanguageManager::Language::COUNT);
+    int total = 2;
     _currentLangIndex = (_currentLangIndex + 1) % total;
 
     LanguageManager::getInstance()->setLanguage(

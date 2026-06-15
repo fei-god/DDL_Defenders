@@ -1,8 +1,8 @@
-#include "CoffeeLaser.h"
+ï»¿#include "CoffeeLaser.h"
 
 USING_NS_CC;
 
-//ÎäÆ÷ÌØµã£ºÉËº¦¸ß£¬ÀäÈ´³¤£¬´©Í¸Á¦Ç¿£¬ÊÊºÏ¶Ô¸¶¾«Ó¢¹ÖºÍBoss¡£
+//æ­¦å™¨ç‰¹ç‚¹ï¼šä¼¤å®³é«˜ï¼Œå†·å´é•¿ï¼Œç©¿é€åŠ›å¼ºï¼Œé€‚åˆå¯¹ä»˜ç²¾è‹±æ€ªå’ŒBossã€‚
 
 CoffeeLaser* CoffeeLaser::create(Player* owner)
 {
@@ -20,13 +20,13 @@ CoffeeLaser* CoffeeLaser::create(Player* owner)
 
 bool CoffeeLaser::initCoffeeLaser(Player* owner)
 {
-    // ¿§·È¼¤¹âÉËº¦¸ü¸ß£¬µ«ÀäÈ´¸ü³¤¡£
+    // å’–å•¡æ¿€å…‰ä¼¤å®³æ›´é«˜ï¼Œä½†å†·å´æ›´é•¿ã€‚
     if (!initWeapon(
-        "CoffeeLaser",     // ÎäÆ÷Ãû×Ö
-        "",                // ÎäÆ÷±¾Ìå
-        owner,             // ÎäÆ÷ËùÊôÍæ¼Ò
-        35,                // ¹¥»÷Á¦
-        1.20f              // ÀäÈ´Ê±¼ä
+        "CoffeeLaser",     // æ­¦å™¨åå­—
+        "",                // æ­¦å™¨æœ¬ä½“
+        owner,             // æ­¦å™¨æ‰€å±žçŽ©å®¶
+        35,                // æ”»å‡»åŠ›
+        1.20f              // å†·å´æ—¶é—´
     ))
     {
         return false;
@@ -34,41 +34,40 @@ bool CoffeeLaser::initCoffeeLaser(Player* owner)
 
     _bulletSpeed = 900.0f;
     _bulletImagePath = "weapon/coffee_laser.png";
+    configureEnergy(100.0f, 34.0f, 14.0f);
 
     return true;
 }
 
 void CoffeeLaser::fire()
 {
-    Enemy* target = findNearestEnemy();
-
-    if (target == nullptr)
-    {
-        return;
-    }
+    if (!canFire()) return;
+    if (!consumeEnergyForShot()) return;
 
     Vec2 startPos = _owner->getObjectPosition();
-    Vec2 dir = getDirectionToEnemy(target);
+    Vec2 dir = getAimDirection();
+    if (dir.lengthSquared() < 0.0001f)
+    {
+        Enemy* target = findNearestEnemy();
+        dir = target ? getDirectionToEnemy(target) : Vec2(1, 0);
+    }
 
-    Bullet* bullet = Bullet::createBullet(
+    Bullet* bullet = spawnBullet(
         "CoffeeLaserBullet",
         _bulletImagePath,
         startPos,
         dir,
         _bulletSpeed,
-        _attackPower,
+        getModifiedAttackPower(),
         0.75f,
         true
     );
 
     if (bullet != nullptr)
     {
-        // ¼¤¹â¿ÉÒÔÉÔÎ¢À­³¤£¬¿´ÆðÀ´¸üÏñÒ»Êø¹â¡£
+        // æ¿€å…‰å¯ä»¥ç¨å¾®æ‹‰é•¿ï¼Œçœ‹èµ·æ¥æ›´åƒä¸€æŸå…‰ã€‚
         bullet->setScaleX(2.2f);
         bullet->setScaleY(0.7f);
-
-        _bulletLayer->addChild(bullet);
-        _bulletList->push_back(bullet);
     }
 
     resetCooldown();

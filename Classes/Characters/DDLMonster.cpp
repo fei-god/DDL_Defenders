@@ -1,4 +1,4 @@
-#include "DDLMonster.h"
+﻿#include "DDLMonster.h"
 
 USING_NS_CC;
 
@@ -20,16 +20,16 @@ bool DDLMonster::initDDLMonster(const std::string& imagePath,
     const Vec2& startPosition,
     Player* target)
 {
-    // 冲锋型怪物：中等血量，较快速度，中等攻击
+    // 鍐查攱鍨嬫€墿锛氫腑绛夎閲忥紝杈冨揩閫熷害锛屼腑绛夋敾鍑?
     bool ok = initEnemy("DDLMonster",
         imagePath,
         startPosition,
-        50,        // maxHp       (降低：60→50)
-        80.0f,     // speed       (降低：200→80，之前太快了)
-        5,         // defense     (降低：10→5)
-        20,        // attackDamage (降低：35→20)
-        55.0f,     // attackRange  (降低：60→55)
-        50);       // expReward    (降低：80→50)
+        24,        // maxHp
+        115.0f,    // speed
+        0,         // defense
+        12,        // attackDamage
+        64.0f,     // attackRange
+        50);       // expReward    (闄嶄綆锛?0鈫?0)
     if (!ok) return false;
 
     setTargetPlayer(target);
@@ -43,41 +43,41 @@ void DDLMonster::move(float dt)
 {
     if (_targetPlayer == nullptr) return;
 
-    // 冷却计时
+    // 鍐峰嵈璁℃椂
     if (_chargeCooldown > 0.0f)
         _chargeCooldown -= dt;
 
     if (_isCharging)
     {
-        // 冲锋状态：沿冲锋方向快速移动
+        // 鍐查攱鐘舵€侊細娌垮啿閿嬫柟鍚戝揩閫熺Щ鍔?
         float chargeSpeed = getSpeed() * 2.5f;
         Vec2 newPos = getPosition() + _chargeDirection * chargeSpeed * dt;
         setPosition(newPos);
 
-        // 冲锋持续 0.4 秒
+        // 鍐查攱鎸佺画 0.4 绉?
         if (_chargeCooldown <= 0.0f)
         {
             _isCharging = false;
-            _chargeCooldown = 1.5f;  // 冲锋结束后冷却 1.5 秒
+            _chargeCooldown = 1.5f;  // 鍐查攱缁撴潫鍚庡喎鍗?1.5 绉?
         }
         return;
     }
     else
     {
-        // 普通状态：向玩家移动
+        // 鏅€氱姸鎬侊細鍚戠帺瀹剁Щ鍔?
         Vec2 dir = _targetPlayer->getPosition() - getPosition();
         dir.normalize();
         setDirection(dir);
         Vec2 newPos = getPosition() + dir * getSpeed() * dt;
         setPosition(newPos);
 
-        // 冷却结束且玩家较近时，尝试发起冲锋
+        // 鍐峰嵈缁撴潫涓旂帺瀹惰緝杩戞椂锛屽皾璇曞彂璧峰啿閿?
         float distToPlayer = getPosition().distance(_targetPlayer->getPosition());
         if (_chargeCooldown <= 0.0f && distToPlayer < 150.0f)
         {
             _isCharging = true;
             _chargeDirection = dir;
-            _chargeCooldown = 0.4f;  // 冲锋持续 0.4 秒
+            _chargeCooldown = 0.4f;  // 鍐查攱鎸佺画 0.4 绉?
         }
     }
 }
@@ -85,6 +85,8 @@ void DDLMonster::move(float dt)
 void DDLMonster::attack()
 {
     if (_targetPlayer == nullptr) return;
-    // 冲锋怪物近战攻击
+    // 鍐查攱鎬墿杩戞垬鏀诲嚮
     _targetPlayer->takeDamage(_attackDamage);
 }
+
+

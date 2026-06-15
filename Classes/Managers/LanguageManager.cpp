@@ -80,7 +80,7 @@ std::string LanguageManager::getStringF(const std::string& key, float value) con
 std::vector<std::string> LanguageManager::getAvailableLanguageNames() const
 {
     std::vector<std::string> names;
-    for (int i = 0; i < static_cast<int>(Language::COUNT); ++i)
+    for (int i = 0; i < 2; ++i)
     {
         Language lang = static_cast<Language>(i);
         auto it = _strings.find("lang_self");
@@ -97,14 +97,14 @@ std::vector<std::string> LanguageManager::getAvailableLanguageNames() const
 std::vector<LanguageManager::Language> LanguageManager::getAvailableLanguages()
 {
     std::vector<Language> langs;
-    for (int i = 0; i < static_cast<int>(Language::COUNT); ++i)
+    for (int i = 0; i < 2; ++i)
         langs.push_back(static_cast<Language>(i));
     return langs;
 }
 
 LanguageManager::Language LanguageManager::intToLanguage(int idx)
 {
-    if (idx < 0 || idx >= static_cast<int>(Language::COUNT))
+    if (idx < 0 || idx >= 2)
         return Language::SIMPLIFIED_CHINESE;
     return static_cast<Language>(idx);
 }
@@ -281,4 +281,73 @@ void LanguageManager::initStrings()
     _strings["confirm"][L::ENGLISH]            = "OK";
     _strings["confirm"][L::JAPANESE]           = u8"確認";
     _strings["confirm"][L::KOREAN]             = u8"확인";
+    // Clean Chinese/English overrides used by the current game UI.
+    _strings["lang_self"][L::SIMPLIFIED_CHINESE] = u8"简体中文";
+    _strings["lang_self"][L::ENGLISH] = "English";
+
+    _strings["start_game"][L::SIMPLIFIED_CHINESE] = u8"开始游戏";
+    _strings["start_game"][L::ENGLISH] = "Start Game";
+    _strings["settings"][L::SIMPLIFIED_CHINESE] = u8"设置";
+    _strings["settings"][L::ENGLISH] = "Settings";
+    _strings["exit_game"][L::SIMPLIFIED_CHINESE] = u8"退出游戏";
+    _strings["exit_game"][L::ENGLISH] = "Exit Game";
+    _strings["mainmenu_hint"][L::SIMPLIFIED_CHINESE] = u8"WASD 移动 | O 攻击";
+    _strings["mainmenu_hint"][L::ENGLISH] = "WASD Move | O Attack";
+
+    _strings["gameover_title"][L::SIMPLIFIED_CHINESE] = u8"游戏结束";
+    _strings["gameover_title"][L::ENGLISH] = "Game Over";
+    _strings["survival_time_fmt"][L::SIMPLIFIED_CHINESE] = u8"生存时间: %.1fs";
+    _strings["survival_time_fmt"][L::ENGLISH] = "Survival Time: %.1fs";
+    _strings["restart"][L::SIMPLIFIED_CHINESE] = u8"重新开始";
+    _strings["restart"][L::ENGLISH] = "Restart";
+    _strings["back_to_title"][L::SIMPLIFIED_CHINESE] = u8"返回首页";
+    _strings["back_to_title"][L::ENGLISH] = "Back to Menu";
+
+    _strings["pause_title"][L::SIMPLIFIED_CHINESE] = u8"暂停";
+    _strings["pause_title"][L::ENGLISH] = "Paused";
+    _strings["resume"][L::SIMPLIFIED_CHINESE] = u8"继续游戏";
+    _strings["resume"][L::ENGLISH] = "Resume";
+
+    _strings["settings_title"][L::SIMPLIFIED_CHINESE] = u8"设置";
+    _strings["settings_title"][L::ENGLISH] = "Settings";
+    _strings["resolution"][L::SIMPLIFIED_CHINESE] = u8"分辨率";
+    _strings["resolution"][L::ENGLISH] = "Resolution";
+    _strings["display_mode"][L::SIMPLIFIED_CHINESE] = u8"显示模式";
+    _strings["display_mode"][L::ENGLISH] = "Display Mode";
+    _strings["windowed"][L::SIMPLIFIED_CHINESE] = u8"窗口";
+    _strings["windowed"][L::ENGLISH] = "Windowed";
+    _strings["borderless"][L::SIMPLIFIED_CHINESE] = u8"无边框";
+    _strings["borderless"][L::ENGLISH] = "Borderless";
+    _strings["fullscreen"][L::SIMPLIFIED_CHINESE] = u8"全屏";
+    _strings["fullscreen"][L::ENGLISH] = "Fullscreen";
+    _strings["apply"][L::SIMPLIFIED_CHINESE] = u8"应用";
+    _strings["apply"][L::ENGLISH] = "Apply";
+    _strings["key_bindings"][L::SIMPLIFIED_CHINESE] = u8"按键设置";
+    _strings["key_bindings"][L::ENGLISH] = "Key Bindings";
+    _strings["language"][L::SIMPLIFIED_CHINESE] = u8"语言";
+    _strings["language"][L::ENGLISH] = "Language";
+    _strings["back"][L::SIMPLIFIED_CHINESE] = u8"返回";
+    _strings["back"][L::ENGLISH] = "Back";
+    _strings["restart_hint"][L::SIMPLIFIED_CHINESE] = u8"重启后生效";
+    _strings["restart_hint"][L::ENGLISH] = "Takes effect after restart";
+    _strings["press_key"][L::SIMPLIFIED_CHINESE] = u8"按下新按键...";
+    _strings["press_key"][L::ENGLISH] = "Press new key...";
+    _strings["rebind"][L::SIMPLIFIED_CHINESE] = u8"改键";
+    _strings["rebind"][L::ENGLISH] = "Rebind";
+    _strings["move_up"][L::SIMPLIFIED_CHINESE] = u8"向上移动";
+    _strings["move_up"][L::ENGLISH] = "Move Up";
+    _strings["move_down"][L::SIMPLIFIED_CHINESE] = u8"向下移动";
+    _strings["move_down"][L::ENGLISH] = "Move Down";
+    _strings["move_left"][L::SIMPLIFIED_CHINESE] = u8"向左移动";
+    _strings["move_left"][L::ENGLISH] = "Move Left";
+    _strings["move_right"][L::SIMPLIFIED_CHINESE] = u8"向右移动";
+    _strings["move_right"][L::ENGLISH] = "Move Right";
+    _strings["fire_key"][L::SIMPLIFIED_CHINESE] = u8"攻击";
+    _strings["fire_key"][L::ENGLISH] = "Attack";
+    _strings["pause_key"][L::SIMPLIFIED_CHINESE] = u8"暂停";
+    _strings["pause_key"][L::ENGLISH] = "Pause";
+    _strings["mouse_left"][L::SIMPLIFIED_CHINESE] = "O";
+    _strings["mouse_left"][L::ENGLISH] = "O";
+    _strings["confirm"][L::SIMPLIFIED_CHINESE] = u8"确定";
+    _strings["confirm"][L::ENGLISH] = "OK";
 }

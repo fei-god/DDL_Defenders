@@ -1,4 +1,4 @@
-#include "MoodSystem.h"
+ï»¿#include "MoodSystem.h"
 
 #include <sstream>
 #include <algorithm>
@@ -46,7 +46,7 @@ void MoodSystem::updateMood(float dt)
         }
     }
 
-    // ÇéĞ÷Öµ»ºÂı»Øµ½ÖĞ¼äÖµ£¬±ÜÃâÒ»Ö±´¦ÓÚ¼«¶Ë×´Ì¬
+    // æƒ…ç»ªå€¼ç¼“æ…¢å›åˆ°ä¸­é—´å€¼ï¼Œé¿å…ä¸€ç›´å¤„äºæç«¯çŠ¶æ€
     float middleValue = maxMoodValue * 0.5f;
 
     if (moodValue > middleValue)
@@ -109,7 +109,7 @@ bool MoodSystem::isNormal() const
 }
 
 // =========================
-// ÇéĞ÷±¶ÂÊ
+// æƒ…ç»ªå€ç‡
 // =========================
 
 float MoodSystem::getSpeedMultiplier() const
@@ -160,8 +160,8 @@ float MoodSystem::getSpeedMultiplier() const
 
 float MoodSystem::getDamageMultiplier() const
 {
-    // ÕâÀï±íÊ¾¡°ÊÜµ½ÉËº¦±¶ÂÊ¡±
-    // Ğ¡ÓÚ 1 ±íÊ¾¸ü¿¹´ò£¬´óÓÚ 1 ±íÊ¾¸ü´à
+    // è¿™é‡Œè¡¨ç¤ºâ€œå—åˆ°ä¼¤å®³å€ç‡â€
+    // å°äº 1 è¡¨ç¤ºæ›´æŠ—æ‰“ï¼Œå¤§äº 1 è¡¨ç¤ºæ›´è„†
     float multiplier = 1.0f;
 
     switch (currentMood)
@@ -208,7 +208,7 @@ float MoodSystem::getDamageMultiplier() const
 
 float MoodSystem::getCooldownMultiplier() const
 {
-    // ÀäÈ´±¶ÂÊ£ºÔ½Ğ¡Ô½¿ì
+    // å†·å´å€ç‡ï¼šè¶Šå°è¶Šå¿«
     float multiplier = 1.0f;
 
     switch (currentMood)
@@ -255,7 +255,7 @@ float MoodSystem::getCooldownMultiplier() const
 
 float MoodSystem::getOutgoingDamageMultiplier() const
 {
-    // ÕâÀï±íÊ¾¡°Íæ¼ÒÔì³ÉÉËº¦±¶ÂÊ¡±
+    // è¿™é‡Œè¡¨ç¤ºâ€œç©å®¶é€ æˆä¼¤å®³å€ç‡â€
     float multiplier = 1.0f;
 
     switch (currentMood)
@@ -489,7 +489,7 @@ float MoodSystem::getMaterialMultiplier() const
 }
 
 // =========================
-// ÇéĞ÷ÏÔÊ¾
+// æƒ…ç»ªæ˜¾ç¤º
 // =========================
 
 std::string MoodSystem::getMoodName() const
@@ -530,31 +530,31 @@ std::string MoodSystem::getMoodChineseName() const
     switch (currentMood)
     {
     case MoodType::Normal:
-        return "ÆÕÍ¨";
+        return "Normal";
 
     case MoodType::Focus:
-        return "×¨×¢";
+        return "Focus";
 
     case MoodType::Irritable:
-        return "·³Ôê";
+        return "Irritable";
 
     case MoodType::Exhausted:
-        return "Æ£±¹";
+        return "Exhausted";
 
     case MoodType::Excited:
-        return "ĞË·Ü";
+        return "Excited";
 
     case MoodType::Fear:
-        return "¿Ö¾å";
+        return "Fear";
 
     case MoodType::Calm:
-        return "Àä¾²";
+        return "Calm";
 
     case MoodType::Panic:
-        return "»ÅÂÒ";
+        return "Panic";
 
     default:
-        return "Î´Öª";
+        return "Unknown";
     }
 }
 
@@ -609,7 +609,7 @@ std::string MoodSystem::getDebugInfo() const
 }
 
 // =========================
-// ³ÖĞøÊ±¼ä
+// æŒç»­æ—¶é—´
 // =========================
 
 void MoodSystem::setMoodDuration(float duration)
@@ -665,7 +665,7 @@ void MoodSystem::resetMood()
 }
 
 // =========================
-// ÇéĞ÷Ç¿¶È
+// æƒ…ç»ªå¼ºåº¦
 // =========================
 
 void MoodSystem::setMoodIntensity(float intensity)
@@ -679,7 +679,7 @@ float MoodSystem::getMoodIntensity() const
 }
 
 // =========================
-// ÇéĞ÷ÖµÏµÍ³
+// æƒ…ç»ªå€¼ç³»ç»Ÿ
 // =========================
 
 void MoodSystem::addMoodValue(float value)
@@ -759,17 +759,20 @@ void MoodSystem::updateMoodByValue()
 }
 
 // =========================
-// ³£ÓÃÊÂ¼ş½Ó¿Ú
+// å¸¸ç”¨äº‹ä»¶æ¥å£
 // =========================
 
 void MoodSystem::onPlayerDamaged()
 {
     reduceMoodValue(8.0f);
 
-    // ÊÜÉËºóÓĞ¸ÅÂÊ½øÈë¿Ö¾å»ò»ÅÂÒ£¬ÕâÀïÖ±½Ó°´ÇéĞ÷ÖµÅĞ¶Ï
     if (getMoodValuePercent() < 0.25f)
     {
         changeMood(MoodType::Panic, 3.0f, 1.0f);
+    }
+    else
+    {
+        changeMood(MoodType::Irritable, 2.5f, 1.0f);
     }
 }
 
@@ -809,7 +812,7 @@ void MoodSystem::onWaveEnd()
 }
 
 // =========================
-// ¹¤¾ßº¯Êı
+// å·¥å…·å‡½æ•°
 // =========================
 
 float MoodSystem::clampFloat(float value, float minValue, float maxValue) const
@@ -829,9 +832,9 @@ float MoodSystem::clampFloat(float value, float minValue, float maxValue) const
 
 float MoodSystem::applyIntensity(float baseMultiplier) const
 {
-    // ÈÃÇéĞ÷Ç¿¶ÈÓ°Ïì±¶ÂÊ£¬µ«²»Ö±½Ó°Ñ±¶ÂÊ³Ë±¬
-    // ÀıÈç baseMultiplier = 1.2, intensity = 1.5
-    // ×îÖÕÎª 1 + (0.2 * 1.5) = 1.3
+    // è®©æƒ…ç»ªå¼ºåº¦å½±å“å€ç‡ï¼Œä½†ä¸ç›´æ¥æŠŠå€ç‡ä¹˜çˆ†
+    // ä¾‹å¦‚ baseMultiplier = 1.2, intensity = 1.5
+    // æœ€ç»ˆä¸º 1 + (0.2 * 1.5) = 1.3
     float result = 1.0f + (baseMultiplier - 1.0f) * moodIntensity;
 
     if (result < 0.1f)
@@ -841,3 +844,5 @@ float MoodSystem::applyIntensity(float baseMultiplier) const
 
     return result;
 }
+
+

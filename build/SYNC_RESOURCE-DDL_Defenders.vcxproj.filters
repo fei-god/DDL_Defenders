@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="D:\DDL_defenders\build\CMakeFiles\d919fb9c0b2a20a4765c91756bcc5356\SYNC_RESOURCE-DDL_Defenders.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="D:\DDL_defenders\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="D:\DDL_defenders\build\CMakeFiles\SYNC_RESOURCE-DDL_Defenders" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{366721AF-5971-39B1-BE9C-DD70CC76CA55}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

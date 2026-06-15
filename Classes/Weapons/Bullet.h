@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #ifndef BULLET_H
 #define BULLET_H
 
@@ -35,6 +35,17 @@ public:
 		bool canPierce
 	);
 
+	void resetBullet(
+		const string& name,
+		const string& imagePath,
+		const cocos2d::Vec2& startPosition,
+		const cocos2d::Vec2& direction,
+		float speed,
+		int damage,
+		float lifeTime,
+		bool canPierce
+	);
+
 	virtual void updateObject(float dt) override;
 
 	virtual cocos2d::Rect getCollisionBox() const override;
@@ -55,7 +66,7 @@ private:
 	float _timer;
 	bool _expired;
 
-	vector<GameObject*> _hitObjects; // ¼ÇÂ¼ÒÑ¾­»÷ÖĞµÄ¶ÔÏó£¬±ÜÃâÖØ¸´ÉËº¦
+	vector<GameObject*> _hitObjects; // è®°å½•å·²ç»å‡»ä¸­çš„å¯¹è±¡ï¼Œé¿å…é‡å¤ä¼¤å®³
 
 };
 

@@ -8,6 +8,8 @@ Enemy::Enemy()
     , _attackDamage(10)
     , _attackRange(50.0f)
     , _expReward(50)
+    , _hitCount(0)
+    , _hitsToDie(3)
     , _attackCooldown(0.0f)
     , _attackCooldownMax(1.0f)
 {
@@ -33,7 +35,11 @@ bool Enemy::initEnemy(const std::string& name,
     _attackDamage = attackDamage;
     _attackRange = attackRange;
     _expReward = expReward;
+    _hitCount = 0;
+    _hitsToDie = 3;
     _attackCooldown = 0.0f;
+    hurtCooldown = 0.08f;
+    hurtCooldownTimer = 0.0f;
     return true;
 }
 
@@ -77,6 +83,62 @@ int Enemy::getExpReward() const
     return _expReward;
 }
 
+int Enemy::getHitsToDieForPlayer(Player* player) const
+{
+    if (player == nullptr)
+    {
+        return 3;
+    }
+
+    switch (player->getCurrentMood())
+    {
+    case MoodType::Excited:
+        return 2;
+    case MoodType::Exhausted:
+    case MoodType::Fear:
+    case MoodType::Panic:
+        return 4;
+    case MoodType::Normal:
+    case MoodType::Focus:
+    case MoodType::Calm:
+    case MoodType::Irritable:
+    default:
+        return 3;
+    }
+}
+void Enemy::takeDamage(int damage)
+{
+    takeDamage(damage, DamageType::Normal, nullptr);
+}
+
+void Enemy::takeDamage(int damage, DamageType damageType, Role* attacker)
+{
+    if (!isAlive || !isObjectActive() || damage <= 0 || !canTakeDamage())
+    {
+        return;
+    }
+
+    Player* moodPlayer = dynamic_cast<Player*>(attacker);
+    if (moodPlayer == nullptr)
+    {
+        moodPlayer = _targetPlayer;
+    }
+
+    _hitsToDie = getHitsToDieForPlayer(moodPlayer);
+    ++_hitCount;
+    int hitsLeft = _hitsToDie - _hitCount;
+    if (hitsLeft <= 0)
+    {
+        hp = 0;
+        die();
+        return;
+    }
+
+    int newHp = (maxHp * hitsLeft + _hitsToDie - 1) / _hitsToDie;
+    if (newHp < 1) newHp = 1;
+    setHp(newHp);
+    hurtCooldownTimer = hurtCooldown;
+}
 void Enemy::die()
 {
     if (!isRoleAlive()) return;
@@ -94,6 +156,15 @@ void Enemy::updateEnemy(float dt)
 {
     if (!isRoleAlive() || !isObjectActive())
         return;
+
+    if (hurtCooldownTimer > 0.0f)
+    {
+        hurtCooldownTimer -= dt;
+        if (hurtCooldownTimer < 0.0f)
+        {
+            hurtCooldownTimer = 0.0f;
+        }
+    }
 
     // ¸üÐÂ¹¥»÷ÀäÈ´
     if (_attackCooldown > 0.0f)
