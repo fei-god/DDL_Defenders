@@ -1,5 +1,4 @@
 #pragma once
-#pragma once
 #ifndef __SLEEPY_MONSTER_H__
 #define __SLEEPY_MONSTER_H__
 
@@ -16,14 +15,14 @@ public:
         const cocos2d::Vec2& startPosition,
         Player* target);
 
-    // ÊµÏÖ´¿Ðéº¯Êý
+    // Êµï¿½Ö´ï¿½ï¿½éº¯ï¿½ï¿½
     virtual void move(float dt) override;
     virtual void attack() override;
 
 private:
-    float _pauseTimer;      // Í£¶Ù¼ÆÊ±Æ÷
-    bool _isPausing;        // ÊÇ·ñÕýÔÚÍ£¶Ù
-    cocos2d::Vec2 _randomDirection; // Ëæ»úÒÆ¶¯·½Ïò
+    float _pauseTimer;      // Í£ï¿½Ù¼ï¿½Ê±ï¿½ï¿½
+    bool _isPausing;        // ï¿½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½Í£ï¿½ï¿½
+    cocos2d::Vec2 _randomDirection; // ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½ï¿½ï¿½ï¿½ï¿½
     void changeRandomDirection();
 };
 #endif

@@ -57,8 +57,5 @@ void PhoneMonster::attack()
     if (_targetPlayer == nullptr) return;
 
     _targetPlayer->takeDamage(_attackDamage);
-    if (_targetPlayer->getMoodSystem())
-    {
-        _targetPlayer->getMoodSystem()->changeMood(MoodType::Irritable, 2.0f);
-    }
+    _targetPlayer->changeMood(MoodType::Irritable, 2.0f);
 }

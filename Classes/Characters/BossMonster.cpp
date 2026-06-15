@@ -58,7 +58,7 @@ bool BossMonster::initBossMonster(const std::string& imagePath,
     _isEnraged = false;
     _waveLevel = waveLevel;
 
-    _wanderTimer = 0.0f;
+    _wanderTimer = 1.0f;
     _wanderTarget = Vec2::ZERO;
     _isWandering = true;
 
@@ -218,19 +218,18 @@ void BossMonster::die()
 {
     if (!isRoleAlive()) return;
 
-    // Boss死亡：大量经验奖励
-    if (_targetPlayer != nullptr && _targetPlayer->isRoleAlive())
-    {
-        _targetPlayer->addExp(_expReward);
-        CCLOG("Boss defeated! Player gained %d exp!", _expReward);
-    }
+    CCLOG("Boss defeated! Player gained %d exp!", _expReward);
 
-    // 创建死亡特效（缩放缩小消失）
+    // 先禁用碰撞，防止死亡动画期间继续造成伤害
+    setCollisionEnabled(false);
+
+    // 创建死亡特效（缩放缩小消失），动画结束后执行真正的死亡逻辑
     auto fadeOut = ScaleTo::create(0.3f, 0.1f);
+    auto dieCallback = CallFunc::create([this]() {
+        Enemy::die();
+    });
     auto remove = RemoveSelf::create();
-    this->runAction(Sequence::create(fadeOut, remove, nullptr));
-
-    Role::die();
+    this->runAction(Sequence::create(fadeOut, dieCallback, remove, nullptr));
 }
 
 bool BossMonster::isEnraged() const

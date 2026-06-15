@@ -327,6 +327,7 @@ void WaveManager::update(float dt)
 
         if (_waveTimer >= _waveDuration)
         {
+            onWaveCleared();
             startWave(_currentWave + 1);
         }
     }
