@@ -1,5 +1,4 @@
 #pragma once
-#pragma once
 #ifndef __DDL_MONSTER_H__
 #define __DDL_MONSTER_H__
 
@@ -20,8 +19,8 @@ public:
     virtual void attack() override;
 
 private:
-    float _chargeCooldown;     // ³å´ÌÀäÈ´
-    bool _isCharging;          // ÊÇ·ñÕýÔÚ³å´Ì
-    cocos2d::Vec2 _chargeDirection; // ³å´Ì·½Ïò
+    float _chargeCooldown;     // ï¿½ï¿½ï¿½ï¿½ï¿½È´
+    bool _isCharging;          // ï¿½Ç·ï¿½ï¿½ï¿½ï¿½Ú³ï¿½ï¿½
+    cocos2d::Vec2 _chargeDirection; // ï¿½ï¿½Ì·ï¿½ï¿½ï¿½
 };
 #endif

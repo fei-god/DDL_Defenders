@@ -1,10 +1,9 @@
 #pragma once
-#pragma once
 #ifndef __ENEMY_H__
 #define __ENEMY_H__
 
 #include "Role.h"
-#include "Player.h"   // Ç°ÏòÉùÃ÷Ò²¿ÉÒÔ£¬µ«ÐèÒªÖªµÀ Player Àà
+#include "Player.h"   // Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò²ï¿½ï¿½ï¿½Ô£ï¿½ï¿½ï¿½ï¿½ï¿½ÒªÖªï¿½ï¿½ Player ï¿½ï¿½
 
 class Enemy : public Role
 {
@@ -12,7 +11,7 @@ public:
     Enemy();
     virtual ~Enemy();
 
-    // ³õÊ¼»¯µÐÈË
+    // ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     virtual bool initEnemy(const std::string& name,
         const std::string& imagePath,
         const cocos2d::Vec2& startPosition,
@@ -23,15 +22,15 @@ public:
         float attackRange,
         int expReward);
 
-    // ´¿Ðéº¯Êý£ºÇ¿ÖÆÅÉÉúÀàÊµÏÖ×Ô¼ºµÄÒÆ¶¯ºÍ¹¥»÷ÐÐÎª£¨ÌåÏÖ¶àÌ¬£©
+    // ï¿½ï¿½ï¿½éº¯ï¿½ï¿½ï¿½ï¿½Ç¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½ï¿½Ô¼ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½ï¿½Í¹ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½Ö¶ï¿½Ì¬ï¿½ï¿½
     virtual void move(float dt) = 0;
     virtual void attack() = 0;
 
-    // ÉèÖÃ/»ñÈ¡Ä¿±êÍæ¼Ò£¨ÓÃÓÚ AI ×·Öð£©
+    // ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½È¡Ä¿ï¿½ï¿½ï¿½ï¿½Ò£ï¿½ï¿½ï¿½ï¿½ï¿½ AI ×·ï¿½ï¿½
     void setTargetPlayer(Player* player);
     Player* getTargetPlayer() const;
 
-    // ¹¥»÷Á¦¡¢¹¥»÷·¶Î§¡¢¾­Ñé½±ÀøµÄ´æÈ¡
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î§ï¿½ï¿½ï¿½ï¿½ï¿½é½±ï¿½ï¿½ï¿½Ä´ï¿½È¡
     void setAttackDamage(int damage);
     int getAttackDamage() const;
     void setAttackRange(float range);
@@ -39,26 +38,26 @@ public:
     void setExpReward(int exp);
     int getExpReward() const;
 
-    // µÐÈËËÀÍöÊ±£¬¸øÍæ¼ÒÔö¼Ó¾­Ñé
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¾ï¿½ï¿½ï¿½
     virtual void die() override;
     virtual void takeDamage(int damage) override;
     virtual void takeDamage(int damage, DamageType damageType, Role* attacker = nullptr) override;
 
-    // ¹©Íâ²¿µ÷ÓÃ£¬Ã¿Ö¡¸üÐÂµÐÈËµÄÒÆ¶¯ºÍ¹¥»÷ÀäÈ´
+    // ï¿½ï¿½ï¿½â²¿ï¿½ï¿½ï¿½Ã£ï¿½Ã¿Ö¡ï¿½ï¿½ï¿½Âµï¿½ï¿½Ëµï¿½ï¿½Æ¶ï¿½ï¿½Í¹ï¿½ï¿½ï¿½ï¿½ï¿½È´
     void updateEnemy(float dt);
 
 protected:
-    Player* _targetPlayer;      // Íæ¼ÒÖ¸Õë£¨ÈõÒýÓÃ£¬²»ÐèÒªÊÍ·Å£©
-    int _attackDamage;          // ¹¥»÷Á¦
-    float _attackRange;         // ¹¥»÷·¶Î§
-    int _expReward;             // »÷°Üºó½±ÀøµÄ¾­ÑéÖµ
+    Player* _targetPlayer;      // ï¿½ï¿½ï¿½Ö¸ï¿½ë£¨ï¿½ï¿½ï¿½ï¿½ï¿½Ã£ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½Í·Å£ï¿½
+    int _attackDamage;          // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    float _attackRange;         // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î§
+    int _expReward;             // ï¿½ï¿½ï¿½Üºï¿½ï¿½ï¿½ï¿½Ä¾ï¿½ï¿½ï¿½Öµ
     int _hitCount;
     int _hitsToDie;
 
     virtual int getHitsToDieForPlayer(Player* player) const;
 
-    float _attackCooldown;      // ¹¥»÷ÀäÈ´Ê£ÓàÊ±¼ä
-    float _attackCooldownMax;   // ¹¥»÷ÀäÈ´×î´óÖµ£¨Ä¬ÈÏÎª1Ãë£©
+    float _attackCooldown;      // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È´Ê£ï¿½ï¿½Ê±ï¿½ï¿½
+    float _attackCooldownMax;   // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È´ï¿½ï¿½ï¿½Öµï¿½ï¿½Ä¬ï¿½ï¿½Îª1ï¿½ë£©
 };
 
 #endif

@@ -41,8 +41,8 @@ void ThesisBoss::move(float dt)
 void ThesisBoss::attack()
 {
     BossMonster::attack();
-    if (getTargetPlayer() && getTargetPlayer()->getMoodSystem())
+    if (getTargetPlayer())
     {
-        getTargetPlayer()->getMoodSystem()->changeMood(MoodType::Exhausted, 1.5f);
+        getTargetPlayer()->changeMood(MoodType::Exhausted, 1.5f);
     }
 }
