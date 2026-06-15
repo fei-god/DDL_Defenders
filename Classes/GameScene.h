@@ -72,6 +72,7 @@ private:
     void assignWeaponToSlot(int weaponId);
     cocos2d::Node* createEquipmentIcon(const WeaponOption& option, const cocos2d::Size& boxSize, bool selected);
     void updateWeaponEnergyUI();
+    void refreshWeaponSlotUI();
     void initLevelTask();
     void showLevelIntro();
     void hideLevelIntro();
@@ -94,7 +95,9 @@ private:
     cocos2d::LayerColor* _hpBarBg;
     cocos2d::LayerColor* _hpBarFill;
     float _hpBarMaxWidth;
+    cocos2d::LayerColor* _hudPanelBg;
     cocos2d::Label* _moodLabel;
+    cocos2d::Sprite* _weaponIcon;
     cocos2d::Label* _weaponLabel;
     cocos2d::LayerColor* _weaponEnergyBg;
     cocos2d::LayerColor* _weaponEnergyFill;
@@ -107,6 +110,9 @@ private:
     cocos2d::Label* _environmentLabel;
     cocos2d::Label* _survivalTimeLabel;
     cocos2d::Label* _topHintLabel;
+    std::vector<cocos2d::Node*> _weaponSlotNodes;
+    std::vector<int> _lastWeaponSlotIds;
+    int _lastWeaponSlotIndex;
     float m_survivalTime;
 
     // ==================== World / Camera ====================

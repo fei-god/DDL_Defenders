@@ -388,12 +388,20 @@ bool GameScene::init()
 
     // --- HP bar ---
     float hpBarWidth  = 220.0f * s;
-    float hpBarHeight = 22.0f * s;
-    float marginX = 20.0f * s;
-    float marginY = 20.0f * s;
+    float hpBarHeight = 18.0f * s;
+    float marginX = 18.0f * s;
+    float marginY = 18.0f * s;
 
     float hpBarLeft = origin.x + marginX;
     float hpBarTop  = origin.y + visibleSize.height - marginY;
+
+    _hudPanelBg = LayerColor::create(Color4B(11, 14, 22, 178), 352.0f * s, 184.0f * s);
+    _hudPanelBg->setPosition(Vec2(hpBarLeft - 10.0f * s, hpBarTop - 176.0f * s));
+    this->addChild(_hudPanelBg, 8);
+
+    auto hudAccent = LayerColor::create(Color4B(88, 196, 255, 185), 4.0f * s, 184.0f * s);
+    hudAccent->setPosition(_hudPanelBg->getPosition());
+    this->addChild(hudAccent, 9);
 
     auto hpFrame = LayerColor::create(Color4B(100, 100, 110, 255), hpBarWidth + 4, hpBarHeight + 4);
     hpFrame->setPosition(Vec2(hpBarLeft - 2, hpBarTop - hpBarHeight - 2));
@@ -416,23 +424,27 @@ bool GameScene::init()
 
     // --- Mood label ---
     _moodLabel = Label::createWithSystemFont(
-        textByLanguage("Mood: Normal", u8"情绪: 普通"), "Arial", 24.0f * s);
-    _moodLabel->setColor(Color3B(210, 210, 220));
+        textByLanguage("Mood: Normal", u8"情绪: 普通"), "Arial", 18.0f * s);
+    _moodLabel->setColor(Color3B(212, 224, 238));
     _moodLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
-    _moodLabel->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight - 28.0f * s));
+    _moodLabel->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight - 24.0f * s));
     this->addChild(_moodLabel, 10);
 
+    _weaponIcon = Sprite::create();
+    _weaponIcon->setPosition(Vec2(hpBarLeft + 17.0f * s, hpBarTop - hpBarHeight - 55.0f * s));
+    this->addChild(_weaponIcon, 10);
+
     _weaponLabel = Label::createWithSystemFont(
-        textByLanguage("Weapon: CoffeeGun", u8"武器: 咖啡枪"), "Arial", 20.0f * s);
-    _weaponLabel->setColor(Color3B(210, 220, 230));
+        textByLanguage("Weapon: CoffeeGun", u8"武器: 咖啡枪"), "Arial", 18.0f * s);
+    _weaponLabel->setColor(Color3B(232, 238, 244));
     _weaponLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
-    _weaponLabel->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight - 54.0f * s));
+    _weaponLabel->setPosition(Vec2(hpBarLeft + 38.0f * s, hpBarTop - hpBarHeight - 55.0f * s));
     this->addChild(_weaponLabel, 10);
 
-    float weaponEnergyWidth = 145.0f * s;
-    float weaponEnergyHeight = 10.0f * s;
+    float weaponEnergyWidth = 112.0f * s;
+    float weaponEnergyHeight = 8.0f * s;
     _weaponEnergyBg = LayerColor::create(Color4B(45, 45, 58, 255), weaponEnergyWidth, weaponEnergyHeight);
-    _weaponEnergyBg->setPosition(Vec2(hpBarLeft + 210.0f * s,
+    _weaponEnergyBg->setPosition(Vec2(hpBarLeft + 206.0f * s,
         hpBarTop - hpBarHeight - 59.0f * s));
     this->addChild(_weaponEnergyBg, 9);
 
@@ -442,21 +454,21 @@ bool GameScene::init()
     _weaponEnergyBarMaxWidth = weaponEnergyWidth;
 
     _progressLabel = Label::createWithSystemFont(
-        textByLanguage("Assignment: 0%", u8"作业进度: 0%"), "Arial", 20.0f * s);
-    _progressLabel->setColor(Color3B(230, 220, 160));
+        textByLanguage("Assignment: 0%", u8"作业进度: 0%"), "Arial", 18.0f * s);
+    _progressLabel->setColor(Color3B(246, 228, 137));
     _progressLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
-    _progressLabel->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight - 80.0f * s));
+    _progressLabel->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight - 82.0f * s));
     this->addChild(_progressLabel, 10);
 
     _taskLabel = Label::createWithSystemFont(
-        textByLanguage("Desk: 0.00 / 0.00s", u8"书桌: 0.00 / 0.00秒"), "Arial", 18.0f * s);
-    _taskLabel->setColor(Color3B(180, 235, 255));
+        textByLanguage("Desk: 0.00 / 0.00s", u8"书桌: 0.00 / 0.00秒"), "Arial", 16.0f * s);
+    _taskLabel->setColor(Color3B(172, 231, 255));
     _taskLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
     _taskLabel->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight - 106.0f * s));
     this->addChild(_taskLabel, 10);
 
-    _taskBarMaxWidth = 210.0f * s;
-    float taskBarHeight = 10.0f * s;
+    _taskBarMaxWidth = 222.0f * s;
+    float taskBarHeight = 8.0f * s;
     _taskBarBg = LayerColor::create(Color4B(45, 45, 58, 255), _taskBarMaxWidth, taskBarHeight);
     _taskBarBg->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight - 131.0f * s));
     this->addChild(_taskBarBg, 9);
@@ -466,11 +478,27 @@ bool GameScene::init()
     this->addChild(_taskBarFill, 10);
 
     _environmentLabel = Label::createWithSystemFont(
-        textByLanguage("Environment: None", u8"环境: 无"), "Arial", 18.0f * s);
-    _environmentLabel->setColor(Color3B(180, 220, 210));
+        textByLanguage("Environment: None", u8"环境: 无"), "Arial", 16.0f * s);
+    _environmentLabel->setColor(Color3B(177, 221, 208));
     _environmentLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
     _environmentLabel->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight - 154.0f * s));
     this->addChild(_environmentLabel, 10);
+
+    _weaponSlotNodes.clear();
+    _lastWeaponSlotIds.clear();
+    _lastWeaponSlotIndex = -1;
+    Size slotSize(46.0f * s, 46.0f * s);
+    float slotGap = 8.0f * s;
+    float slotStartX = origin.x + visibleSize.width * 0.5f - (slotSize.width * 4.0f + slotGap * 3.0f) * 0.5f;
+    float slotY = origin.y + 24.0f * s;
+    for (int i = 0; i < 4; ++i)
+    {
+        auto slot = Node::create();
+        slot->setContentSize(slotSize);
+        slot->setPosition(Vec2(slotStartX + i * (slotSize.width + slotGap), slotY));
+        this->addChild(slot, 22);
+        _weaponSlotNodes.push_back(slot);
+    }
 
     // --- Survival time ---
     m_survivalTime = 0.0f;
@@ -486,10 +514,10 @@ bool GameScene::init()
     _topHintLabel = Label::createWithSystemFont(
         defaultControlHint(),
         "Arial",
-        20.0f * s);
+        16.0f * s);
     _topHintLabel->setColor(Color3B(255, 245, 180));
     _topHintLabel->setPosition(Vec2(origin.x + visibleSize.width / 2,
-        origin.y + visibleSize.height - 62.0f * s));
+        origin.y + 86.0f * s));
     this->addChild(_topHintLabel, 20);
 
     auto equipLabel = Label::createWithSystemFont(
@@ -772,6 +800,23 @@ void GameScene::updateUI(Player* player)
         _weaponLabel->setString(textByLanguage("Weapon: ", u8"武器: ") +
             weaponNameForUi(_currentWeapon->getWeaponName()));
     }
+    if (_weaponIcon && _currentWeapon)
+    {
+        auto texture = Director::getInstance()->getTextureCache()->addImage(_currentWeapon->getImagePath());
+        if (texture)
+        {
+            _weaponIcon->setTexture(texture);
+            _weaponIcon->setTextureRect(Rect(0, 0,
+                texture->getContentSize().width,
+                texture->getContentSize().height));
+            applySpriteFit(_weaponIcon, 26.0f, 26.0f);
+            _weaponIcon->setVisible(true);
+        }
+        else
+        {
+            _weaponIcon->setVisible(false);
+        }
+    }
     updateWeaponEnergyUI();
 
     if (_progressLabel)
@@ -844,6 +889,8 @@ void GameScene::updateUI(Player* player)
         _taskBarFill->setContentSize(Size(_taskBarMaxWidth * ratio,
             _taskBarFill->getContentSize().height));
     }
+
+    refreshWeaponSlotUI();
 }
 
 void GameScene::updateWeaponEnergyUI()
@@ -869,6 +916,109 @@ void GameScene::updateWeaponEnergyUI()
     {
         _weaponEnergyFill->setColor(Color3B(235, 70, 70));
     }
+}
+
+void GameScene::refreshWeaponSlotUI()
+{
+    if (_weaponSlotNodes.empty())
+    {
+        return;
+    }
+
+    bool slotDataChanged = _lastWeaponSlotIndex != _currentWeaponIndex ||
+        _lastWeaponSlotIds.size() != _weaponLoadoutIds.size();
+    if (!slotDataChanged)
+    {
+        for (int i = 0; i < static_cast<int>(_weaponLoadoutIds.size()); ++i)
+        {
+            if (_lastWeaponSlotIds[i] != _weaponLoadoutIds[i])
+            {
+                slotDataChanged = true;
+                break;
+            }
+        }
+    }
+    if (!slotDataChanged)
+    {
+        return;
+    }
+
+    auto options = getWeaponOptions();
+    float s = Director::getInstance()->getWinSize().height / 640.0f;
+
+    for (int i = 0; i < static_cast<int>(_weaponSlotNodes.size()); ++i)
+    {
+        auto slot = _weaponSlotNodes[i];
+        if (!slot)
+        {
+            continue;
+        }
+
+        slot->removeAllChildren();
+
+        Size slotSize = slot->getContentSize();
+        bool selected = i == _currentWeaponIndex;
+        auto bg = LayerColor::create(
+            selected ? Color4B(64, 96, 118, 232) : Color4B(18, 22, 30, 220),
+            slotSize.width,
+            slotSize.height);
+        bg->setPosition(Vec2::ZERO);
+        slot->addChild(bg, 0);
+
+        auto border = DrawNode::create();
+        Vec2 verts[4] = {
+            Vec2(0, 0),
+            Vec2(slotSize.width, 0),
+            Vec2(slotSize.width, slotSize.height),
+            Vec2(0, slotSize.height)
+        };
+        border->drawPolygon(
+            verts,
+            4,
+            Color4F(0, 0, 0, 0),
+            selected ? 2.5f : 1.2f,
+            selected ? Color4F(0.42f, 0.92f, 1.0f, 1.0f) : Color4F(0.52f, 0.58f, 0.67f, 0.8f));
+        slot->addChild(border, 3);
+
+        int weaponId = (i < static_cast<int>(_weaponLoadoutIds.size())) ? _weaponLoadoutIds[i] : i;
+        std::string imagePath;
+        for (const auto& option : options)
+        {
+            if (option.id == weaponId)
+            {
+                imagePath = option.imagePath;
+                break;
+            }
+        }
+
+        if (!imagePath.empty())
+        {
+            auto icon = Sprite::create(imagePath);
+            if (icon)
+            {
+                Size imageSize = icon->getContentSize();
+                if (imageSize.width > 0.0f && imageSize.height > 0.0f)
+                {
+                    icon->setScale(std::min((slotSize.width - 12.0f * s) / imageSize.width,
+                        (slotSize.height - 12.0f * s) / imageSize.height));
+                }
+                icon->setPosition(Vec2(slotSize.width * 0.5f, slotSize.height * 0.54f));
+                slot->addChild(icon, 1);
+            }
+        }
+
+        auto numBg = LayerColor::create(Color4B(0, 0, 0, 150), 16.0f * s, 16.0f * s);
+        numBg->setPosition(Vec2(2.0f * s, slotSize.height - 18.0f * s));
+        slot->addChild(numBg, 4);
+
+        auto num = Label::createWithSystemFont(std::to_string(i + 1), "Arial", 12.0f * s);
+        num->setColor(selected ? Color3B(135, 235, 255) : Color3B(222, 226, 232));
+        num->setPosition(numBg->getPosition() + Vec2(8.0f * s, 8.0f * s));
+        slot->addChild(num, 5);
+    }
+
+    _lastWeaponSlotIndex = _currentWeaponIndex;
+    _lastWeaponSlotIds = _weaponLoadoutIds;
 }
 
 void GameScene::initLevelTask()
@@ -1490,6 +1640,13 @@ void GameScene::switchWeapon(int index)
 
     _currentWeaponIndex = index;
     _currentWeapon = _weapons[index];
+    for (int i = 0; i < static_cast<int>(_weapons.size()); ++i)
+    {
+        if (_weapons[i])
+        {
+            _weapons[i]->setVisible(i == _currentWeaponIndex);
+        }
+    }
     if (_currentWeapon)
     {
         _currentWeapon->readyNow();
@@ -1580,12 +1737,13 @@ void GameScene::rebuildWeaponLoadout()
         Weapon* weapon = createWeaponById(_weaponLoadoutIds[i]);
         if (weapon)
         {
-            (_worldLayer ? _worldLayer : this)->addChild(weapon, 7);
+            (_worldLayer ? _worldLayer : this)->addChild(weapon, 120);
             if (_waveManager)
             {
                 weapon->bindBattleData(&_waveManager->getAliveEnemies(), &_bullets, _bulletLayer);
                 weapon->bindBulletPool(&_bulletPool);
             }
+            weapon->setVisible(i == _currentWeaponIndex);
             _weapons.push_back(weapon);
         }
     }
@@ -1595,6 +1753,13 @@ void GameScene::rebuildWeaponLoadout()
         _currentWeaponIndex = 0;
     }
     _currentWeapon = _weapons.empty() ? nullptr : _weapons[_currentWeaponIndex];
+    for (int i = 0; i < static_cast<int>(_weapons.size()); ++i)
+    {
+        if (_weapons[i])
+        {
+            _weapons[i]->setVisible(i == _currentWeaponIndex);
+        }
+    }
     updateUI(m_player);
 }
 

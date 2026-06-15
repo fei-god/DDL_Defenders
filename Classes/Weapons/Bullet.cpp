@@ -75,6 +75,8 @@ bool Bullet::initBullet(
         return false;
     }
 
+    setScale(1.0f);
+
     // 有图片就加载图片；图片不存在就给一个18×18的碰撞矩形兜底。
     if (!imagePath.empty())
     {
@@ -123,6 +125,7 @@ void Bullet::resetBullet(
 {
     setObjectName(name);
     setObjectPosition(startPosition);
+    setScale(1.0f);
 
     if (!imagePath.empty())
     {

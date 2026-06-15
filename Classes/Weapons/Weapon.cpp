@@ -84,7 +84,12 @@ void Weapon::updateObject(float dt)
     // 武器跟随玩家位置。
     if (_owner != nullptr)
     {
-        setObjectPosition(_owner->getObjectPosition());
+        Vec2 displayDir = _aimDirection.lengthSquared() > 0.0001f
+            ? _aimDirection.getNormalized()
+            : Vec2(1, 0);
+        Vec2 side(-displayDir.y, displayDir.x);
+        setObjectPosition(_owner->getObjectPosition() + displayDir * 26.0f + side * 6.0f);
+        faceToDirection(displayDir);
     }
 
     // 冷却时间每帧减少 dt。
@@ -112,7 +117,12 @@ void Weapon::updateCooldown(float dt)
 {
     if (_owner != nullptr)
     {
-        setObjectPosition(_owner->getObjectPosition());
+        Vec2 displayDir = _aimDirection.lengthSquared() > 0.0001f
+            ? _aimDirection.getNormalized()
+            : Vec2(1, 0);
+        Vec2 side(-displayDir.y, displayDir.x);
+        setObjectPosition(_owner->getObjectPosition() + displayDir * 26.0f + side * 6.0f);
+        faceToDirection(displayDir);
     }
 
     if (_cooldownTimer > 0.0f)

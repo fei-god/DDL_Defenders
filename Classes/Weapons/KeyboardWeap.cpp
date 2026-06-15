@@ -18,14 +18,15 @@ KeyboardWeap* KeyboardWeap::create(Player* owner)
 
 bool KeyboardWeap::initKeyboardWeap(Player* owner)
 {
-    if (!initWeapon("KeyboardWeap", "", owner, 48, 0.9f))
+    if (!initWeapon("KeyboardWeap", "weapon/keyboard_weapon.png", owner, 48, 0.9f))
     {
         return false;
     }
 
     _bulletSpeed = 580.0f;
-    _bulletImagePath = "weapon/keyboard_weap.png";
+    _bulletImagePath = "weapon/keyboard_wave.png";
     configureEnergy(100.0f, 32.0f, 15.0f);
+    setObjectScale(0.018f);
     return true;
 }
 
