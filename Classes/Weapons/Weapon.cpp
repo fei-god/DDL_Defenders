@@ -88,7 +88,15 @@ void Weapon::updateObject(float dt)
             ? _aimDirection.getNormalized()
             : Vec2(1, 0);
         Vec2 side(-displayDir.y, displayDir.x);
-        setObjectPosition(_owner->getObjectPosition() + displayDir * 26.0f + side * 6.0f);
+        Vec2 displayOffset = displayDir * 20.0f + side * 4.0f + Vec2(0.0f, -8.0f);
+        if (getParent() == _owner)
+        {
+            setObjectPosition(displayOffset);
+        }
+        else
+        {
+            setObjectPosition(_owner->getObjectPosition() + displayOffset);
+        }
         faceToDirection(displayDir);
     }
 
@@ -121,7 +129,15 @@ void Weapon::updateCooldown(float dt)
             ? _aimDirection.getNormalized()
             : Vec2(1, 0);
         Vec2 side(-displayDir.y, displayDir.x);
-        setObjectPosition(_owner->getObjectPosition() + displayDir * 26.0f + side * 6.0f);
+        Vec2 displayOffset = displayDir * 20.0f + side * 4.0f + Vec2(0.0f, -8.0f);
+        if (getParent() == _owner)
+        {
+            setObjectPosition(displayOffset);
+        }
+        else
+        {
+            setObjectPosition(_owner->getObjectPosition() + displayOffset);
+        }
         faceToDirection(displayDir);
     }
 

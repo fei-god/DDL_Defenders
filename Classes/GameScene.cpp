@@ -1737,7 +1737,19 @@ void GameScene::rebuildWeaponLoadout()
         Weapon* weapon = createWeaponById(_weaponLoadoutIds[i]);
         if (weapon)
         {
-            (_worldLayer ? _worldLayer : this)->addChild(weapon, 120);
+            if (m_player)
+            {
+                float parentScale = m_player->getScale();
+                if (parentScale > 0.001f)
+                {
+                    weapon->setScale(weapon->getScale() / parentScale);
+                }
+                m_player->addChild(weapon, 4);
+            }
+            else
+            {
+                (_worldLayer ? _worldLayer : this)->addChild(weapon, 120);
+            }
             if (_waveManager)
             {
                 weapon->bindBattleData(&_waveManager->getAliveEnemies(), &_bullets, _bulletLayer);
