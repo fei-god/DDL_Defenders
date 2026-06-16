@@ -1,4 +1,4 @@
-#include "DormEventManager.h"
+ï»¿#include "DormEventManager.h"
 #include <cstdlib>
 
 USING_NS_CC;
@@ -31,7 +31,7 @@ void DormEventManager::update(float dt)
     _timer -= dt;
     if (_timer <= 0.0f)
     {
-        int type = rand() % 3; // ÈýÖÖÊÂ¼þ
+        int type = rand() % 3; // ï¿½ï¿½ï¿½ï¿½ï¿½Â¼ï¿½
         triggerEvent(type);
         _timer = _interval;
     }
@@ -41,10 +41,10 @@ void DormEventManager::triggerEvent(int eventType)
 {
     if (!_player) return;
 
-    // ÊÂ¼þÀàÐÍ£º
-    // 0: ¶Ïµç -> ½µµÍËÙ¶È£¨ÓÃ Exhausted£©
-    // 1: ÉáÓÑ²¹¿Î -> Focus
-    // 2: µ¯´°À´Ï® -> Irritable
+    // ï¿½Â¼ï¿½ï¿½ï¿½ï¿½Í£ï¿½
+    // 0: ï¿½Ïµï¿½ -> ï¿½ï¿½ï¿½ï¿½ï¿½Ù¶È£ï¿½ï¿½ï¿½ Exhaustedï¿½ï¿½
+    // 1: ï¿½ï¿½ï¿½Ñ²ï¿½ï¿½ï¿½ -> Focus
+    // 2: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï® -> Irritable
     switch (eventType)
     {
     case 0:

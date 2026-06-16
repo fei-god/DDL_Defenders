@@ -1,11 +1,15 @@
-#include "CoffeeBuffItem.h"
+ï»¿#include "CoffeeBuffItem.h"
 
 USING_NS_CC;
 
 CoffeeBuffItem* CoffeeBuffItem::create(const Vec2& pos, float focusDuration)
 {
     auto item = new (std::nothrow) CoffeeBuffItem();
-    if (item && item->initObject("coffee", GameObjectType::Item, "item_coffee.png", pos))
+    if (item && item->initObject(
+        "coffee",
+        GameObjectType::Item,
+        "item_coffee.png", // <-- æ”¹æˆä½ çš„å’–å•¡å›¾ç‰‡æ–‡ä»¶åï¼ˆæˆ–ä¿æŒä¸å˜ç”¨åšæ³•Aï¼‰
+        pos))
     {
         item->_focusDuration = focusDuration;
         item->autorelease();
@@ -17,8 +21,6 @@ CoffeeBuffItem* CoffeeBuffItem::create(const Vec2& pos, float focusDuration)
 
 void CoffeeBuffItem::applyToPlayer(Player* player)
 {
-    // Ôö¼ÓÒÆ¶¯ËÙ¶È/¶ÌÊ±ÌáÉı Focus
     if (!player) return;
     player->changeMood(MoodType::Focus, _focusDuration);
-    // ÄãÒ²¿ÉÒÔË³ÊÖ¸ø¸ö¡°Õ½¶·Á¦±¶ÂÊĞ¡ÌáÉı¡±£¬²»Ç¿ÖÆ
 }

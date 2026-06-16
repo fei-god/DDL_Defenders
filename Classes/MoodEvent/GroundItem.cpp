@@ -1,4 +1,4 @@
-#include "GroundItem.h"
+ï»¿#include "GroundItem.h"
 
 void GroundItem::onPicked(Player* player)
 {
@@ -7,7 +7,7 @@ void GroundItem::onPicked(Player* player)
         applyToPlayer(player);
     }
 
-    // ±ê¼ÇÊ§Ð§²¢´Ó¸¸½ÚµãÒÆ³ý
+    // ï¿½ï¿½ï¿½Ê§Ð§ï¿½ï¿½ï¿½Ó¸ï¿½ï¿½Úµï¿½ï¿½Æ³ï¿½
     setActive(false);
     removeFromParent();
 }

@@ -1,4 +1,4 @@
-#include "MoodEventDemoScene.h"
+ï»¿#include "MoodEventDemoScene.h"
 
 USING_NS_CC;
 
@@ -14,7 +14,7 @@ bool MoodEventDemoScene::init()
     auto visibleSize = Director::getInstance()->getVisibleSize();
     auto origin = Director::getInstance()->getVisibleOrigin();
 
-    // ÓÃÏÖÓÐ×ÊÔ´Õ¼Î»£»ÄãºóÃæÓÐ½ÇÉ«Í¼ÔÙÌæ»»
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô´Õ¼Î»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð½ï¿½É«Í¼ï¿½ï¿½ï¿½æ»»
     _player = Player::create(
         "Player",
         "HelloWorld.png",
@@ -37,7 +37,7 @@ bool MoodEventDemoScene::init()
     _hpLabel->setPosition(Vec2(origin.x + 90, origin.y + visibleSize.height - 55));
     addChild(_hpLabel, 2);
 
-    // ²»µ÷ÓÃ player->updatePlayer(dt)£¬±ÜÃâÍ¼±êÒÆ¶¯
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ player->updatePlayer(dt)ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¼ï¿½ï¿½ï¿½Æ¶ï¿½
     _t = 0.0f;
     _phase = 0;
 
@@ -49,7 +49,7 @@ bool MoodEventDemoScene::init()
 void MoodEventDemoScene::triggerMoveStart()
 {
     if (!_player) return;
-    // ÒÆ¶¯ÊÂ¼þ£ºÖ»ÓÃ setInputDirection ´¥·¢ Focus£¨²»¸üÐÂÍæ¼ÒÎ»ÖÃ£©
+    // ï¿½Æ¶ï¿½ï¿½Â¼ï¿½ï¿½ï¿½Ö»ï¿½ï¿½ setInputDirection ï¿½ï¿½ï¿½ï¿½ Focusï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½Ã£ï¿½
     _player->setInputDirection(Vec2(1, 0));
 }
 
@@ -67,21 +67,21 @@ void MoodEventDemoScene::triggerHit(int damage)
 
 void MoodEventDemoScene::update(float dt)
 {
-    // ÈÃ MoodSystem µÄµ¹¼ÆÊ±ÉúÐ§
+    // ï¿½ï¿½ MoodSystem ï¿½Äµï¿½ï¿½ï¿½Ê±ï¿½ï¿½Ð§
     if (_player)
         _player->getMoodSystem()->updateMood(dt);
 
     _t += dt;
 
-    // ½Å±¾ÊÂ¼þ£¨È·±£»÷ÖÐ¼ä¸ô > 1.0s£¬±ÜÃâÎÞµÐ×èÖ¹µÚ¶þ´Î takeDamage£©
-    // ¼ÙÉè£º0.8s Focus£»2.0s Irritable£¨>50%£©£»3.4s Exhausted£¨<=50%£©
+    // ï¿½Å±ï¿½ï¿½Â¼ï¿½ï¿½ï¿½È·ï¿½ï¿½ï¿½ï¿½ï¿½Ð¼ï¿½ï¿½ > 1.0sï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Þµï¿½ï¿½ï¿½Ö¹ï¿½Ú¶ï¿½ï¿½ï¿½ takeDamageï¿½ï¿½
+    // ï¿½ï¿½ï¿½è£º0.8s Focusï¿½ï¿½2.0s Irritableï¿½ï¿½>50%ï¿½ï¿½ï¿½ï¿½3.4s Exhaustedï¿½ï¿½<=50%ï¿½ï¿½
     switch (_phase)
     {
     case 0:
         if (_t >= 0.8f) { triggerMoveStart(); _phase = 1; }
         break;
     case 1:
-        if (_t >= 1.0f) { triggerMoveStop(); _phase = 2; } // ºÜ¶ÌµÄ¡°ÒÆ¶¯¿ªÊ¼/Í£Ö¹¡±
+        if (_t >= 1.0f) { triggerMoveStop(); _phase = 2; } // ï¿½Ü¶ÌµÄ¡ï¿½ï¿½Æ¶ï¿½ï¿½ï¿½Ê¼/Í£Ö¹ï¿½ï¿½
         break;
     case 2:
         if (_t >= 2.0f) { triggerHit(30); _phase = 3; } // 100-30=70 -> Irritable

@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "cocos2d.h"
 #include "Player.h"
@@ -15,9 +15,9 @@ public:
 private:
     void refreshHUD();
 
-    void triggerMoveStart();  // ´¥·¢ Focus
+    void triggerMoveStart();  // ï¿½ï¿½ï¿½ï¿½ Focus
     void triggerMoveStop();
-    void triggerHit(int damage); // ´¥·¢ Irritable / Exhausted
+    void triggerHit(int damage); // ï¿½ï¿½ï¿½ï¿½ Irritable / Exhausted
 
 private:
     Player* _player = nullptr;
@@ -25,5 +25,5 @@ private:
     cocos2d::Label* _hpLabel = nullptr;
 
     float _t = 0.0f;
-    int _phase = 0; // ÊÂ¼þ½Å±¾½×¶Î
+    int _phase = 0; // ï¿½Â¼ï¿½ï¿½Å±ï¿½ï¿½×¶ï¿½
 };

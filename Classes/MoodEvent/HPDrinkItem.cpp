@@ -1,4 +1,4 @@
-#include "HPDrinkItem.h"
+ï»¿#include "HPDrinkItem.h"
 
 USING_NS_CC;
 
@@ -19,8 +19,8 @@ HPDrinkItem* HPDrinkItem::create(const cocos2d::Vec2& pos, int healAmount, float
 void HPDrinkItem::applyToPlayer(Player* player)
 {
     if (!player) return;
-    // ÖÎÁÆ/ÌáÉýÉú´æ
+    // ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     player->heal(_healAmount);
-    // ¿É½áºÏ Mood£¨ºÍÄãÍ¼Àï¡°¿É½áºÏ Mood¡±Ò»ÖÂ£©
+    // ï¿½É½ï¿½ï¿½ Moodï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¼ï¿½ï¡°ï¿½É½ï¿½ï¿½ Moodï¿½ï¿½Ò»ï¿½Â£ï¿½
     player->changeMood(MoodType::Focus, _focusDuration);
 }

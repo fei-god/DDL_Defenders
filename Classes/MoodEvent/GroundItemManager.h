@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include "cocos2d.h"
 #include "Player.h"
 #include "CoffeeBuffItem.h"
@@ -12,7 +12,7 @@ public:
 
     bool init(Player* player, cocos2d::Node* parentLayer);
 
-    void update(float dt); // ³¡¾°Ã¿Ö¡µ÷ÓÃ
+    void update(float dt); // ï¿½ï¿½ï¿½ï¿½Ã¿Ö¡ï¿½ï¿½ï¿½ï¿½
     void spawnCoffee(const cocos2d::Vec2& pos);
     void spawnHPDrink(const cocos2d::Vec2& pos);
     void spawnShield(const cocos2d::Vec2& pos);
