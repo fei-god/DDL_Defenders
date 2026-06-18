@@ -2,6 +2,7 @@
 #include <cfloat>
 #include <cmath>
 #include <new>
+#include <algorithm>
 
 USING_NS_CC;
 
@@ -37,6 +38,7 @@ Weapon::Weapon()
     , _currentEnergy(100.0f)
     , _energyCost(20.0f)
     , _energyRecoverPerSecond(18.0f)
+    , _projectileCountBonus(0)
     , _bulletSpeed(500.0f)
     , _bulletImagePath("")
     , _aimDirection(Vec2(1, 0))
@@ -79,6 +81,7 @@ bool Weapon::initWeapon(
     _currentEnergy = _maxEnergy;
     _energyCost = 20.0f;
     _energyRecoverPerSecond = 18.0f;
+    _projectileCountBonus = 0;
 
     return true;
 }
@@ -256,6 +259,11 @@ float Weapon::getEnergyCost() const
     return _energyCost;
 }
 
+float Weapon::getEnergyRecoverPerSecond() const
+{
+    return _energyRecoverPerSecond;
+}
+
 bool Weapon::consumeEnergyForShot()
 {
     if (!hasEnoughEnergy())
@@ -323,6 +331,41 @@ int Weapon::getAttackPower() const
 float Weapon::getCooldownTime() const
 {
     return _cooldownTime;
+}
+
+int Weapon::getProjectileCountBonus() const
+{
+    return _projectileCountBonus;
+}
+
+void Weapon::addAttackPower(int amount)
+{
+    _attackPower = std::max(1, _attackPower + amount);
+}
+
+void Weapon::addEnergyRecoverPercent(float percent)
+{
+    _energyRecoverPerSecond *= (1.0f + percent);
+    if (_energyRecoverPerSecond < 1.0f)
+    {
+        _energyRecoverPerSecond = 1.0f;
+    }
+}
+
+void Weapon::addMaxEnergy(float amount)
+{
+    float oldMax = _maxEnergy;
+    _maxEnergy = std::max(1.0f, _maxEnergy + amount);
+    _currentEnergy += (_maxEnergy - oldMax);
+    if (_currentEnergy > _maxEnergy)
+    {
+        _currentEnergy = _maxEnergy;
+    }
+}
+
+void Weapon::addProjectileCountBonus(int amount)
+{
+    _projectileCountBonus = std::max(0, _projectileCountBonus + amount);
 }
 
 Enemy* Weapon::findNearestEnemy() const

@@ -1,5 +1,7 @@
 ﻿#include "CoffeeLaser.h"
 
+#include <cmath>
+
 USING_NS_CC;
 
 //武器特点：伤害高，冷却长，穿透力强，适合对付精英怪和Boss。
@@ -53,22 +55,32 @@ void CoffeeLaser::fire()
         dir = target ? getDirectionToEnemy(target) : Vec2(1, 0);
     }
 
-    Bullet* bullet = spawnBullet(
-        "CoffeeLaserBullet",
-        _bulletImagePath,
-        startPos,
-        dir,
-        _bulletSpeed,
-        getModifiedAttackPower(),
-        0.75f,
-        true
-    );
-
-    if (bullet != nullptr)
+    int projectileCount = 1 + getProjectileCountBonus();
+    float spread = projectileCount > 1 ? 6.0f : 0.0f;
+    for (int i = 0; i < projectileCount; ++i)
     {
-        // 激光可以稍微拉长，看起来更像一束光。
-        bullet->setScaleX(0.18f);
-        bullet->setScaleY(0.06f);
+        float angle = (i - (projectileCount - 1) * 0.5f) * spread;
+        float rad = CC_DEGREES_TO_RADIANS(angle);
+        Vec2 shotDir(dir.x * std::cos(rad) - dir.y * std::sin(rad),
+            dir.x * std::sin(rad) + dir.y * std::cos(rad));
+
+        Bullet* bullet = spawnBullet(
+            "CoffeeLaserBullet",
+            _bulletImagePath,
+            startPos,
+            shotDir,
+            _bulletSpeed,
+            getModifiedAttackPower(),
+            0.75f,
+            true
+        );
+
+        if (bullet != nullptr)
+        {
+            // 激光可以稍微拉长，看起来更像一束光。
+            bullet->setScaleX(0.18f);
+            bullet->setScaleY(0.06f);
+        }
     }
 
     resetCooldown();

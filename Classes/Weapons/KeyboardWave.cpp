@@ -57,12 +57,16 @@ void KeyboardWave::fire()
     }
     Vec2 startPos = _owner->getObjectPosition();
 
-    // 三发子弹分别偏转 -12°、0°、12°，形成扇形攻击。
-    float angles[3] = { -12.0f, 0.0f, 12.0f };
+    int projectileCount = 3 + getProjectileCountBonus();
+    float startAngle = -12.0f - getProjectileCountBonus() * 4.0f;
+    float endAngle = 12.0f + getProjectileCountBonus() * 4.0f;
 
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < projectileCount; i++)
     {
-        Vec2 dir = rotateDirection(baseDir, angles[i]);
+        float t = projectileCount > 1
+            ? static_cast<float>(i) / static_cast<float>(projectileCount - 1)
+            : 0.5f;
+        Vec2 dir = rotateDirection(baseDir, startAngle + (endAngle - startAngle) * t);
 
         Bullet* bullet = spawnBullet(
             "KeyboardWaveBullet",

@@ -1,5 +1,6 @@
 #include "CoffeeGun.h"
 #include <algorithm>
+#include <cmath>
 
 USING_NS_CC;
 
@@ -42,15 +43,25 @@ void CoffeeGun::fire()
         dir = target ? getDirectionToEnemy(target) : Vec2(1, 0);
     }
 
-    Bullet* bullet = spawnBullet("CoffeeGunBullet", _bulletImagePath,
-        _owner->getObjectPosition(), dir, _bulletSpeed,
-        getModifiedAttackPower(), 1.1f, false);
-    if (bullet)
+    int projectileCount = 1 + getProjectileCountBonus();
+    float spread = projectileCount > 1 ? 9.0f : 0.0f;
+    for (int i = 0; i < projectileCount; ++i)
     {
-        auto size = bullet->getContentSize();
-        if (size.width > 0.0f && size.height > 0.0f)
+        float angle = (i - (projectileCount - 1) * 0.5f) * spread;
+        float rad = CC_DEGREES_TO_RADIANS(angle);
+        Vec2 shotDir(dir.x * std::cos(rad) - dir.y * std::sin(rad),
+            dir.x * std::sin(rad) + dir.y * std::cos(rad));
+
+        Bullet* bullet = spawnBullet("CoffeeGunBullet", _bulletImagePath,
+            _owner->getObjectPosition(), shotDir, _bulletSpeed,
+            getModifiedAttackPower(), 1.1f, false);
+        if (bullet)
         {
-            bullet->setScale(std::min(18.0f / size.width, 18.0f / size.height));
+            auto size = bullet->getContentSize();
+            if (size.width > 0.0f && size.height > 0.0f)
+            {
+                bullet->setScale(std::min(18.0f / size.width, 18.0f / size.height));
+            }
         }
     }
 

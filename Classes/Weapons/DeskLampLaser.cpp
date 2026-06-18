@@ -1,5 +1,7 @@
 ﻿#include "DeskLampLaser.h"
 
+#include <cmath>
+
 USING_NS_CC;
 
 DeskLampLaser* DeskLampLaser::create(Player* owner)
@@ -40,12 +42,22 @@ void DeskLampLaser::fire()
     }
 
     int damage = getModifiedAttackPower();
-    Bullet* bullet = spawnBullet("DeskLampLaserBullet", _bulletImagePath,
-        _owner->getObjectPosition(), dir, _bulletSpeed, damage, 1.25f, true);
-    if (bullet)
+    int projectileCount = 1 + getProjectileCountBonus();
+    float spread = projectileCount > 1 ? 5.0f : 0.0f;
+    for (int i = 0; i < projectileCount; ++i)
     {
-        bullet->setScaleX(0.22f);
-        bullet->setScaleY(0.09f);
+        float angle = (i - (projectileCount - 1) * 0.5f) * spread;
+        float rad = CC_DEGREES_TO_RADIANS(angle);
+        Vec2 shotDir(dir.x * std::cos(rad) - dir.y * std::sin(rad),
+            dir.x * std::sin(rad) + dir.y * std::cos(rad));
+
+        Bullet* bullet = spawnBullet("DeskLampLaserBullet", _bulletImagePath,
+            _owner->getObjectPosition(), shotDir, _bulletSpeed, damage, 1.25f, true);
+        if (bullet)
+        {
+            bullet->setScaleX(0.22f);
+            bullet->setScaleY(0.09f);
+        }
     }
     resetCooldown();
 }
