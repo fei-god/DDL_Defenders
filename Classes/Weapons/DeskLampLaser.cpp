@@ -16,14 +16,14 @@ DeskLampLaser* DeskLampLaser::create(Player* owner)
 
 bool DeskLampLaser::initDeskLampLaser(Player* owner)
 {
-    if (!initWeapon("DeskLampLaser", "weapon/desk_lamp_laser.png", owner, 42, 0.75f))
+    if (!initWeapon("DeskLampLaser", "weapon/desk_lamp_weapon_sprite.png", owner, 42, 0.75f))
     {
         return false;
     }
     _bulletSpeed = 900.0f;
-    _bulletImagePath = "weapon/desk_lamp_laser.png";
+    _bulletImagePath = "weapon/desk_lamp_laser_sprite.png";
     configureEnergy(100.0f, 30.0f, 16.0f);
-    setObjectScale(0.014f);
+    setObjectScale(0.095f);
     return true;
 }
 
@@ -41,11 +41,11 @@ void DeskLampLaser::fire()
 
     int damage = getModifiedAttackPower();
     Bullet* bullet = spawnBullet("DeskLampLaserBullet", _bulletImagePath,
-        _owner->getObjectPosition(), dir, _bulletSpeed, damage, 0.85f, true);
+        _owner->getObjectPosition(), dir, _bulletSpeed, damage, 1.25f, true);
     if (bullet)
     {
-        bullet->setScaleX(0.12f);
-        bullet->setScaleY(0.035f);
+        bullet->setScaleX(0.22f);
+        bullet->setScaleY(0.09f);
     }
     resetCooldown();
 }

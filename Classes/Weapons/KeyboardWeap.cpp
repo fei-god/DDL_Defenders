@@ -18,15 +18,15 @@ KeyboardWeap* KeyboardWeap::create(Player* owner)
 
 bool KeyboardWeap::initKeyboardWeap(Player* owner)
 {
-    if (!initWeapon("KeyboardWeap", "weapon/keyboard_weapon.png", owner, 48, 0.9f))
+    if (!initWeapon("KeyboardWeap", "weapon/keyboard_weapon_sprite.png", owner, 48, 0.9f))
     {
         return false;
     }
 
     _bulletSpeed = 580.0f;
-    _bulletImagePath = "weapon/keyboard_wave.png";
+    _bulletImagePath = "weapon/keyboard_weap_bolt_sprite.png";
     configureEnergy(100.0f, 32.0f, 15.0f);
-    setObjectScale(0.018f);
+    setObjectScale(0.095f);
     return true;
 }
 
@@ -50,7 +50,7 @@ void KeyboardWeap::fire()
         auto size = bullet->getContentSize();
         if (size.width > 0.0f && size.height > 0.0f)
         {
-            bullet->setScale(std::min(34.0f / size.width, 34.0f / size.height));
+            bullet->setScale(std::min(72.0f / size.width, 28.0f / size.height));
         }
     }
 

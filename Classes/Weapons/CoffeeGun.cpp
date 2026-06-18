@@ -18,15 +18,15 @@ CoffeeGun* CoffeeGun::create(Player* owner)
 
 bool CoffeeGun::initCoffeeGun(Player* owner)
 {
-    if (!initWeapon("CoffeeGun", "weapon/coffee_gun.png", owner, 22, 0.28f))
+    if (!initWeapon("CoffeeGun", "weapon/coffee_gun_sprite.png", owner, 22, 0.28f))
     {
         return false;
     }
 
     _bulletSpeed = 680.0f;
-    _bulletImagePath = "weapon/coffee_laser.png";
+    _bulletImagePath = "weapon/coffee_bullet_sprite.png";
     configureEnergy(100.0f, 12.0f, 28.0f);
-    setObjectScale(0.018f);
+    setObjectScale(0.095f);
     return true;
 }
 

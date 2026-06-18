@@ -1,8 +1,28 @@
 ﻿#include "Weapon.h"
 #include <cfloat>
+#include <cmath>
 #include <new>
 
 USING_NS_CC;
+
+namespace
+{
+    void faceWeaponWithoutUpsideDown(Weapon* weapon, const Vec2& direction)
+    {
+        if (weapon == nullptr || direction.isZero())
+        {
+            return;
+        }
+
+        Vec2 normalized = direction.getNormalized();
+        float angle = CC_RADIANS_TO_DEGREES(std::atan2(normalized.y, std::abs(normalized.x)));
+
+        weapon->setDirection(normalized);
+        weapon->setFlippedX(normalized.x < 0.0f);
+        weapon->setFlippedY(false);
+        weapon->setRotation(-angle);
+    }
+}
 
 Weapon::Weapon()
     : _owner(nullptr)
@@ -97,7 +117,7 @@ void Weapon::updateObject(float dt)
         {
             setObjectPosition(_owner->getObjectPosition() + displayOffset);
         }
-        faceToDirection(displayDir);
+        faceWeaponWithoutUpsideDown(this, displayDir);
     }
 
     // 冷却时间每帧减少 dt。
@@ -138,7 +158,7 @@ void Weapon::updateCooldown(float dt)
         {
             setObjectPosition(_owner->getObjectPosition() + displayOffset);
         }
-        faceToDirection(displayDir);
+        faceWeaponWithoutUpsideDown(this, displayDir);
     }
 
     if (_cooldownTimer > 0.0f)

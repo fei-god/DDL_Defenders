@@ -431,20 +431,20 @@ bool GameScene::init()
     this->addChild(_moodLabel, 10);
 
     _weaponIcon = Sprite::create();
-    _weaponIcon->setPosition(Vec2(hpBarLeft + 17.0f * s, hpBarTop - hpBarHeight - 55.0f * s));
+    _weaponIcon->setPosition(Vec2(hpBarLeft + 28.0f * s, hpBarTop - hpBarHeight - 55.0f * s));
     this->addChild(_weaponIcon, 10);
 
     _weaponLabel = Label::createWithSystemFont(
         textByLanguage("Weapon: CoffeeGun", u8"武器: 咖啡枪"), "Arial", 18.0f * s);
     _weaponLabel->setColor(Color3B(232, 238, 244));
     _weaponLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
-    _weaponLabel->setPosition(Vec2(hpBarLeft + 38.0f * s, hpBarTop - hpBarHeight - 55.0f * s));
+    _weaponLabel->setPosition(Vec2(hpBarLeft + 64.0f * s, hpBarTop - hpBarHeight - 55.0f * s));
     this->addChild(_weaponLabel, 10);
 
     float weaponEnergyWidth = 112.0f * s;
     float weaponEnergyHeight = 8.0f * s;
     _weaponEnergyBg = LayerColor::create(Color4B(45, 45, 58, 255), weaponEnergyWidth, weaponEnergyHeight);
-    _weaponEnergyBg->setPosition(Vec2(hpBarLeft + 206.0f * s,
+    _weaponEnergyBg->setPosition(Vec2(hpBarLeft + 220.0f * s,
         hpBarTop - hpBarHeight - 59.0f * s));
     this->addChild(_weaponEnergyBg, 9);
 
@@ -487,8 +487,8 @@ bool GameScene::init()
     _weaponSlotNodes.clear();
     _lastWeaponSlotIds.clear();
     _lastWeaponSlotIndex = -1;
-    Size slotSize(46.0f * s, 46.0f * s);
-    float slotGap = 8.0f * s;
+    Size slotSize(76.0f * s, 76.0f * s);
+    float slotGap = 12.0f * s;
     float slotStartX = origin.x + visibleSize.width * 0.5f - (slotSize.width * 4.0f + slotGap * 3.0f) * 0.5f;
     float slotY = origin.y + 24.0f * s;
     for (int i = 0; i < 4; ++i)
@@ -809,7 +809,7 @@ void GameScene::updateUI(Player* player)
             _weaponIcon->setTextureRect(Rect(0, 0,
                 texture->getContentSize().width,
                 texture->getContentSize().height));
-            applySpriteFit(_weaponIcon, 26.0f, 26.0f);
+            applySpriteFit(_weaponIcon, 56.0f, 56.0f);
             _weaponIcon->setVisible(true);
         }
         else
@@ -999,8 +999,8 @@ void GameScene::refreshWeaponSlotUI()
                 Size imageSize = icon->getContentSize();
                 if (imageSize.width > 0.0f && imageSize.height > 0.0f)
                 {
-                    icon->setScale(std::min((slotSize.width - 12.0f * s) / imageSize.width,
-                        (slotSize.height - 12.0f * s) / imageSize.height));
+                    icon->setScale(std::min((slotSize.width - 6.0f * s) / imageSize.width,
+                        (slotSize.height - 6.0f * s) / imageSize.height));
                 }
                 icon->setPosition(Vec2(slotSize.width * 0.5f, slotSize.height * 0.54f));
                 slot->addChild(icon, 1);
@@ -1690,13 +1690,13 @@ Weapon* GameScene::createWeaponById(int weaponId)
 std::vector<GameScene::WeaponOption> GameScene::getWeaponOptions() const
 {
     std::vector<WeaponOption> options = {
-        { 0, textByLanguage("Coffee Gun", u8"咖啡枪"), "weapon/coffee_gun.png" },
-        { 1, textByLanguage("Coffee Laser", u8"咖啡激光"), "weapon/coffee_laser.png" },
-        { 2, textByLanguage("Keyboard Wave", u8"键盘冲击波"), "weapon/keyboard_wave.png" },
-        { 3, textByLanguage("Keyboard Weap", u8"键盘武器"), "weapon/keyboard_weap.png" },
-        { 4, textByLanguage("Desk Lamp", u8"台灯激光"), "weapon/desk_lamp_laser.png" },
-        { 5, textByLanguage("Coffee Blast", u8"咖啡爆破"), "weapon/coffee_blast.png" },
-        { 6, textByLanguage("Focus Orb", u8"专注宝珠"), "weapon/focus_orb.png" }
+        { 0, textByLanguage("Coffee Gun", u8"咖啡枪"), "weapon/coffee_gun_sprite.png" },
+        { 1, textByLanguage("Coffee Laser", u8"咖啡激光"), "weapon/coffee_bullet_sprite.png" },
+        { 2, textByLanguage("Keyboard Wave", u8"键盘冲击波"), "weapon/keyboard_wave_sprite.png" },
+        { 3, textByLanguage("Keyboard Weap", u8"键盘武器"), "weapon/keyboard_weapon_sprite.png" },
+        { 4, textByLanguage("Desk Lamp", u8"台灯激光"), "weapon/desk_lamp_weapon_sprite.png" },
+        { 5, textByLanguage("Coffee Blast", u8"咖啡爆破"), "weapon/coffee_blast_sprite.png" },
+        { 6, textByLanguage("Focus Orb", u8"专注宝珠"), "weapon/focus_orb_sprite.png" }
     };
 
     for (auto& option : options)
@@ -1704,7 +1704,7 @@ std::vector<GameScene::WeaponOption> GameScene::getWeaponOptions() const
         std::string resolved = AssetPaths::resolve(option.imagePath);
         if (resolved.empty() && option.id == 3)
         {
-            resolved = AssetPaths::resolve("weapon/keyboard_weapon.png");
+            resolved = AssetPaths::resolve("weapon/keyboard_weapon_sprite.png");
         }
         option.imagePath = resolved;
     }

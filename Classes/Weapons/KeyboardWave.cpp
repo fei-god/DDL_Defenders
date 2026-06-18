@@ -24,7 +24,7 @@ bool KeyboardWave::initKeyboardWave(Player* owner)
 {
     if (!initWeapon(
         "KeyboardWave",    // 武器名字
-        "weapon/keyboard_weapon.png", // 武器本体
+        "weapon/keyboard_weapon_sprite.png", // 武器本体
         owner,             // 武器所属玩家
         26,                // 攻击力
         0.42f              // 冷却时间
@@ -35,11 +35,11 @@ bool KeyboardWave::initKeyboardWave(Player* owner)
 
     _bulletSpeed = 520.0f;
     configureEnergy(100.0f, 18.0f, 24.0f);
-    setObjectScale(0.018f);
+    setObjectScale(0.095f);
 
     // 你需要把图片放到 Resources/weapon/keyboard_wave.png
     // 如果图片不存在，Bullet 里面有兜底逻辑，但建议还是放图片。
-    _bulletImagePath = "weapon/keyboard_wave.png";
+    _bulletImagePath = "weapon/keyboard_wave_sprite.png";
 
     return true;
 }
