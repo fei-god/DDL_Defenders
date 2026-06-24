@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "cocos2d.h"
 #include "GameObject.h"
@@ -9,9 +9,9 @@ class GroundItem : public GameObject
 public:
     virtual ~GroundItem() {}
 
-    // µØÉÏÊ°È¡£ºµ±Íæ¼ÒÅöµ½ºóÖ´ÐÐ
+    // ï¿½ï¿½ï¿½ï¿½Ê°È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö´ï¿½ï¿½
     virtual void applyToPlayer(Player* player) = 0;
 
-    // Äã¿ÉÒÔÈÃµÀ¾ßÔÚÊ°È¡ºóÊ§Ð§²¢ÒÆ³ý
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ãµï¿½ï¿½ï¿½ï¿½ï¿½Ê°È¡ï¿½ï¿½Ê§Ð§ï¿½ï¿½ï¿½Æ³ï¿½
     void onPicked(Player* player);
 };

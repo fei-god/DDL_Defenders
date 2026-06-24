@@ -16,12 +16,13 @@ CoffeeBlast* CoffeeBlast::create(Player* owner)
 
 bool CoffeeBlast::initCoffeeBlast(Player* owner)
 {
-    if (!initWeapon("CoffeeBlast", "", owner, 38, 1.05f))
+    if (!initWeapon("CoffeeBlast", "weapon/coffee_blast_sprite.png", owner, 38, 1.05f))
     {
         return false;
     }
     _radius = 150.0f;
     configureEnergy(100.0f, 28.0f, 18.0f);
+    setObjectScale(0.095f);
     return true;
 }
 

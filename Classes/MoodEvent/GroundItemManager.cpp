@@ -1,4 +1,4 @@
-#include "GroundItemManager.h"
+ï»¿#include "GroundItemManager.h"
 #include <algorithm>
 
 USING_NS_CC;
@@ -63,12 +63,12 @@ void GroundItemManager::update(float /*dt*/)
         }
     }
 
-    // ÇåÀíÎÞÐ§Ö¸Õë£¨±£ÊØÇåÀí£©
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð§Ö¸ï¿½ë£¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     _items.erase(
         std::remove_if(_items.begin(), _items.end(),
             [](GroundItem* it)
             {
-                return (it == nullptr);
+                return (it == nullptr) || (!it->isObjectActive());
             }),
         _items.end()
     );

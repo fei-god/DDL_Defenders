@@ -2,6 +2,7 @@
 #include "GameOverScene.h"
 #include "MainMenuScene.h"
 #include "SettingsScene.h"
+#include "StoryModeScene.h"
 #include "VictoryScene.h"
 #include "Weapons/CoffeeGun.h"
 #include "Weapons/CoffeeLaser.h"
@@ -19,6 +20,7 @@
 #include <new>
 #include <cmath>
 #include <algorithm>
+#include <string>
 
 USING_NS_CC;
 
@@ -337,6 +339,15 @@ bool GameScene::init()
     _currentWeapon = nullptr;
     _nextEquipmentSlot = 0;
     _equipmentLayer = nullptr;
+    _upgradeLayer = nullptr;
+    _endlessStatsLabel = nullptr;
+    _endlessScore = 0;
+    _lastHandledPlayerLevel = 1;
+    _lifeOnKill = 0;
+    _weaponDamageBonus = 0;
+    _projectileBonus = 0;
+    _energyRecoveryBonusPercent = 0.0f;
+    _masteredWeaponIds.clear();
     auto* ud = UserDefault::getInstance();
     for (int i = 0; i < 4; ++i)
     {
@@ -379,6 +390,7 @@ bool GameScene::init()
     if (_waveManager)
     {
         _waveManager->setEnemyKilledCallback([this](Enemy* enemy) {
+            handleEndlessEnemyKilled(enemy);
             spawnRewardForEnemy(enemy);
         });
         int startingWave = _isEndlessMode ? 1 : ((_levelNumber + 1) / 2);
@@ -388,12 +400,20 @@ bool GameScene::init()
 
     // --- HP bar ---
     float hpBarWidth  = 220.0f * s;
-    float hpBarHeight = 22.0f * s;
-    float marginX = 20.0f * s;
-    float marginY = 20.0f * s;
+    float hpBarHeight = 18.0f * s;
+    float marginX = 18.0f * s;
+    float marginY = 44.0f * s;
 
     float hpBarLeft = origin.x + marginX;
     float hpBarTop  = origin.y + visibleSize.height - marginY;
+
+    _hudPanelBg = LayerColor::create(Color4B(11, 14, 22, 178), 352.0f * s, 184.0f * s);
+    _hudPanelBg->setPosition(Vec2(hpBarLeft - 10.0f * s, hpBarTop - 176.0f * s));
+    this->addChild(_hudPanelBg, 8);
+
+    auto hudAccent = LayerColor::create(Color4B(88, 196, 255, 185), 4.0f * s, 184.0f * s);
+    hudAccent->setPosition(_hudPanelBg->getPosition());
+    this->addChild(hudAccent, 9);
 
     auto hpFrame = LayerColor::create(Color4B(100, 100, 110, 255), hpBarWidth + 4, hpBarHeight + 4);
     hpFrame->setPosition(Vec2(hpBarLeft - 2, hpBarTop - hpBarHeight - 2));
@@ -416,23 +436,27 @@ bool GameScene::init()
 
     // --- Mood label ---
     _moodLabel = Label::createWithSystemFont(
-        textByLanguage("Mood: Normal", u8"情绪: 普通"), "Arial", 24.0f * s);
-    _moodLabel->setColor(Color3B(210, 210, 220));
+        textByLanguage("Mood: Normal", u8"情绪: 普通"), "Arial", 18.0f * s);
+    _moodLabel->setColor(Color3B(212, 224, 238));
     _moodLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
-    _moodLabel->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight - 28.0f * s));
+    _moodLabel->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight - 24.0f * s));
     this->addChild(_moodLabel, 10);
 
+    _weaponIcon = Sprite::create();
+    _weaponIcon->setPosition(Vec2(hpBarLeft + 28.0f * s, hpBarTop - hpBarHeight - 55.0f * s));
+    this->addChild(_weaponIcon, 10);
+
     _weaponLabel = Label::createWithSystemFont(
-        textByLanguage("Weapon: CoffeeGun", u8"武器: 咖啡枪"), "Arial", 20.0f * s);
-    _weaponLabel->setColor(Color3B(210, 220, 230));
+        textByLanguage("Weapon: CoffeeGun", u8"武器: 咖啡枪"), "Arial", 18.0f * s);
+    _weaponLabel->setColor(Color3B(232, 238, 244));
     _weaponLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
-    _weaponLabel->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight - 54.0f * s));
+    _weaponLabel->setPosition(Vec2(hpBarLeft + 64.0f * s, hpBarTop - hpBarHeight - 55.0f * s));
     this->addChild(_weaponLabel, 10);
 
-    float weaponEnergyWidth = 145.0f * s;
-    float weaponEnergyHeight = 10.0f * s;
+    float weaponEnergyWidth = 112.0f * s;
+    float weaponEnergyHeight = 8.0f * s;
     _weaponEnergyBg = LayerColor::create(Color4B(45, 45, 58, 255), weaponEnergyWidth, weaponEnergyHeight);
-    _weaponEnergyBg->setPosition(Vec2(hpBarLeft + 210.0f * s,
+    _weaponEnergyBg->setPosition(Vec2(hpBarLeft + 220.0f * s,
         hpBarTop - hpBarHeight - 59.0f * s));
     this->addChild(_weaponEnergyBg, 9);
 
@@ -442,21 +466,21 @@ bool GameScene::init()
     _weaponEnergyBarMaxWidth = weaponEnergyWidth;
 
     _progressLabel = Label::createWithSystemFont(
-        textByLanguage("Assignment: 0%", u8"作业进度: 0%"), "Arial", 20.0f * s);
-    _progressLabel->setColor(Color3B(230, 220, 160));
+        textByLanguage("Assignment: 0%", u8"作业进度: 0%"), "Arial", 18.0f * s);
+    _progressLabel->setColor(Color3B(246, 228, 137));
     _progressLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
-    _progressLabel->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight - 80.0f * s));
+    _progressLabel->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight - 82.0f * s));
     this->addChild(_progressLabel, 10);
 
     _taskLabel = Label::createWithSystemFont(
-        textByLanguage("Desk: 0.00 / 0.00s", u8"书桌: 0.00 / 0.00秒"), "Arial", 18.0f * s);
-    _taskLabel->setColor(Color3B(180, 235, 255));
+        textByLanguage("Desk: 0.00 / 0.00s", u8"书桌: 0.00 / 0.00秒"), "Arial", 16.0f * s);
+    _taskLabel->setColor(Color3B(172, 231, 255));
     _taskLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
     _taskLabel->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight - 106.0f * s));
     this->addChild(_taskLabel, 10);
 
-    _taskBarMaxWidth = 210.0f * s;
-    float taskBarHeight = 10.0f * s;
+    _taskBarMaxWidth = 222.0f * s;
+    float taskBarHeight = 8.0f * s;
     _taskBarBg = LayerColor::create(Color4B(45, 45, 58, 255), _taskBarMaxWidth, taskBarHeight);
     _taskBarBg->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight - 131.0f * s));
     this->addChild(_taskBarBg, 9);
@@ -466,11 +490,27 @@ bool GameScene::init()
     this->addChild(_taskBarFill, 10);
 
     _environmentLabel = Label::createWithSystemFont(
-        textByLanguage("Environment: None", u8"环境: 无"), "Arial", 18.0f * s);
-    _environmentLabel->setColor(Color3B(180, 220, 210));
+        textByLanguage("Environment: None", u8"环境: 无"), "Arial", 16.0f * s);
+    _environmentLabel->setColor(Color3B(177, 221, 208));
     _environmentLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
     _environmentLabel->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight - 154.0f * s));
     this->addChild(_environmentLabel, 10);
+
+    _weaponSlotNodes.clear();
+    _lastWeaponSlotIds.clear();
+    _lastWeaponSlotIndex = -1;
+    Size slotSize(76.0f * s, 76.0f * s);
+    float slotGap = 12.0f * s;
+    float slotStartX = origin.x + visibleSize.width * 0.5f - (slotSize.width * 4.0f + slotGap * 3.0f) * 0.5f;
+    float slotY = origin.y + 24.0f * s;
+    for (int i = 0; i < 4; ++i)
+    {
+        auto slot = Node::create();
+        slot->setContentSize(slotSize);
+        slot->setPosition(Vec2(slotStartX + i * (slotSize.width + slotGap), slotY));
+        this->addChild(slot, 22);
+        _weaponSlotNodes.push_back(slot);
+    }
 
     // --- Survival time ---
     m_survivalTime = 0.0f;
@@ -483,13 +523,22 @@ bool GameScene::init()
     ));
     this->addChild(_survivalTimeLabel, 10);
 
+    _endlessStatsLabel = Label::createWithSystemFont("", "Arial", 18.0f * s);
+    _endlessStatsLabel->setColor(Color3B(160, 232, 255));
+    _endlessStatsLabel->setPosition(Vec2(
+        origin.x + visibleSize.width / 2,
+        origin.y + visibleSize.height - 62.0f * s
+    ));
+    _endlessStatsLabel->setVisible(_isEndlessMode);
+    this->addChild(_endlessStatsLabel, 10);
+
     _topHintLabel = Label::createWithSystemFont(
         defaultControlHint(),
         "Arial",
-        20.0f * s);
+        16.0f * s);
     _topHintLabel->setColor(Color3B(255, 245, 180));
     _topHintLabel->setPosition(Vec2(origin.x + visibleSize.width / 2,
-        origin.y + visibleSize.height - 62.0f * s));
+        origin.y + 86.0f * s));
     this->addChild(_topHintLabel, 20);
 
     auto equipLabel = Label::createWithSystemFont(
@@ -772,6 +821,23 @@ void GameScene::updateUI(Player* player)
         _weaponLabel->setString(textByLanguage("Weapon: ", u8"武器: ") +
             weaponNameForUi(_currentWeapon->getWeaponName()));
     }
+    if (_weaponIcon && _currentWeapon)
+    {
+        auto texture = Director::getInstance()->getTextureCache()->addImage(_currentWeapon->getImagePath());
+        if (texture)
+        {
+            _weaponIcon->setTexture(texture);
+            _weaponIcon->setTextureRect(Rect(0, 0,
+                texture->getContentSize().width,
+                texture->getContentSize().height));
+            applySpriteFit(_weaponIcon, 56.0f, 56.0f);
+            _weaponIcon->setVisible(true);
+        }
+        else
+        {
+            _weaponIcon->setVisible(false);
+        }
+    }
     updateWeaponEnergyUI();
 
     if (_progressLabel)
@@ -802,6 +868,28 @@ void GameScene::updateUI(Player* player)
             }
         }
         _progressLabel->setString(buf);
+    }
+
+    if (_endlessStatsLabel)
+    {
+        _endlessStatsLabel->setVisible(_isEndlessMode);
+        if (_isEndlessMode)
+        {
+            char buf[128];
+            int exp = player->getExp();
+            int expToNext = player->getExpToNextLevel();
+            if (isChineseUi())
+            {
+                snprintf(buf, sizeof(buf), "等级 %d  经验 %d/%d  分数 %d",
+                    player->getLevel(), exp, expToNext, _endlessScore);
+            }
+            else
+            {
+                snprintf(buf, sizeof(buf), "Lv %d  EXP %d/%d  Score %d",
+                    player->getLevel(), exp, expToNext, _endlessScore);
+            }
+            _endlessStatsLabel->setString(buf);
+        }
     }
 
     if (_taskLabel)
@@ -844,6 +932,8 @@ void GameScene::updateUI(Player* player)
         _taskBarFill->setContentSize(Size(_taskBarMaxWidth * ratio,
             _taskBarFill->getContentSize().height));
     }
+
+    refreshWeaponSlotUI();
 }
 
 void GameScene::updateWeaponEnergyUI()
@@ -869,6 +959,109 @@ void GameScene::updateWeaponEnergyUI()
     {
         _weaponEnergyFill->setColor(Color3B(235, 70, 70));
     }
+}
+
+void GameScene::refreshWeaponSlotUI()
+{
+    if (_weaponSlotNodes.empty())
+    {
+        return;
+    }
+
+    bool slotDataChanged = _lastWeaponSlotIndex != _currentWeaponIndex ||
+        _lastWeaponSlotIds.size() != _weaponLoadoutIds.size();
+    if (!slotDataChanged)
+    {
+        for (int i = 0; i < static_cast<int>(_weaponLoadoutIds.size()); ++i)
+        {
+            if (_lastWeaponSlotIds[i] != _weaponLoadoutIds[i])
+            {
+                slotDataChanged = true;
+                break;
+            }
+        }
+    }
+    if (!slotDataChanged)
+    {
+        return;
+    }
+
+    auto options = getWeaponOptions();
+    float s = Director::getInstance()->getWinSize().height / 640.0f;
+
+    for (int i = 0; i < static_cast<int>(_weaponSlotNodes.size()); ++i)
+    {
+        auto slot = _weaponSlotNodes[i];
+        if (!slot)
+        {
+            continue;
+        }
+
+        slot->removeAllChildren();
+
+        Size slotSize = slot->getContentSize();
+        bool selected = i == _currentWeaponIndex;
+        auto bg = LayerColor::create(
+            selected ? Color4B(64, 96, 118, 232) : Color4B(18, 22, 30, 220),
+            slotSize.width,
+            slotSize.height);
+        bg->setPosition(Vec2::ZERO);
+        slot->addChild(bg, 0);
+
+        auto border = DrawNode::create();
+        Vec2 verts[4] = {
+            Vec2(0, 0),
+            Vec2(slotSize.width, 0),
+            Vec2(slotSize.width, slotSize.height),
+            Vec2(0, slotSize.height)
+        };
+        border->drawPolygon(
+            verts,
+            4,
+            Color4F(0, 0, 0, 0),
+            selected ? 2.5f : 1.2f,
+            selected ? Color4F(0.42f, 0.92f, 1.0f, 1.0f) : Color4F(0.52f, 0.58f, 0.67f, 0.8f));
+        slot->addChild(border, 3);
+
+        int weaponId = (i < static_cast<int>(_weaponLoadoutIds.size())) ? _weaponLoadoutIds[i] : i;
+        std::string imagePath;
+        for (const auto& option : options)
+        {
+            if (option.id == weaponId)
+            {
+                imagePath = option.imagePath;
+                break;
+            }
+        }
+
+        if (!imagePath.empty())
+        {
+            auto icon = Sprite::create(imagePath);
+            if (icon)
+            {
+                Size imageSize = icon->getContentSize();
+                if (imageSize.width > 0.0f && imageSize.height > 0.0f)
+                {
+                    icon->setScale(std::min((slotSize.width - 6.0f * s) / imageSize.width,
+                        (slotSize.height - 6.0f * s) / imageSize.height));
+                }
+                icon->setPosition(Vec2(slotSize.width * 0.5f, slotSize.height * 0.54f));
+                slot->addChild(icon, 1);
+            }
+        }
+
+        auto numBg = LayerColor::create(Color4B(0, 0, 0, 150), 16.0f * s, 16.0f * s);
+        numBg->setPosition(Vec2(2.0f * s, slotSize.height - 18.0f * s));
+        slot->addChild(numBg, 4);
+
+        auto num = Label::createWithSystemFont(std::to_string(i + 1), "Arial", 12.0f * s);
+        num->setColor(selected ? Color3B(135, 235, 255) : Color3B(222, 226, 232));
+        num->setPosition(numBg->getPosition() + Vec2(8.0f * s, 8.0f * s));
+        slot->addChild(num, 5);
+    }
+
+    _lastWeaponSlotIndex = _currentWeaponIndex;
+    _lastWeaponSlotIds = _weaponLoadoutIds;
 }
 
 void GameScene::initLevelTask()
@@ -1521,6 +1714,13 @@ void GameScene::switchWeapon(int index)
 
     _currentWeaponIndex = index;
     _currentWeapon = _weapons[index];
+    for (int i = 0; i < static_cast<int>(_weapons.size()); ++i)
+    {
+        if (_weapons[i])
+        {
+            _weapons[i]->setVisible(i == _currentWeaponIndex);
+        }
+    }
     if (_currentWeapon)
     {
         _currentWeapon->readyNow();
@@ -1564,13 +1764,13 @@ Weapon* GameScene::createWeaponById(int weaponId)
 std::vector<GameScene::WeaponOption> GameScene::getWeaponOptions() const
 {
     std::vector<WeaponOption> options = {
-        { 0, textByLanguage("Coffee Gun", u8"咖啡枪"), "weapon/coffee_gun.png" },
-        { 1, textByLanguage("Coffee Laser", u8"咖啡激光"), "weapon/coffee_laser.png" },
-        { 2, textByLanguage("Keyboard Wave", u8"键盘冲击波"), "weapon/keyboard_wave.png" },
-        { 3, textByLanguage("Keyboard Weap", u8"键盘武器"), "weapon/keyboard_weap.png" },
-        { 4, textByLanguage("Desk Lamp", u8"台灯激光"), "weapon/desk_lamp_laser.png" },
-        { 5, textByLanguage("Coffee Blast", u8"咖啡爆破"), "weapon/coffee_blast.png" },
-        { 6, textByLanguage("Focus Orb", u8"专注宝珠"), "weapon/focus_orb.png" }
+        { 0, textByLanguage("Coffee Gun", u8"咖啡枪"), "weapon/coffee_gun_sprite.png" },
+        { 1, textByLanguage("Coffee Laser", u8"咖啡激光"), "weapon/coffee_bullet_sprite.png" },
+        { 2, textByLanguage("Keyboard Wave", u8"键盘冲击波"), "weapon/keyboard_wave_sprite.png" },
+        { 3, textByLanguage("Keyboard Weap", u8"键盘武器"), "weapon/keyboard_weapon_sprite.png" },
+        { 4, textByLanguage("Desk Lamp", u8"台灯激光"), "weapon/desk_lamp_weapon_sprite.png" },
+        { 5, textByLanguage("Coffee Blast", u8"咖啡爆破"), "weapon/coffee_blast_sprite.png" },
+        { 6, textByLanguage("Focus Orb", u8"专注宝珠"), "weapon/focus_orb_sprite.png" }
     };
 
     for (auto& option : options)
@@ -1578,7 +1778,7 @@ std::vector<GameScene::WeaponOption> GameScene::getWeaponOptions() const
         std::string resolved = AssetPaths::resolve(option.imagePath);
         if (resolved.empty() && option.id == 3)
         {
-            resolved = AssetPaths::resolve("weapon/keyboard_weapon.png");
+            resolved = AssetPaths::resolve("weapon/keyboard_weapon_sprite.png");
         }
         option.imagePath = resolved;
     }
@@ -1611,12 +1811,26 @@ void GameScene::rebuildWeaponLoadout()
         Weapon* weapon = createWeaponById(_weaponLoadoutIds[i]);
         if (weapon)
         {
-            (_worldLayer ? _worldLayer : this)->addChild(weapon, 7);
+            applyEndlessGrowthToWeapon(weapon, _weaponLoadoutIds[i]);
+            if (m_player)
+            {
+                float parentScale = m_player->getScale();
+                if (parentScale > 0.001f)
+                {
+                    weapon->setScale(weapon->getScale() / parentScale);
+                }
+                m_player->addChild(weapon, 4);
+            }
+            else
+            {
+                (_worldLayer ? _worldLayer : this)->addChild(weapon, 120);
+            }
             if (_waveManager)
             {
                 weapon->bindBattleData(&_waveManager->getAliveEnemies(), &_bullets, _bulletLayer);
                 weapon->bindBulletPool(&_bulletPool);
             }
+            weapon->setVisible(i == _currentWeaponIndex);
             _weapons.push_back(weapon);
         }
     }
@@ -1626,6 +1840,13 @@ void GameScene::rebuildWeaponLoadout()
         _currentWeaponIndex = 0;
     }
     _currentWeapon = _weapons.empty() ? nullptr : _weapons[_currentWeaponIndex];
+    for (int i = 0; i < static_cast<int>(_weapons.size()); ++i)
+    {
+        if (_weapons[i])
+        {
+            _weapons[i]->setVisible(i == _currentWeaponIndex);
+        }
+    }
     updateUI(m_player);
 }
 
@@ -2008,6 +2229,380 @@ void GameScene::updateAssignmentProgress(float dt)
     }
 }
 
+void GameScene::handleEndlessEnemyKilled(Enemy* enemy)
+{
+    if (!_isEndlessMode || !enemy)
+    {
+        return;
+    }
+
+    int scoreReward = getScoreRewardForEnemy(enemy);
+    _endlessScore += scoreReward;
+
+    if (_lifeOnKill > 0 && m_player && m_player->isRoleAlive())
+    {
+        m_player->heal(_lifeOnKill);
+    }
+
+    if (_topHintLabel)
+    {
+        std::string hint = textByLanguage("Kill reward: +", u8"击杀奖励: +") +
+            std::to_string(enemy->getExpReward()) +
+            textByLanguage(" EXP  +", u8"经验  +") +
+            std::to_string(scoreReward) +
+            textByLanguage(" Score", u8"分");
+        _topHintLabel->setString(hint);
+    }
+
+    checkEndlessLevelUps();
+}
+
+int GameScene::getScoreRewardForEnemy(Enemy* enemy) const
+{
+    if (!enemy)
+    {
+        return 0;
+    }
+
+    const std::string name = enemy->getObjectName();
+    if (name.find("Thesis") != std::string::npos ||
+        name.find("Boss") != std::string::npos)
+    {
+        return 520;
+    }
+    if (name.find("DDL") != std::string::npos)
+    {
+        return 170;
+    }
+    if (name.find("Phone") != std::string::npos)
+    {
+        return 120;
+    }
+    if (name.find("Sleepy") != std::string::npos)
+    {
+        return 80;
+    }
+
+    return std::max(50, enemy->getExpReward() * 2);
+}
+
+void GameScene::checkEndlessLevelUps()
+{
+    if (!_isEndlessMode || !m_player || _upgradeLayer)
+    {
+        return;
+    }
+
+    if (m_player->getLevel() <= _lastHandledPlayerLevel)
+    {
+        return;
+    }
+
+    int nextLevel = _lastHandledPlayerLevel + 1;
+    showUpgradeMenu(nextLevel % 5 == 0);
+}
+
+std::vector<GameScene::UpgradeChoice> GameScene::rollUpgradeChoices(bool major) const
+{
+    std::vector<UpgradeChoice> pool;
+    if (major)
+    {
+        pool = {
+            { UpgradeType::LifeOnKill,
+                textByLanguage("Sustain Notes", u8"续航笔记"),
+                textByLanguage("Every kill restores +2 HP.", u8"每次击杀恢复2点生命。"),
+                true },
+            { UpgradeType::WeaponMastery,
+                textByLanguage("Weapon Mastery", u8"武器专精"),
+                textByLanguage("Current weapon gains a special stronger bonus.", u8"当前武器获得专属强力提升。"),
+                true }
+        };
+        return pool;
+    }
+
+    pool = {
+        { UpgradeType::BulletDamage,
+            textByLanguage("Sharper Bullets", u8"子弹强化"),
+            textByLanguage("All weapons gain +4 bullet damage.", u8"所有武器子弹伤害+4。"),
+            false },
+        { UpgradeType::EnergyRecovery,
+            textByLanguage("Fast Recharge", u8"快速回能"),
+            textByLanguage("Weapon energy recovers 18% faster.", u8"攻击能量条恢复速度+18%。"),
+            false },
+        { UpgradeType::ProjectileCount,
+            textByLanguage("Extra Shot", u8"弹幕增加"),
+            textByLanguage("All projectile weapons fire one extra bullet.", u8"所有弹道武器额外发射1颗子弹。"),
+            false },
+        { UpgradeType::MaxHp,
+            textByLanguage("Late-night Endurance", u8"熬夜耐力"),
+            textByLanguage("Maximum HP +12 and heal 12 HP.", u8"生命值上限+12，并恢复12点生命。"),
+            false },
+        { UpgradeType::MoveSpeed,
+            textByLanguage("Quick Steps", u8"灵活走位"),
+            textByLanguage("Movement speed +18.", u8"移动速度+18。"),
+            false }
+    };
+
+    std::vector<UpgradeChoice> choices;
+    while (!pool.empty() && choices.size() < 2)
+    {
+        int index = static_cast<int>(CCRANDOM_0_1() * pool.size());
+        if (index < 0) index = 0;
+        if (index >= static_cast<int>(pool.size())) index = static_cast<int>(pool.size()) - 1;
+        choices.push_back(pool[index]);
+        pool.erase(pool.begin() + index);
+    }
+    return choices;
+}
+
+void GameScene::showUpgradeMenu(bool major)
+{
+    if (_upgradeLayer || !m_player)
+    {
+        return;
+    }
+
+    _isPaused = true;
+    _keyW = _keyA = _keyS = _keyD = false;
+    updateMoveDirection();
+    _currentUpgradeChoices = rollUpgradeChoices(major);
+
+    auto visibleSize = Director::getInstance()->getVisibleSize();
+    Vec2 origin = Director::getInstance()->getVisibleOrigin();
+    float s = Director::getInstance()->getWinSize().height / 640.0f;
+    Vec2 center(origin.x + visibleSize.width * 0.5f, origin.y + visibleSize.height * 0.5f);
+
+    _upgradeLayer = Node::create();
+    this->addChild(_upgradeLayer, 360);
+
+    auto shade = LayerColor::create(Color4B(5, 8, 16, 205), visibleSize.width, visibleSize.height);
+    shade->setPosition(origin);
+    _upgradeLayer->addChild(shade, -1);
+
+    auto title = Label::createWithSystemFont(
+        major ? textByLanguage("Major Upgrade", u8"强力升级") : textByLanguage("Level Up", u8"升级"),
+        "Arial", major ? 42.0f * s : 38.0f * s);
+    title->setColor(major ? Color3B(255, 220, 110) : Color3B(160, 232, 255));
+    title->setPosition(center + Vec2(0, 130.0f * s));
+    _upgradeLayer->addChild(title, 2);
+
+    char levelBuf[64];
+    if (isChineseUi())
+    {
+        snprintf(levelBuf, sizeof(levelBuf), "等级 %d，选择一项强化", _lastHandledPlayerLevel + 1);
+    }
+    else
+    {
+        snprintf(levelBuf, sizeof(levelBuf), "Level %d: choose one upgrade", _lastHandledPlayerLevel + 1);
+    }
+    auto subtitle = Label::createWithSystemFont(levelBuf, "Arial", 18.0f * s);
+    subtitle->setColor(Color3B(230, 235, 245));
+    subtitle->setPosition(center + Vec2(0, 92.0f * s));
+    _upgradeLayer->addChild(subtitle, 2);
+
+    Vector<MenuItem*> items;
+    for (int i = 0; i < static_cast<int>(_currentUpgradeChoices.size()); ++i)
+    {
+        const auto& choice = _currentUpgradeChoices[i];
+        auto createChoiceCard = [choice, s]() {
+            auto root = Node::create();
+            Size boxSize(310.0f * s, 126.0f * s);
+            root->setContentSize(boxSize);
+
+            auto bg = LayerColor::create(choice.major ? Color4B(88, 67, 24, 235) : Color4B(30, 45, 64, 235),
+                boxSize.width, boxSize.height);
+            bg->setIgnoreAnchorPointForPosition(false);
+            bg->setAnchorPoint(Vec2(0.5f, 0.5f));
+            bg->setPosition(Vec2(boxSize.width * 0.5f, boxSize.height * 0.5f));
+            root->addChild(bg);
+
+            auto name = Label::createWithSystemFont(choice.title, "Arial", 22.0f * s);
+            name->setColor(choice.major ? Color3B(255, 227, 130) : Color3B(165, 235, 255));
+            name->setPosition(Vec2(boxSize.width * 0.5f, boxSize.height - 34.0f * s));
+            root->addChild(name, 2);
+
+            auto desc = Label::createWithSystemFont(choice.description, "Arial", 15.0f * s);
+            desc->setColor(Color3B(232, 236, 242));
+            desc->setDimensions(boxSize.width - 34.0f * s, 56.0f * s);
+            desc->setAlignment(TextHAlignment::CENTER, TextVAlignment::CENTER);
+            desc->setPosition(Vec2(boxSize.width * 0.5f, 45.0f * s));
+            root->addChild(desc, 2);
+            return root;
+        };
+
+        auto root = createChoiceCard();
+        auto selected = createChoiceCard();
+        selected->setScale(0.97f);
+        selected->setOpacity(230);
+        auto item = MenuItemSprite::create(root, selected, [this, i](Ref*) {
+            if (i >= 0 && i < static_cast<int>(_currentUpgradeChoices.size()))
+            {
+                applyUpgradeChoice(_currentUpgradeChoices[i]);
+            }
+        });
+        items.pushBack(item);
+    }
+
+    auto menu = Menu::createWithArray(items);
+    menu->setPosition(center + Vec2(0, -25.0f * s));
+    menu->alignItemsHorizontallyWithPadding(34.0f * s);
+    _upgradeLayer->addChild(menu, 4);
+}
+
+void GameScene::applyUpgradeChoice(const UpgradeChoice& choice)
+{
+    if (!m_player)
+    {
+        hideUpgradeMenu();
+        return;
+    }
+
+    switch (choice.type)
+    {
+    case UpgradeType::BulletDamage:
+        _weaponDamageBonus += 4;
+        for (auto* weapon : _weapons)
+        {
+            if (weapon) weapon->addAttackPower(4);
+        }
+        break;
+    case UpgradeType::EnergyRecovery:
+        _energyRecoveryBonusPercent += 0.18f;
+        for (auto* weapon : _weapons)
+        {
+            if (weapon) weapon->addEnergyRecoverPercent(0.18f);
+        }
+        break;
+    case UpgradeType::ProjectileCount:
+        ++_projectileBonus;
+        for (auto* weapon : _weapons)
+        {
+            if (weapon) weapon->addProjectileCountBonus(1);
+        }
+        break;
+    case UpgradeType::MaxHp:
+        m_player->addMaxHp(12);
+        m_player->heal(12);
+        break;
+    case UpgradeType::MoveSpeed:
+        m_player->setBaseSpeed(m_player->getBaseSpeed() + 18.0f);
+        break;
+    case UpgradeType::LifeOnKill:
+        _lifeOnKill += 2;
+        break;
+    case UpgradeType::WeaponMastery:
+        applyWeaponMastery(_currentWeapon);
+        break;
+    }
+
+    m_player->spendUpgradePoint();
+    ++_lastHandledPlayerLevel;
+    hideUpgradeMenu();
+    checkEndlessLevelUps();
+}
+
+void GameScene::hideUpgradeMenu()
+{
+    if (_upgradeLayer)
+    {
+        _upgradeLayer->removeFromParentAndCleanup(true);
+        _upgradeLayer = nullptr;
+    }
+    _currentUpgradeChoices.clear();
+    _isPaused = false;
+}
+
+void GameScene::applyWeaponMastery(Weapon* weapon)
+{
+    if (!weapon)
+    {
+        return;
+    }
+
+    if (_currentWeaponIndex >= 0 && _currentWeaponIndex < static_cast<int>(_weaponLoadoutIds.size()))
+    {
+        int weaponId = _weaponLoadoutIds[_currentWeaponIndex];
+        _masteredWeaponIds.push_back(weaponId);
+    }
+
+    applyWeaponMasteryEffects(weapon);
+
+    const std::string name = weapon->getWeaponName();
+    if (_topHintLabel)
+    {
+        _topHintLabel->setString(textByLanguage("Weapon mastery activated: ", u8"武器专精已激活: ") +
+            weaponNameForUi(name));
+    }
+}
+
+void GameScene::applyWeaponMasteryEffects(Weapon* weapon)
+{
+    if (!weapon)
+    {
+        return;
+    }
+
+    const std::string name = weapon->getWeaponName();
+    if (name == "CoffeeGun")
+    {
+        weapon->addProjectileCountBonus(2);
+        weapon->addEnergyRecoverPercent(0.25f);
+    }
+    else if (name == "CoffeeLaser")
+    {
+        weapon->addAttackPower(12);
+        weapon->addMaxEnergy(25.0f);
+    }
+    else if (name == "KeyboardWave")
+    {
+        weapon->addProjectileCountBonus(2);
+        weapon->addAttackPower(5);
+    }
+    else if (name == "KeyboardWeap")
+    {
+        weapon->addAttackPower(14);
+        weapon->addEnergyRecoverPercent(0.18f);
+    }
+    else if (name == "DeskLampLaser")
+    {
+        weapon->addProjectileCountBonus(1);
+        weapon->addAttackPower(10);
+    }
+    else
+    {
+        weapon->addAttackPower(10);
+        weapon->addMaxEnergy(20.0f);
+    }
+}
+
+void GameScene::applyEndlessGrowthToWeapon(Weapon* weapon, int weaponId)
+{
+    if (!_isEndlessMode || !weapon)
+    {
+        return;
+    }
+
+    if (_weaponDamageBonus > 0)
+    {
+        weapon->addAttackPower(_weaponDamageBonus);
+    }
+    if (_energyRecoveryBonusPercent > 0.0f)
+    {
+        weapon->addEnergyRecoverPercent(_energyRecoveryBonusPercent);
+    }
+    if (_projectileBonus > 0)
+    {
+        weapon->addProjectileCountBonus(_projectileBonus);
+    }
+    for (int masteredId : _masteredWeaponIds)
+    {
+        if (masteredId == weaponId)
+        {
+            applyWeaponMasteryEffects(weapon);
+        }
+    }
+}
+
 void GameScene::spawnRewardForEnemy(Enemy* enemy)
 {
     if (!enemy)
@@ -2314,7 +2909,7 @@ int GameScene::calculateScore() const
     {
         return static_cast<int>(m_survivalTime) * 8
             + _completedDdlCount * 800
-            + kills * 60;
+            + _endlessScore;
     }
 
     return static_cast<int>(m_survivalTime) * 10
@@ -2352,6 +2947,12 @@ void GameScene::goToVictory()
     {
         ud->setIntegerForKey("unlocked_level", _levelNumber + 1);
         ud->flush();
+    }
+
+    // --- Story mode auto-save: advance to next level ---
+    if (!_isEndlessMode)
+    {
+        StoryModeScene::addAutoSave(_levelNumber + 1);
     }
 
     int kills = _waveManager ? _waveManager->getKillCount() : 0;
@@ -2407,7 +3008,25 @@ void GameScene::showPauseMenu()
 
     if (resumeItem && restartItem && settingsItem && titleItem)
     {
-        auto menu = Menu::create(resumeItem, restartItem, titleItem, settingsItem, nullptr);
+        Vector<MenuItem*> pauseItems;
+        pauseItems.pushBack(resumeItem);
+        pauseItems.pushBack(restartItem);
+
+        // Save button only in story mode (not endless)
+        if (!_isEndlessMode)
+        {
+            auto saveItem = createUiImageButton("art/ui/pause_save.png",
+                lm->getString("save_game"),
+                buttonSize, 30.0f * s, Color3B(100, 180, 240),
+                CC_CALLBACK_1(GameScene::onPauseSaveClicked, this));
+            if (saveItem)
+                pauseItems.pushBack(saveItem);
+        }
+
+        pauseItems.pushBack(titleItem);
+        pauseItems.pushBack(settingsItem);
+
+        auto menu = Menu::createWithArray(pauseItems);
         menu->setPosition(Vec2(cx, cy - 45.0f * s));
         menu->alignItemsVerticallyWithPadding(12.0f * s);
         _pauseLayer->addChild(menu);
@@ -2445,4 +3064,31 @@ void GameScene::onPauseSettingsClicked(Ref*)
 void GameScene::onPauseTitleClicked(Ref*)
 {
     Director::getInstance()->replaceScene(MainMenuScene::createScene());
+}
+
+void GameScene::onPauseSaveClicked(Ref*)
+{
+    if (!StoryModeScene::addManualSave(_levelNumber))
+    {
+        // Save slots full — show a brief hint
+        auto* lm = LanguageManager::getInstance();
+        auto visibleSize = Director::getInstance()->getVisibleSize();
+        Vec2 origin = Director::getInstance()->getVisibleOrigin();
+        auto hint = Label::createWithSystemFont(lm->getString("save_full"), "Arial", 22.0f);
+        hint->setColor(Color3B(255, 150, 100));
+        hint->setPosition(Vec2(origin.x + visibleSize.width / 2,
+            origin.y + visibleSize.height * 0.25f));
+        hint->setName("save_full_hint");
+        _pauseLayer->addChild(hint, 10);
+
+        // Auto-remove after 2 seconds
+        auto delay = DelayTime::create(2.0f);
+        auto remove = CallFunc::create([hint]() {
+            hint->removeFromParent();
+        });
+        hint->runAction(Sequence::create(delay, remove, nullptr));
+        return;
+    }
+
+    hidePauseMenu();
 }

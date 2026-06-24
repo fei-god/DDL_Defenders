@@ -47,6 +47,25 @@ private:
         std::string imagePath;
     };
 
+    enum class UpgradeType
+    {
+        BulletDamage,
+        EnergyRecovery,
+        ProjectileCount,
+        MaxHp,
+        MoveSpeed,
+        LifeOnKill,
+        WeaponMastery
+    };
+
+    struct UpgradeChoice
+    {
+        UpgradeType type;
+        std::string title;
+        std::string description;
+        bool major;
+    };
+
     // --- Placeholder textures ---
     void createPlaceholderTextures();
     void applySpriteFit(cocos2d::Sprite* sprite, float maxWidth, float maxHeight);
@@ -72,6 +91,7 @@ private:
     void assignWeaponToSlot(int weaponId);
     cocos2d::Node* createEquipmentIcon(const WeaponOption& option, const cocos2d::Size& boxSize, bool selected);
     void updateWeaponEnergyUI();
+    void refreshWeaponSlotUI();
     void initLevelTask();
     void showLevelIntro();
     void hideLevelIntro();
@@ -79,6 +99,16 @@ private:
     void updateEnvironmentEffects(float dt);
     void updateAssignmentProgress(float dt);
     void spawnRewardForEnemy(Enemy* enemy);
+    void handleEndlessEnemyKilled(Enemy* enemy);
+    int getScoreRewardForEnemy(Enemy* enemy) const;
+    void checkEndlessLevelUps();
+    std::vector<UpgradeChoice> rollUpgradeChoices(bool major) const;
+    void showUpgradeMenu(bool major);
+    void applyUpgradeChoice(const UpgradeChoice& choice);
+    void hideUpgradeMenu();
+    void applyWeaponMastery(Weapon* weapon);
+    void applyWeaponMasteryEffects(Weapon* weapon);
+    void applyEndlessGrowthToWeapon(Weapon* weapon, int weaponId);
     void spawnReward(RewardType type, const cocos2d::Vec2& position);
     cocos2d::Node* createRewardNode(RewardType type);
     void updateRewards(float dt);
@@ -94,7 +124,9 @@ private:
     cocos2d::LayerColor* _hpBarBg;
     cocos2d::LayerColor* _hpBarFill;
     float _hpBarMaxWidth;
+    cocos2d::LayerColor* _hudPanelBg;
     cocos2d::Label* _moodLabel;
+    cocos2d::Sprite* _weaponIcon;
     cocos2d::Label* _weaponLabel;
     cocos2d::LayerColor* _weaponEnergyBg;
     cocos2d::LayerColor* _weaponEnergyFill;
@@ -107,6 +139,10 @@ private:
     cocos2d::Label* _environmentLabel;
     cocos2d::Label* _survivalTimeLabel;
     cocos2d::Label* _topHintLabel;
+    cocos2d::Label* _endlessStatsLabel;
+    std::vector<cocos2d::Node*> _weaponSlotNodes;
+    std::vector<int> _lastWeaponSlotIds;
+    int _lastWeaponSlotIndex;
     float m_survivalTime;
 
     // ==================== World / Camera ====================
@@ -134,6 +170,8 @@ private:
     int _currentWeaponIndex;
     int _nextEquipmentSlot;
     cocos2d::Node* _equipmentLayer;
+    cocos2d::Node* _upgradeLayer;
+    std::vector<UpgradeChoice> _currentUpgradeChoices;
     std::vector<Bullet*> _bullets;
     cocos2d::Node* _bulletLayer;
     BulletPool _bulletPool;
@@ -161,6 +199,7 @@ private:
     void hidePauseMenu();
     void onPauseResumeClicked(cocos2d::Ref* sender);
     void onPauseRestartClicked(cocos2d::Ref* sender);
+    void onPauseSaveClicked(cocos2d::Ref* sender);
     void onPauseSettingsClicked(cocos2d::Ref* sender);
     void onPauseTitleClicked(cocos2d::Ref* sender);
 
@@ -185,6 +224,13 @@ private:
     float _lowHpMoodTimer;
     float _freezeTimer;
     float _rewardSpawnTimer;
+    int _endlessScore;
+    int _lastHandledPlayerLevel;
+    int _lifeOnKill;
+    int _weaponDamageBonus;
+    int _projectileBonus;
+    float _energyRecoveryBonusPercent;
+    std::vector<int> _masteredWeaponIds;
     std::string _currentPlayerMoodImage;
     std::vector<EnvironmentZone*> _environmentZones;
     int _lastUiLanguageIndex;

@@ -88,7 +88,8 @@ PlayerRecord SaveManager::makeNewPlayerRecord(int playerId, const char* playerNa
     record.lastProgress = 0;
     record.lastKills = 0;
     record.lastResult = static_cast<int>(GameResult::Lose);
-    copyPlayerName(record.lastPlayedTime, "N/A");
+    std::strncpy(record.lastPlayedTime, "N/A", sizeof(record.lastPlayedTime) - 1);
+    record.lastPlayedTime[sizeof(record.lastPlayedTime) - 1] = '\0';
 
     return record;
 }

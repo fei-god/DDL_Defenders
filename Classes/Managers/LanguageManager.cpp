@@ -350,4 +350,41 @@ void LanguageManager::initStrings()
     _strings["mouse_left"][L::ENGLISH] = "O";
     _strings["confirm"][L::SIMPLIFIED_CHINESE] = u8"确定";
     _strings["confirm"][L::ENGLISH] = "OK";
+
+    // ---- Story Mode / Save System ----
+    _strings["story_mode"][L::SIMPLIFIED_CHINESE] = u8"故事模式";
+    _strings["story_mode"][L::ENGLISH] = "Story Mode";
+
+    _strings["new_game"][L::SIMPLIFIED_CHINESE] = u8"新游戏";
+    _strings["new_game"][L::ENGLISH] = "New Game";
+
+    _strings["load_game"][L::SIMPLIFIED_CHINESE] = u8"读取存档";
+    _strings["load_game"][L::ENGLISH] = "Load Game";
+
+    _strings["save_game"][L::SIMPLIFIED_CHINESE] = u8"保存进度";
+    _strings["save_game"][L::ENGLISH] = "Save Progress";
+
+    _strings["saved_hint"][L::SIMPLIFIED_CHINESE] = u8"已保存！";
+    _strings["saved_hint"][L::ENGLISH] = "Saved!";
+
+    _strings["auto_save"][L::SIMPLIFIED_CHINESE] = u8"自动存档";
+    _strings["auto_save"][L::ENGLISH] = "Auto Save";
+
+    _strings["manual_save"][L::SIMPLIFIED_CHINESE] = u8"手动存档";
+    _strings["manual_save"][L::ENGLISH] = "Manual Save";
+
+    _strings["no_saves"][L::SIMPLIFIED_CHINESE] = u8"没有存档数据";
+    _strings["no_saves"][L::ENGLISH] = "No save data";
+
+    _strings["save_full"][L::SIMPLIFIED_CHINESE] = u8"存档已满，请删除旧存档";
+    _strings["save_full"][L::ENGLISH] = "Save slots full. Delete old saves.";
+
+    _strings["delete_save_confirm"][L::SIMPLIFIED_CHINESE] = u8"确定删除此存档？";
+    _strings["delete_save_confirm"][L::ENGLISH] = "Delete this save?";
+
+    _strings["load"][L::SIMPLIFIED_CHINESE] = u8"载入";
+    _strings["load"][L::ENGLISH] = "Load";
+
+    _strings["level_info_fmt"][L::SIMPLIFIED_CHINESE] = u8"第 %d 关";
+    _strings["level_info_fmt"][L::ENGLISH] = "Level %d";
 }

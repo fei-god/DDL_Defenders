@@ -10,8 +10,7 @@ public:
 
     virtual bool init() override;
 
-    void onStartGameClicked(cocos2d::Ref* sender);
-    void onLevelClicked(cocos2d::Ref* sender);
+    void onStoryModeClicked(cocos2d::Ref* sender);
     void onEndlessClicked(cocos2d::Ref* sender);
     void onExitGameClicked(cocos2d::Ref* sender);
     void onSettingsClicked(cocos2d::Ref* sender);

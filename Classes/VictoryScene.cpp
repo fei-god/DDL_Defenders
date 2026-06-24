@@ -41,6 +41,7 @@ bool VictoryScene::init()
     GameResultData data;
     data.playerId = 0;
     std::strncpy(data.playerName, "Player", 31);
+    data.playerName[31] = '\0';
     data.score = _score;
     data.survivalTime = static_cast<int>(_survivalTime);
     data.progress = _progress;

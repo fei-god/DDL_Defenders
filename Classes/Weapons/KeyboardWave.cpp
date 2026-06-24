@@ -24,7 +24,7 @@ bool KeyboardWave::initKeyboardWave(Player* owner)
 {
     if (!initWeapon(
         "KeyboardWave",    // 武器名字
-        "",                // 武器本体
+        "weapon/keyboard_weapon_sprite.png", // 武器本体
         owner,             // 武器所属玩家
         26,                // 攻击力
         0.42f              // 冷却时间
@@ -35,10 +35,11 @@ bool KeyboardWave::initKeyboardWave(Player* owner)
 
     _bulletSpeed = 520.0f;
     configureEnergy(100.0f, 18.0f, 24.0f);
+    setObjectScale(0.095f);
 
     // 你需要把图片放到 Resources/weapon/keyboard_wave.png
     // 如果图片不存在，Bullet 里面有兜底逻辑，但建议还是放图片。
-    _bulletImagePath = "weapon/keyboard_wave.png";
+    _bulletImagePath = "weapon/keyboard_wave_sprite.png";
 
     return true;
 }
@@ -56,12 +57,16 @@ void KeyboardWave::fire()
     }
     Vec2 startPos = _owner->getObjectPosition();
 
-    // 三发子弹分别偏转 -12°、0°、12°，形成扇形攻击。
-    float angles[3] = { -12.0f, 0.0f, 12.0f };
+    int projectileCount = 3 + getProjectileCountBonus();
+    float startAngle = -12.0f - getProjectileCountBonus() * 4.0f;
+    float endAngle = 12.0f + getProjectileCountBonus() * 4.0f;
 
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < projectileCount; i++)
     {
-        Vec2 dir = rotateDirection(baseDir, angles[i]);
+        float t = projectileCount > 1
+            ? static_cast<float>(i) / static_cast<float>(projectileCount - 1)
+            : 0.5f;
+        Vec2 dir = rotateDirection(baseDir, startAngle + (endAngle - startAngle) * t);
 
         Bullet* bullet = spawnBullet(
             "KeyboardWaveBullet",

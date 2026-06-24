@@ -1,4 +1,4 @@
-#include "RoommateAssistManager.h"
+ï»¿#include "RoommateAssistManager.h"
 #include <cstdlib>
 
 USING_NS_CC;
@@ -27,12 +27,12 @@ void RoommateAssistManager::update(float /*dt*/)
 
     bool nowIrr = (_player->getCurrentMood() == MoodType::Irritable);
 
-    // ´¥·¢¼ÆÊı£º´Ó·Ç Irritable -> Irritable
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó·ï¿½ Irritable -> Irritable
     if (nowIrr && !_prevWasIrritable)
     {
         _irritableTriggers++;
 
-        // ÄãÒªÇóµÄ¡°Ã¿´Î´¥·¢ Irritable Ôö¼ÓÕ½¶·Á¦¡±
+        // ï¿½ï¿½Òªï¿½ï¿½Ä¡ï¿½Ã¿ï¿½Î´ï¿½ï¿½ï¿½ Irritable ï¿½ï¿½ï¿½ï¿½Õ½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         _player->onIrritableTriggered();
 
         tryAssist();
@@ -45,21 +45,21 @@ void RoommateAssistManager::tryAssist()
 {
     if (_hasAssisted) return;
 
-    // ´ïµ½ 25 ´Î´¥·¢
+    // ï¿½ïµ½ 25 ï¿½Î´ï¿½ï¿½ï¿½
     if (_irritableTriggers >= 25)
     {
         _hasAssisted = true;
 
-        // ÖúÕ½ÄÚÈİ£¨ÄãÕÕÆ¬Àï¡°Ğ­Öú¹¥»÷/ÃüÖĞµĞÈË¡±ĞèÒª¹¥»÷ÏµÍ³Ö§³Ö£¬Ä¿Ç°Ã»Íê³É£©
-        // ÎÒÃÇÏÈÊµÏÖÕÕÆ¬ÀïÈ·¶¨µÄ·ÀÓù/²¹Ñª²¿·Ö£¬¹¥»÷Áô¸øÎ´À´ÎäÆ÷/×Óµ¯ÏµÍ³½ÓÈë¡£
+        // ï¿½ï¿½Õ½ï¿½ï¿½ï¿½İ£ï¿½ï¿½ï¿½ï¿½ï¿½Æ¬ï¿½ï¡°Ğ­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½ï¿½Ğµï¿½ï¿½Ë¡ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ÏµÍ³Ö§ï¿½Ö£ï¿½Ä¿Ç°Ã»ï¿½ï¿½É£ï¿½
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½ï¿½ï¿½Æ¬ï¿½ï¿½È·ï¿½ï¿½ï¿½Ä·ï¿½ï¿½ï¿½/ï¿½ï¿½Ñªï¿½ï¿½ï¿½Ö£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½/ï¿½Óµï¿½ÏµÍ³ï¿½ï¿½ï¿½ë¡£
         //
-        // ·ÀÓù£º¶ÌÊ±ÎŞµĞ/½µÉËº¦
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½Şµï¿½/ï¿½ï¿½ï¿½Ëºï¿½
         _player->setInvincible(true);
 
-        // ²¹Ñª
+        // ï¿½ï¿½Ñª
         _player->heal(30);
 
-        // ÕâÀïÄã¿ÉÒÔÔÙ¼ÓÒ»¸öÌáÊ¾ UI/ÒôĞ§/ÌØĞ§£¨¿ÉÑ¡£©
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ù¼ï¿½Ò»ï¿½ï¿½ï¿½ï¿½Ê¾ UI/ï¿½ï¿½Ğ§/ï¿½ï¿½Ğ§ï¿½ï¿½ï¿½ï¿½Ñ¡ï¿½ï¿½
         CCLOG("[RoommateAssist] Triggered after 25 Irritable hits!");
     }
 }

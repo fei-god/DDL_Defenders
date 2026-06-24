@@ -47,6 +47,7 @@ public:
     float getCurrentEnergy() const;
     float getMaxEnergy() const;
     float getEnergyCost() const;
+    float getEnergyRecoverPerSecond() const;
 
     void setAimDirection(const cocos2d::Vec2& direction);
     cocos2d::Vec2 getAimDirection() const;
@@ -55,6 +56,12 @@ public:
 
     int getAttackPower() const;
     float getCooldownTime() const;
+    int getProjectileCountBonus() const;
+
+    void addAttackPower(int amount);
+    void addEnergyRecoverPercent(float percent);
+    void addMaxEnergy(float amount);
+    void addProjectileCountBonus(int amount);
 
 protected:
     bool canFire() const;
@@ -86,6 +93,7 @@ protected:
     float _currentEnergy;
     float _energyCost;
     float _energyRecoverPerSecond;
+    int _projectileCountBonus;
 
     float _bulletSpeed;                    // 子弹速度
 	string _bulletImagePath;               //子弹图片路径

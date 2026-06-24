@@ -1,5 +1,7 @@
 ﻿#include "DeskLampLaser.h"
 
+#include <cmath>
+
 USING_NS_CC;
 
 DeskLampLaser* DeskLampLaser::create(Player* owner)
@@ -16,13 +18,14 @@ DeskLampLaser* DeskLampLaser::create(Player* owner)
 
 bool DeskLampLaser::initDeskLampLaser(Player* owner)
 {
-    if (!initWeapon("DeskLampLaser", "", owner, 42, 0.75f))
+    if (!initWeapon("DeskLampLaser", "weapon/desk_lamp_weapon_sprite.png", owner, 42, 0.75f))
     {
         return false;
     }
     _bulletSpeed = 900.0f;
-    _bulletImagePath = "weapon/desk_lamp_laser.png";
+    _bulletImagePath = "weapon/desk_lamp_laser_sprite.png";
     configureEnergy(100.0f, 30.0f, 16.0f);
+    setObjectScale(0.095f);
     return true;
 }
 
@@ -39,12 +42,22 @@ void DeskLampLaser::fire()
     }
 
     int damage = getModifiedAttackPower();
-    Bullet* bullet = spawnBullet("DeskLampLaserBullet", _bulletImagePath,
-        _owner->getObjectPosition(), dir, _bulletSpeed, damage, 0.85f, true);
-    if (bullet)
+    int projectileCount = 1 + getProjectileCountBonus();
+    float spread = projectileCount > 1 ? 5.0f : 0.0f;
+    for (int i = 0; i < projectileCount; ++i)
     {
-        bullet->setScaleX(1.7f);
-        bullet->setScaleY(0.42f);
+        float angle = (i - (projectileCount - 1) * 0.5f) * spread;
+        float rad = CC_DEGREES_TO_RADIANS(angle);
+        Vec2 shotDir(dir.x * std::cos(rad) - dir.y * std::sin(rad),
+            dir.x * std::sin(rad) + dir.y * std::cos(rad));
+
+        Bullet* bullet = spawnBullet("DeskLampLaserBullet", _bulletImagePath,
+            _owner->getObjectPosition(), shotDir, _bulletSpeed, damage, 1.25f, true);
+        if (bullet)
+        {
+            bullet->setScaleX(0.22f);
+            bullet->setScaleY(0.09f);
+        }
     }
     resetCooldown();
 }

@@ -1,4 +1,4 @@
-#include "ShieldScrollItem.h"
+ï»¿#include "ShieldScrollItem.h"
 
 USING_NS_CC;
 
@@ -17,6 +17,6 @@ ShieldScrollItem* ShieldScrollItem::create(const cocos2d::Vec2& pos)
 void ShieldScrollItem::applyToPlayer(Player* player)
 {
     if (!player) return;
-    // ´¥·¢¶ÌÊ±ÎÞµÐ£ºPlayer::setInvincible(true)£¨Äãµ±Ç° Player ÎÞµÐÊ±³¤ÓÉ maxInvincibleTime ¿ØÖÆ£©
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ÞµÐ£ï¿½Player::setInvincible(true)ï¿½ï¿½ï¿½ãµ±Ç° Player ï¿½Þµï¿½Ê±ï¿½ï¿½ï¿½ï¿½ maxInvincibleTime ï¿½ï¿½ï¿½Æ£ï¿½
     player->setInvincible(true);
 }

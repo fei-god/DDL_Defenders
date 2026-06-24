@@ -1,8 +1,29 @@
 ﻿#include "Weapon.h"
 #include <cfloat>
+#include <cmath>
 #include <new>
+#include <algorithm>
 
 USING_NS_CC;
+
+namespace
+{
+    void faceWeaponWithoutUpsideDown(Weapon* weapon, const Vec2& direction)
+    {
+        if (weapon == nullptr || direction.isZero())
+        {
+            return;
+        }
+
+        Vec2 normalized = direction.getNormalized();
+        float angle = CC_RADIANS_TO_DEGREES(std::atan2(normalized.y, std::abs(normalized.x)));
+
+        weapon->setDirection(normalized);
+        weapon->setFlippedX(normalized.x < 0.0f);
+        weapon->setFlippedY(false);
+        weapon->setRotation(-angle);
+    }
+}
 
 Weapon::Weapon()
     : _owner(nullptr)
@@ -17,6 +38,7 @@ Weapon::Weapon()
     , _currentEnergy(100.0f)
     , _energyCost(20.0f)
     , _energyRecoverPerSecond(18.0f)
+    , _projectileCountBonus(0)
     , _bulletSpeed(500.0f)
     , _bulletImagePath("")
     , _aimDirection(Vec2(1, 0))
@@ -59,6 +81,7 @@ bool Weapon::initWeapon(
     _currentEnergy = _maxEnergy;
     _energyCost = 20.0f;
     _energyRecoverPerSecond = 18.0f;
+    _projectileCountBonus = 0;
 
     return true;
 }
@@ -84,7 +107,20 @@ void Weapon::updateObject(float dt)
     // 武器跟随玩家位置。
     if (_owner != nullptr)
     {
-        setObjectPosition(_owner->getObjectPosition());
+        Vec2 displayDir = _aimDirection.lengthSquared() > 0.0001f
+            ? _aimDirection.getNormalized()
+            : Vec2(1, 0);
+        Vec2 side(-displayDir.y, displayDir.x);
+        Vec2 displayOffset = displayDir * 20.0f + side * 4.0f + Vec2(0.0f, -8.0f);
+        if (getParent() == _owner)
+        {
+            setObjectPosition(displayOffset);
+        }
+        else
+        {
+            setObjectPosition(_owner->getObjectPosition() + displayOffset);
+        }
+        faceWeaponWithoutUpsideDown(this, displayDir);
     }
 
     // 冷却时间每帧减少 dt。
@@ -112,7 +148,20 @@ void Weapon::updateCooldown(float dt)
 {
     if (_owner != nullptr)
     {
-        setObjectPosition(_owner->getObjectPosition());
+        Vec2 displayDir = _aimDirection.lengthSquared() > 0.0001f
+            ? _aimDirection.getNormalized()
+            : Vec2(1, 0);
+        Vec2 side(-displayDir.y, displayDir.x);
+        Vec2 displayOffset = displayDir * 20.0f + side * 4.0f + Vec2(0.0f, -8.0f);
+        if (getParent() == _owner)
+        {
+            setObjectPosition(displayOffset);
+        }
+        else
+        {
+            setObjectPosition(_owner->getObjectPosition() + displayOffset);
+        }
+        faceWeaponWithoutUpsideDown(this, displayDir);
     }
 
     if (_cooldownTimer > 0.0f)
@@ -210,6 +259,11 @@ float Weapon::getEnergyCost() const
     return _energyCost;
 }
 
+float Weapon::getEnergyRecoverPerSecond() const
+{
+    return _energyRecoverPerSecond;
+}
+
 bool Weapon::consumeEnergyForShot()
 {
     if (!hasEnoughEnergy())
@@ -277,6 +331,41 @@ int Weapon::getAttackPower() const
 float Weapon::getCooldownTime() const
 {
     return _cooldownTime;
+}
+
+int Weapon::getProjectileCountBonus() const
+{
+    return _projectileCountBonus;
+}
+
+void Weapon::addAttackPower(int amount)
+{
+    _attackPower = std::max(1, _attackPower + amount);
+}
+
+void Weapon::addEnergyRecoverPercent(float percent)
+{
+    _energyRecoverPerSecond *= (1.0f + percent);
+    if (_energyRecoverPerSecond < 1.0f)
+    {
+        _energyRecoverPerSecond = 1.0f;
+    }
+}
+
+void Weapon::addMaxEnergy(float amount)
+{
+    float oldMax = _maxEnergy;
+    _maxEnergy = std::max(1.0f, _maxEnergy + amount);
+    _currentEnergy += (_maxEnergy - oldMax);
+    if (_currentEnergy > _maxEnergy)
+    {
+        _currentEnergy = _maxEnergy;
+    }
+}
+
+void Weapon::addProjectileCountBonus(int amount)
+{
+    _projectileCountBonus = std::max(0, _projectileCountBonus + amount);
 }
 
 Enemy* Weapon::findNearestEnemy() const

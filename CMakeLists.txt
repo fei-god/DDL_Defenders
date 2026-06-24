@@ -63,6 +63,7 @@ list(APPEND GAME_SOURCE
      Classes/VictoryScene.cpp
      Classes/LeaderboardScene.cpp
      Classes/SettingsScene.cpp
+     Classes/StoryModeScene.cpp
 
      # ??
      Classes/Core/GameObject.cpp
@@ -107,6 +108,7 @@ list(APPEND GAME_HEADER
      Classes/VictoryScene.h
      Classes/LeaderboardScene.h
      Classes/SettingsScene.h
+     Classes/StoryModeScene.h
 
      # ??
      Classes/Core/AssetPaths.h
