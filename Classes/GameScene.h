@@ -199,6 +199,7 @@ private:
     void hidePauseMenu();
     void onPauseResumeClicked(cocos2d::Ref* sender);
     void onPauseRestartClicked(cocos2d::Ref* sender);
+    void onPauseSaveClicked(cocos2d::Ref* sender);
     void onPauseSettingsClicked(cocos2d::Ref* sender);
     void onPauseTitleClicked(cocos2d::Ref* sender);
 

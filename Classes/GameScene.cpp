@@ -2,6 +2,7 @@
 #include "GameOverScene.h"
 #include "MainMenuScene.h"
 #include "SettingsScene.h"
+#include "StoryModeScene.h"
 #include "VictoryScene.h"
 #include "Weapons/CoffeeGun.h"
 #include "Weapons/CoffeeLaser.h"
@@ -19,6 +20,7 @@
 #include <new>
 #include <cmath>
 #include <algorithm>
+#include <string>
 
 USING_NS_CC;
 
@@ -2916,6 +2918,12 @@ void GameScene::goToVictory()
         ud->flush();
     }
 
+    // --- Story mode auto-save: advance to next level ---
+    if (!_isEndlessMode)
+    {
+        StoryModeScene::addAutoSave(_levelNumber + 1);
+    }
+
     int kills = _waveManager ? _waveManager->getKillCount() : 0;
     int score = calculateScore();
     AudioManager::getInstance()->playProgressComplete();
@@ -2969,7 +2977,25 @@ void GameScene::showPauseMenu()
 
     if (resumeItem && restartItem && settingsItem && titleItem)
     {
-        auto menu = Menu::create(resumeItem, restartItem, titleItem, settingsItem, nullptr);
+        Vector<MenuItem*> pauseItems;
+        pauseItems.pushBack(resumeItem);
+        pauseItems.pushBack(restartItem);
+
+        // Save button only in story mode (not endless)
+        if (!_isEndlessMode)
+        {
+            auto saveItem = createUiImageButton("art/ui/pause_save.png",
+                lm->getString("save_game"),
+                buttonSize, 30.0f * s, Color3B(100, 180, 240),
+                CC_CALLBACK_1(GameScene::onPauseSaveClicked, this));
+            if (saveItem)
+                pauseItems.pushBack(saveItem);
+        }
+
+        pauseItems.pushBack(titleItem);
+        pauseItems.pushBack(settingsItem);
+
+        auto menu = Menu::createWithArray(pauseItems);
         menu->setPosition(Vec2(cx, cy - 45.0f * s));
         menu->alignItemsVerticallyWithPadding(12.0f * s);
         _pauseLayer->addChild(menu);
@@ -3007,4 +3033,31 @@ void GameScene::onPauseSettingsClicked(Ref*)
 void GameScene::onPauseTitleClicked(Ref*)
 {
     Director::getInstance()->replaceScene(MainMenuScene::createScene());
+}
+
+void GameScene::onPauseSaveClicked(Ref*)
+{
+    if (!StoryModeScene::addManualSave(_levelNumber))
+    {
+        // Save slots full — show a brief hint
+        auto* lm = LanguageManager::getInstance();
+        auto visibleSize = Director::getInstance()->getVisibleSize();
+        Vec2 origin = Director::getInstance()->getVisibleOrigin();
+        auto hint = Label::createWithSystemFont(lm->getString("save_full"), "Arial", 22.0f);
+        hint->setColor(Color3B(255, 150, 100));
+        hint->setPosition(Vec2(origin.x + visibleSize.width / 2,
+            origin.y + visibleSize.height * 0.25f));
+        hint->setName("save_full_hint");
+        _pauseLayer->addChild(hint, 10);
+
+        // Auto-remove after 2 seconds
+        auto delay = DelayTime::create(2.0f);
+        auto remove = CallFunc::create([hint]() {
+            hint->removeFromParent();
+        });
+        hint->runAction(Sequence::create(delay, remove, nullptr));
+        return;
+    }
+
+    hidePauseMenu();
 }

@@ -1,6 +1,7 @@
 ﻿#include "MainMenuScene.h"
 #include "GameScene.h"
 #include "SettingsScene.h"
+#include "StoryModeScene.h"
 #include "LeaderboardScene.h"
 #include "Managers/AudioManager.h"
 #include "Managers/LanguageManager.h"
@@ -121,38 +122,26 @@ bool MainMenuScene::init()
     }
 
     auto ud = UserDefault::getInstance();
-    int unlockedLevel = ud->getIntegerForKey("unlocked_level", 1);
-    if (unlockedLevel < 1) unlockedLevel = 1;
 
-    // --- Level select + menu buttons ---
-    Vector<MenuItem*> levelItems;
+    // --- Story Mode + Endless (left column) ---
+    Vector<MenuItem*> leftItems;
     Size buttonSize(300.0f * s, 48.0f * s);
-    for (int level = 1; level <= 5; ++level)
-    {
-        std::string labelText = "Level " + std::to_string(level);
-        if (level > unlockedLevel)
-        {
-            labelText += "  Locked";
-        }
 
-        auto levelItem = createMenuImageButton(
-            "art/ui/menu_level" + std::to_string(level) + ".png",
-            labelText,
-            buttonSize,
-            24.0f * s,
-            Color3B(220, 220, 100),
-            CC_CALLBACK_1(MainMenuScene::onLevelClicked, this));
-        levelItem->setTag(level);
-        if (level > unlockedLevel)
-        {
-            levelItem->setEnabled(false);
-        }
-        levelItems.pushBack(levelItem);
-    }
+    auto storyItem = createMenuImageButton("art/ui/menu_story.png",
+        lm->getString("story_mode"),
+        Size(400.0f * s, 56.0f * s), 30.0f * s,
+        Color3B(220, 220, 100),
+        CC_CALLBACK_1(MainMenuScene::onStoryModeClicked, this));
 
     auto endlessItem = createMenuImageButton("art/ui/menu_endless.png", "Endless Mode",
-        buttonSize, 24.0f * s, Color3B(245, 175, 95),
+        Size(400.0f * s, 56.0f * s), 24.0f * s, Color3B(245, 175, 95),
         CC_CALLBACK_1(MainMenuScene::onEndlessClicked, this));
+
+    leftItems.pushBack(storyItem);
+    leftItems.pushBack(endlessItem);
+
+    // --- Leaderboard + Settings + Exit (right column) ---
+    Vector<MenuItem*> rightItems;
 
     auto leaderboardItem = createMenuImageButton("art/ui/menu_leaderboard.png", "Leaderboard",
         buttonSize, 25.0f * s, Color3B(140, 220, 190),
@@ -166,25 +155,24 @@ bool MainMenuScene::init()
         buttonSize, 25.0f * s, Color3B(200, 130, 130),
         CC_CALLBACK_1(MainMenuScene::onExitGameClicked, this));
 
-    if (leaderboardItem && settingsItem && exitItem)
-    {
-        Vector<MenuItem*> otherItems;
-        otherItems.pushBack(endlessItem);
-        otherItems.pushBack(leaderboardItem);
-        otherItems.pushBack(settingsItem);
-        otherItems.pushBack(exitItem);
+    rightItems.pushBack(leaderboardItem);
+    rightItems.pushBack(settingsItem);
+    rightItems.pushBack(exitItem);
 
+    if (storyItem && endlessItem && leaderboardItem && settingsItem && exitItem)
+    {
         float centerY = origin.y + visibleSize.height * 0.47f;
         float columnOffset = 170.0f * s;
-        auto levelMenu = Menu::createWithArray(levelItems);
-        levelMenu->setPosition(Vec2(origin.x + visibleSize.width * 0.5f - columnOffset, centerY));
-        levelMenu->alignItemsVerticallyWithPadding(10.0f * s);
-        this->addChild(levelMenu, 2);
 
-        auto otherMenu = Menu::createWithArray(otherItems);
-        otherMenu->setPosition(Vec2(origin.x + visibleSize.width * 0.5f + columnOffset, centerY));
-        otherMenu->alignItemsVerticallyWithPadding(18.0f * s);
-        this->addChild(otherMenu, 2);
+        auto leftMenu = Menu::createWithArray(leftItems);
+        leftMenu->setPosition(Vec2(origin.x + visibleSize.width * 0.5f - columnOffset, centerY));
+        leftMenu->alignItemsVerticallyWithPadding(16.0f * s);
+        this->addChild(leftMenu, 2);
+
+        auto rightMenu = Menu::createWithArray(rightItems);
+        rightMenu->setPosition(Vec2(origin.x + visibleSize.width * 0.5f + columnOffset, centerY));
+        rightMenu->alignItemsVerticallyWithPadding(18.0f * s);
+        this->addChild(rightMenu, 2);
     }
 
     // --- Subtitle hint ---
@@ -202,35 +190,12 @@ bool MainMenuScene::init()
     return true;
 }
 
-void MainMenuScene::onStartGameClicked(Ref* sender)
+void MainMenuScene::onStoryModeClicked(Ref* sender)
 {
     AudioManager::getInstance()->playButtonClick();
-    AudioManager::getInstance()->playGameStart();
-    CCLOG("Start Game Clicked!");
-    auto gameScene = GameScene::createScene();
-    Director::getInstance()->replaceScene(gameScene);
-}
-
-void MainMenuScene::onLevelClicked(Ref* sender)
-{
-    auto item = dynamic_cast<MenuItem*>(sender);
-    int level = item ? item->getTag() : 1;
-    if (level < 1) level = 1;
-
-    auto ud = UserDefault::getInstance();
-    int unlockedLevel = ud->getIntegerForKey("unlocked_level", 1);
-    if (level > unlockedLevel)
-    {
-        return;
-    }
-
-    ud->setIntegerForKey("selected_level", level);
-    ud->setIntegerForKey("selected_game_mode", 0);
-    ud->flush();
-
-    AudioManager::getInstance()->playButtonClick();
-    AudioManager::getInstance()->playGameStart();
-    Director::getInstance()->replaceScene(GameScene::createScene());
+    CCLOG("Story Mode Clicked!");
+    auto storyScene = StoryModeScene::createScene();
+    Director::getInstance()->replaceScene(storyScene);
 }
 
 void MainMenuScene::onEndlessClicked(Ref* sender)
