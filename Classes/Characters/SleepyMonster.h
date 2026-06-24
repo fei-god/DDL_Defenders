@@ -9,11 +9,13 @@ class SleepyMonster : public Enemy
 public:
     static SleepyMonster* create(const std::string& imagePath,
         const cocos2d::Vec2& startPosition,
-        Player* target);
+        Player* target,
+        int waveLevel = 1);
 
     virtual bool initSleepyMonster(const std::string& imagePath,
         const cocos2d::Vec2& startPosition,
-        Player* target);
+        Player* target,
+        int waveLevel = 1);
 
     // ʵ�ִ��麯��
     virtual void move(float dt) override;

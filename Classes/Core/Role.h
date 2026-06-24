@@ -6,8 +6,8 @@
 #include <string>
 #include <vector>
 
-// ÉËº¦ÀàÐÍ
-// Brotato ÀàÓÎÏ·ÀïºóÆÚÎäÆ÷¡¢µÀ¾ß¡¢µÐÈË¹¥»÷»áÓÐ²»Í¬ÀàÐÍ
+// ï¿½Ëºï¿½ï¿½ï¿½ï¿½ï¿½
+// Brotato ï¿½ï¿½ï¿½ï¿½Ï·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß¡ï¿½ï¿½ï¿½ï¿½Ë¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð²ï¿½Í¬ï¿½ï¿½ï¿½ï¿½
 enum class DamageType
 {
     Normal,
@@ -19,7 +19,7 @@ enum class DamageType
     TrueDamage
 };
 
-// ×´Ì¬Ð§¹ûÀàÐÍ
+// ×´Ì¬Ð§ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 enum class RoleStatusType
 {
     None,
@@ -30,7 +30,7 @@ enum class RoleStatusType
     Invincible
 };
 
-// µ¥¸ö×´Ì¬Ð§¹û
+// ï¿½ï¿½ï¿½ï¿½×´Ì¬Ð§ï¿½ï¿½
 struct RoleStatusEffect
 {
     RoleStatusType type;
@@ -67,7 +67,7 @@ public:
     Role();
     virtual ~Role();
 
-    // ³õÊ¼»¯ Role »ù´¡ÊôÐÔ
+    // ï¿½ï¿½Ê¼ï¿½ï¿½ Role ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     virtual bool initRole(
         const std::string& name,
         GameObjectType type,
@@ -78,11 +78,11 @@ public:
         int defense
     );
 
-    // Ã¿Ö¡¸üÐÂ
+    // Ã¿Ö¡ï¿½ï¿½ï¿½ï¿½
     virtual void updateObject(float dt) override;
 
     // =========================
-    // ÒÆ¶¯
+    // ï¿½Æ¶ï¿½
     // =========================
 
     virtual void move(float dt);
@@ -93,7 +93,7 @@ public:
     virtual void stopMove();
 
     // =========================
-    // ÊÜÉË¡¢»ØÑª¡¢ËÀÍö
+    // ï¿½ï¿½ï¿½Ë¡ï¿½ï¿½ï¿½Ñªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     // =========================
 
     virtual void takeDamage(int damage);
@@ -109,9 +109,10 @@ public:
 
     virtual bool canTakeDamage() const;
 
-    // ÎÞµÐÊ±¼ä£¬ÀýÈçÍæ¼Ò±»µÐÈË×²µ½ºó¶ÌÔÝÎÞµÐ
+    // ï¿½Þµï¿½Ê±ï¿½ä£¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò±ï¿½ï¿½ï¿½ï¿½ï¿½×²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Þµï¿½
     virtual void setInvincible(float duration);
     virtual bool isInvincibleNow() const;
+    virtual void updateHurtCooldown(float dt);
 
     // =========================
     // HP
@@ -126,7 +127,7 @@ public:
     virtual float getHpPercent() const;
 
     // =========================
-    // »ù´¡ÊôÐÔ
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     // =========================
 
     virtual float getSpeed() const;
@@ -143,7 +144,7 @@ public:
     virtual bool isRoleAlive() const;
 
     // =========================
-    // Brotato ·ç¸ñÕ½¶·ÊôÐÔ
+    // Brotato ï¿½ï¿½ï¿½Õ½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     // =========================
 
     virtual int getBaseDamage() const;
@@ -176,21 +177,21 @@ public:
     virtual float getKnockbackResistance() const;
     virtual void setKnockbackResistance(float resistance);
 
-    // ¸ù¾ÝÉËº¦ÀàÐÍ»ñµÃ¹¥»÷¼Ó³É
+    // ï¿½ï¿½ï¿½ï¿½ï¿½Ëºï¿½ï¿½ï¿½ï¿½Í»ï¿½Ã¹ï¿½ï¿½ï¿½ï¿½Ó³ï¿½
     virtual int getDamageBonusByType(DamageType damageType) const;
 
-    // ±©»÷ÅÐ¶ÏÓë×îÖÕÊä³öÉËº¦
+    // ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ëºï¿½
     virtual bool rollCritical() const;
     virtual int calculateOutgoingDamage(int baseDamage, DamageType damageType) const;
 
-    // ÉÁ±ÜÅÐ¶Ï
+    // ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½
     virtual bool rollDodge() const;
 
-    // ÉúÃüÍµÈ¡´¥·¢
+    // ï¿½ï¿½ï¿½ï¿½ÍµÈ¡ï¿½ï¿½ï¿½ï¿½
     virtual void tryLifeSteal(int damageDealt);
 
     // =========================
-    // ×´Ì¬Ð§¹û
+    // ×´Ì¬Ð§ï¿½ï¿½
     // =========================
 
     virtual void addStatusEffect(RoleStatusType type, float duration, float value, float tickInterval = 1.0f);
@@ -209,15 +210,15 @@ public:
     virtual bool isSlowed() const;
 
     // =========================
-    // ÊÜ»÷·´À¡
+    // ï¿½Ü»ï¿½ï¿½ï¿½ï¿½ï¿½
     // =========================
 
     virtual void applyKnockback(const cocos2d::Vec2& fromPosition, float force);
     virtual void flashWhenHit();
 
     // =========================
-    // ÊôÐÔÐÞ¸Ä½Ó¿Ú
-    // ¸ø×°±¸¡¢Éý¼¶¡¢MoodSystem Ê¹ÓÃ
+    // ï¿½ï¿½ï¿½ï¿½ï¿½Þ¸Ä½Ó¿ï¿½
+    // ï¿½ï¿½×°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½MoodSystem Ê¹ï¿½ï¿½
     // =========================
 
     virtual void addMaxHp(int value);
@@ -233,14 +234,14 @@ public:
     virtual void addDodgeChance(float value);
 
     // =========================
-    // µ÷ÊÔ
+    // ï¿½ï¿½ï¿½ï¿½
     // =========================
 
     virtual std::string getDebugInfo() const override;
 
 protected:
     // =========================
-    // Éú´æÊôÐÔ
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     // =========================
 
     int hp;
@@ -251,13 +252,13 @@ protected:
 
     bool isAlive;
 
-    // ÄãÔ­À´µÄ defense ±£Áô
-    // armor ÊÇÎªÁËÌù½ü Brotato µÄ»¤¼×¸ÅÄî
+    // ï¿½ï¿½Ô­ï¿½ï¿½ï¿½ï¿½ defense ï¿½ï¿½ï¿½ï¿½
+    // armor ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Brotato ï¿½Ä»ï¿½ï¿½×¸ï¿½ï¿½ï¿½
     int defense;
     int armor;
 
     // =========================
-    // Õ½¶·ÊôÐÔ
+    // Õ½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     // =========================
 
     int baseDamage;
@@ -273,7 +274,7 @@ protected:
     float knockbackResistance;
 
     // =========================
-    // ÊÜÉË¿ØÖÆ
+    // ï¿½ï¿½ï¿½Ë¿ï¿½ï¿½ï¿½
     // =========================
 
     float invincibleTimer;
@@ -281,7 +282,7 @@ protected:
     float hurtCooldownTimer;
 
     // =========================
-    // ×´Ì¬Ð§¹û
+    // ×´Ì¬Ð§ï¿½ï¿½
     // =========================
 
     std::vector<RoleStatusEffect> statusEffects;

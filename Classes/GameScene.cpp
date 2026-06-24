@@ -1219,6 +1219,13 @@ void GameScene::updateEnemyPlayerContact(float dt)
     playerBox.size.width *= 0.76f;
     playerBox.size.height *= 0.76f;
 
+    // Check if player is near world boundary (cornered)
+    float margin = 55.0f;
+    Vec2 playerPos = m_player->getPosition();
+    bool nearWall = (playerPos.x < margin || playerPos.x > _worldSize.width - margin ||
+                     playerPos.y < margin || playerPos.y > _worldSize.height - margin);
+
+    int contactCount = 0;
     for (auto* enemy : _waveManager->getAliveEnemies())
     {
         if (!enemy || !enemy->isRoleAlive() || !enemy->isObjectActive())
@@ -1236,6 +1243,8 @@ void GameScene::updateEnemyPlayerContact(float dt)
         {
             continue;
         }
+
+        contactCount++;
 
         if (_enemyContactDamageCooldown <= 0.0f)
         {
@@ -1278,15 +1287,37 @@ void GameScene::updateEnemyPlayerContact(float dt)
             _enemyContactDamageCooldown = 0.45f;
         }
 
+        // Push ALL colliding enemies away (not just one), stronger push when cornered
         Vec2 pushDir = m_player->getPosition() - enemy->getPosition();
         if (pushDir.lengthSquared() > 0.001f)
         {
             pushDir.normalize();
-            m_player->setPosition(m_player->getPosition() + pushDir * 8.0f);
-            enemy->setPosition(enemy->getPosition() - pushDir * 5.0f);
+            float playerPush = nearWall ? 12.0f : 8.0f;
+            float enemyPush = nearWall ? 22.0f : 12.0f;
+            m_player->setPosition(m_player->getPosition() + pushDir * playerPush);
+            enemy->setPosition(enemy->getPosition() - pushDir * enemyPush);
         }
+    }
 
-        break;
+    // When surrounded, give player a brief escape dash
+    if (contactCount >= 3 && nearWall && m_player->isRoleAlive())
+    {
+        // Push player away from all contacting enemies
+        Vec2 escapeDir;
+        for (auto* enemy : _waveManager->getAliveEnemies())
+        {
+            if (!enemy || !enemy->isRoleAlive() || !enemy->isObjectActive())
+                continue;
+            if (playerBox.intersectsRect(enemy->getBoundingBox()))
+            {
+                escapeDir += (playerPos - enemy->getPosition());
+            }
+        }
+        if (escapeDir.lengthSquared() > 0.001f)
+        {
+            escapeDir.normalize();
+            m_player->setPosition(m_player->getPosition() + escapeDir * 25.0f);
+        }
     }
 }
 

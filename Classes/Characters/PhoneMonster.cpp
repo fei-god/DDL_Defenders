@@ -4,10 +4,11 @@ USING_NS_CC;
 
 PhoneMonster* PhoneMonster::create(const std::string& imagePath,
     const Vec2& startPosition,
-    Player* target)
+    Player* target,
+    int waveLevel)
 {
     PhoneMonster* monster = new (std::nothrow) PhoneMonster();
-    if (monster && monster->initPhoneMonster(imagePath, startPosition, target))
+    if (monster && monster->initPhoneMonster(imagePath, startPosition, target, waveLevel))
     {
         monster->autorelease();
         return monster;
@@ -18,10 +19,16 @@ PhoneMonster* PhoneMonster::create(const std::string& imagePath,
 
 bool PhoneMonster::initPhoneMonster(const std::string& imagePath,
     const Vec2& startPosition,
-    Player* target)
+    Player* target,
+    int waveLevel)
 {
+    // Stats scale with wave level
+    int scaledHp = 20 + waveLevel * 3;
+    float scaledSpeed = 145.0f + waveLevel * 2.0f;
+    int scaledAtk = 6 + waveLevel * 1;
+    int scaledExp = 35 + waveLevel * 5;
     bool ok = initEnemy("PhoneMonster", imagePath, startPosition,
-        20, 145.0f, 0, 6, 46.0f, 35);
+        scaledHp, scaledSpeed, 0, scaledAtk, 46.0f, scaledExp);
     if (!ok) return false;
 
     setTargetPlayer(target);

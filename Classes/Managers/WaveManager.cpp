@@ -31,7 +31,7 @@ bool WaveManager::init(Player* player, Node* parentLayer)
     _totalWaves = 1000000;
     _enemiesToSpawn = 0;
     _spawnTimer = 0.0f;
-    _spawnInterval = 2.45f;
+    _spawnInterval = 2.0f;
     _spawnElapsed = 0.0f;
     _waveTimer = 0.0f;
     _waveDuration = 30.0f;
@@ -50,8 +50,8 @@ bool WaveManager::init(Player* player, Node* parentLayer)
 
 int WaveManager::getEnemyCountForWave(int wave)
 {
-    int count = 8 + wave * 3;
-    if (count > 42) count = 42;
+    int count = 12 + wave * 4;
+    if (count > 55) count = 55;
     return count;
 }
 
@@ -128,13 +128,13 @@ Enemy* WaveManager::createEnemyByType(int enemyType, const Vec2& pos, int waveLe
     case 0: // SleepyMonster - 基础敌人
         {
             std::string path = AssetPaths::resolve("art/monsters/sleepy_monster.png");
-            enemy = SleepyMonster::create(path.empty() ? "enemy_sleepy.png" : path, pos, _player);
+            enemy = SleepyMonster::create(path.empty() ? "enemy_sleepy.png" : path, pos, _player, waveLevel);
         }
         break;
     case 1: // DDLMonster - 冲锋敌人
         {
             std::string path = AssetPaths::resolve("art/monsters/ddl_monster.png");
-            enemy = DDLMonster::create(path.empty() ? "enemy_ddl.png" : path, pos, _player);
+            enemy = DDLMonster::create(path.empty() ? "enemy_ddl.png" : path, pos, _player, waveLevel);
         }
         break;
     case 2: // ThesisBoss
@@ -150,7 +150,7 @@ Enemy* WaveManager::createEnemyByType(int enemyType, const Vec2& pos, int waveLe
     case 3: // PhoneMonster
         {
             std::string path = AssetPaths::resolve("art/monsters/phone_monster.png");
-            enemy = PhoneMonster::create(path.empty() ? "enemy_phone.png" : path, pos, _player);
+            enemy = PhoneMonster::create(path.empty() ? "enemy_phone.png" : path, pos, _player, waveLevel);
         }
         break;
     }
@@ -217,17 +217,6 @@ void WaveManager::spawnEnemy()
 
         _parentLayer->addChild(enemy, 10);  // 添加到游戏层
 
-        auto nameLabel = Label::createWithSystemFont(enemy->getObjectName(), "Arial", 13);
-        if (nameLabel)
-        {
-            nameLabel->setColor(isBossEnemy ? Color3B(255, 180, 90) : Color3B(235, 235, 245));
-            nameLabel->enableOutline(Color4B(0, 0, 0, 210), 2);
-            float labelY = enemySize.height * 0.5f + 16.0f / std::max(0.1f, targetScale);
-            nameLabel->setPosition(Vec2(0.0f, labelY));
-            nameLabel->setScale(1.0f / std::max(0.1f, targetScale));
-            enemy->addChild(nameLabel, 20);
-        }
-
         _aliveEnemies.push_back(enemy);
     }
     else
@@ -285,6 +274,11 @@ void WaveManager::update(float dt)
         {
             enemy->updateEnemy(dt);
         }
+        else
+        {
+            // 冻结时仍更新受伤冷却，确保怪物可以被攻击掉血
+            enemy->updateHurtCooldown(dt);
+        }
 
         // 更新后再次检查
         if (!enemy->isRoleAlive() || !enemy->isObjectActive())
@@ -311,7 +305,7 @@ void WaveManager::update(float dt)
 
         if (_spawnTimer <= 0.0f)
         {
-            int aliveCap = std::min(_isBossWave ? 34 : 30, 12 + _currentWave * 3);
+            int aliveCap = std::min(_isBossWave ? 42 : 38, 15 + _currentWave * 4);
             if (static_cast<int>(_aliveEnemies.size()) < aliveCap)
             {
                 spawnEnemy();
@@ -321,7 +315,7 @@ void WaveManager::update(float dt)
             float linearPressure = std::min(0.55f, _waveTimer * 0.012f);
             float dynamicInterval = _spawnInterval - waveDifficulty - linearPressure;
             if (_isBossWave) dynamicInterval += 0.25f;
-            if (dynamicInterval < 0.78f) dynamicInterval = 0.78f;
+            if (dynamicInterval < 0.65f) dynamicInterval = 0.65f;
             _spawnTimer = dynamicInterval;
         }
 

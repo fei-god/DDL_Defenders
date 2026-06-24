@@ -1,14 +1,15 @@
-﻿#include "SleepyMonster.h"
+#include "SleepyMonster.h"
 #include "cocos2d.h"
 
 USING_NS_CC;
 
 SleepyMonster* SleepyMonster::create(const std::string& imagePath,
     const Vec2& startPosition,
-    Player* target)
+    Player* target,
+    int waveLevel)
 {
     SleepyMonster* monster = new SleepyMonster();
-    if (monster && monster->initSleepyMonster(imagePath, startPosition, target))
+    if (monster && monster->initSleepyMonster(imagePath, startPosition, target, waveLevel))
     {
         monster->autorelease();
         return monster;
@@ -19,18 +20,24 @@ SleepyMonster* SleepyMonster::create(const std::string& imagePath,
 
 bool SleepyMonster::initSleepyMonster(const std::string& imagePath,
     const Vec2& startPosition,
-    Player* target)
+    Player* target,
+    int waveLevel)
 {
-    // 鐬岀潯鎬墿锛氫綆琛€閲忥紝鎱㈤€熷害锛屼綆鏀诲嚮锛岄殢鏈虹Щ鍔?
+    // Sleepy monster: low HP, slow speed, low attack, random movement
+    // Stats scale with wave level
+    int scaledHp = 20 + waveLevel * 4;
+    float scaledSpeed = 82.0f + waveLevel * 2.5f;
+    int scaledAtk = 7 + waveLevel * 1;
+    int scaledExp = 20 + waveLevel * 5;
     bool ok = initEnemy("SleepyMonster",
         imagePath,
         startPosition,
-        20,        // maxHp
-        82.0f,     // speed
-        0,         // defense
-        7,         // attackDamage
-        35.0f,     // attackRange  (闄嶄綆锛?0鈫?5)
-        20);       // expReward    (闄嶄綆锛?0鈫?0)
+        scaledHp,
+        scaledSpeed,
+        0,
+        scaledAtk,
+        35.0f,
+        scaledExp);
     if (!ok) return false;
 
     setTargetPlayer(target);
@@ -51,7 +58,6 @@ void SleepyMonster::move(float dt)
 {
     if (_targetPlayer == nullptr) return;
 
-    // 鐬岀潯琛屼负锛氭瘡闅斾竴娈垫椂闂村仠椤挎垨闅忔満绉诲姩
     if (_isPausing)
     {
         _pauseTimer -= dt;
@@ -74,18 +80,14 @@ void SleepyMonster::move(float dt)
     }
     else
     {
-        // 闅忔満绉诲姩涓€娈垫椂闂?
         _pauseTimer -= dt;
         if (_pauseTimer <= 0.0f)
         {
-            // 闅忔満鍋滈】 0.5~1.5 绉?
             _isPausing = true;
             _pauseTimer = 0.12f + CCRANDOM_0_1() * 0.18f;
             return;
         }
 
-        // 娌块殢鏈烘柟鍚戠紦鎱㈢Щ鍔?
-        // 鍚屾椂鐣ュ井鍚戠帺瀹堕潬杩戯紝涓嶄細瀹屽叏璺戝亸
         Vec2 dirToPlayer = _targetPlayer->getPosition() - getPosition();
         dirToPlayer.normalize();
         Vec2 blendedDir = (_randomDirection * 0.18f + dirToPlayer * 0.82f);
@@ -96,7 +98,6 @@ void SleepyMonster::move(float dt)
         setPosition(newPos);
     }
 
-    // 鍋跺皵锛?%姒傜巼姣忓抚锛夋敼鍙橀殢鏈烘柟鍚戯紝澧炲姞涓嶅彲棰勬祴鎬?
     if (CCRANDOM_0_1() < 0.01f)
     {
         changeRandomDirection();
@@ -106,9 +107,5 @@ void SleepyMonster::move(float dt)
 void SleepyMonster::attack()
 {
     if (_targetPlayer == nullptr) return;
-    // 鐬岀潯鎬墿鏀诲嚮鍔涜緝浣?
     _targetPlayer->takeDamage(_attackDamage);
-    // 鍙互娣诲姞鍑忛€熸晥鏋滐紝鐢卞叾浠栫粍鍛樺疄鐜?
 }
-
-

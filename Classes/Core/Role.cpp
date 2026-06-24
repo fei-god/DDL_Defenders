@@ -135,7 +135,7 @@ void Role::updateObject(float dt)
 }
 
 // =========================
-// ÒÆ¶¯
+// ï¿½Æ¶ï¿½
 // =========================
 
 void Role::move(float dt)
@@ -160,7 +160,7 @@ void Role::move(float dt)
 
     setPosition(newPosition);
 
-    // Í¬²½ GameObject µÄ·½Ïò£¬·½±ãÎäÆ÷¡¢³¯Ïò¡¢µ÷ÊÔÊ¹ÓÃ
+    // Í¬ï¿½ï¿½ GameObject ï¿½Ä·ï¿½ï¿½ò£¬·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ò¡¢µï¿½ï¿½ï¿½Ê¹ï¿½ï¿½
     GameObject::setDirection(normalizedDirection);
 }
 
@@ -186,7 +186,7 @@ void Role::stopMove()
 }
 
 // =========================
-// ÊÜÉË¡¢»ØÑª¡¢ËÀÍö
+// ï¿½ï¿½ï¿½Ë¡ï¿½ï¿½ï¿½Ñªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 // =========================
 
 void Role::takeDamage(int damage)
@@ -210,7 +210,7 @@ void Role::takeDamage(int damage, DamageType damageType, Role* attacker)
     {
         if (rollDodge())
         {
-            // ÉÁ±Ü³É¹¦£¬²»ÊÜÉË
+            // ï¿½ï¿½ï¿½Ü³É¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
             setInvincible(0.1f);
             return;
         }
@@ -251,11 +251,11 @@ int Role::calculateFinalDamage(int damage, DamageType damageType) const
 
     int finalDamage = damage;
 
-    // defense ÊÇ¹Ì¶¨¼õÉË£¬±£ÁôÄãÔ­À´µÄÂß¼­
+    // defense ï¿½Ç¹Ì¶ï¿½ï¿½ï¿½ï¿½Ë£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô­ï¿½ï¿½ï¿½ï¿½ï¿½ß¼ï¿½
     finalDamage -= defense;
 
-    // armor ×ö³É°Ù·Ö±È¼õÉË£¬Ìù½ü Brotato µÄ¡°»¤¼×Ô½¸ßÔ½¿¹´ò¡±
-    // ÕâÀïÓÃ¼òµ¥¹«Ê½£ºÃ¿µã»¤¼×Ô¼ 4% ¿¹ÐÔ£¬µ«²»»á³¬¹ý 70%
+    // armor ï¿½ï¿½ï¿½É°Ù·Ö±È¼ï¿½ï¿½Ë£ï¿½ï¿½ï¿½ï¿½ï¿½ Brotato ï¿½Ä¡ï¿½ï¿½ï¿½ï¿½ï¿½Ô½ï¿½ï¿½Ô½ï¿½ï¿½ï¿½ï¿½
+    // ï¿½ï¿½ï¿½ï¿½ï¿½Ã¼òµ¥¹ï¿½Ê½ï¿½ï¿½Ã¿ï¿½ã»¤ï¿½ï¿½Ô¼ 4% ï¿½ï¿½ï¿½Ô£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½á³¬ï¿½ï¿½ 70%
     float reduction = armor * 0.04f;
 
     if (reduction < 0.0f)
@@ -352,6 +352,18 @@ bool Role::isInvincibleNow() const
     return invincibleTimer > 0.0f || hasStatusEffect(RoleStatusType::Invincible);
 }
 
+void Role::updateHurtCooldown(float dt)
+{
+    if (hurtCooldownTimer > 0.0f)
+    {
+        hurtCooldownTimer -= dt;
+        if (hurtCooldownTimer < 0.0f)
+        {
+            hurtCooldownTimer = 0.0f;
+        }
+    }
+}
+
 // =========================
 // HP
 // =========================
@@ -403,7 +415,7 @@ float Role::getHpPercent() const
 }
 
 // =========================
-// »ù´¡ÊôÐÔ
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 // =========================
 
 float Role::getSpeed() const
@@ -470,7 +482,7 @@ bool Role::isRoleAlive() const
 }
 
 // =========================
-// Brotato ·ç¸ñÕ½¶·ÊôÐÔ
+// Brotato ï¿½ï¿½ï¿½Õ½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 // =========================
 
 int Role::getBaseDamage() const
@@ -690,13 +702,13 @@ void Role::tryLifeSteal(int damageDealt)
 
     if (randomValue <= lifeStealChance)
     {
-        // ÀàËÆ Brotato£¬ÉúÃüÍµÈ¡Í¨³£²»ÊÇ°´ÉËº¦È«¶îÎüÑª£¬ÕâÀï¼òµ¥»Ø 1 µã
+        // ï¿½ï¿½ï¿½ï¿½ Brotatoï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÍµÈ¡Í¨ï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½Ëºï¿½È«ï¿½ï¿½ï¿½ï¿½Ñªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½òµ¥»ï¿½ 1 ï¿½ï¿½
         heal(1);
     }
 }
 
 // =========================
-// ×´Ì¬Ð§¹û
+// ×´Ì¬Ð§ï¿½ï¿½
 // =========================
 
 void Role::addStatusEffect(RoleStatusType type, float duration, float value, float tickInterval)
@@ -710,7 +722,7 @@ void Role::addStatusEffect(RoleStatusType type, float duration, float value, flo
     {
         if (effect.type == type)
         {
-            // Í¬ÀàÐÍ×´Ì¬Ë¢ÐÂ³ÖÐøÊ±¼ä£¬±£Áô¸üÇ¿µÄÊýÖµ
+            // Í¬ï¿½ï¿½ï¿½ï¿½×´Ì¬Ë¢ï¿½Â³ï¿½ï¿½ï¿½Ê±ï¿½ä£¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç¿ï¿½ï¿½ï¿½ï¿½Öµ
             effect.duration = std::max(effect.duration, duration);
             effect.timer = 0.0f;
             effect.value = std::max(effect.value, value);
@@ -825,7 +837,7 @@ bool Role::isSlowed() const
 }
 
 // =========================
-// ÊÜ»÷·´À¡
+// ï¿½Ü»ï¿½ï¿½ï¿½ï¿½ï¿½
 // =========================
 
 void Role::applyKnockback(const Vec2& fromPosition, float force)
@@ -856,7 +868,7 @@ void Role::applyKnockback(const Vec2& fromPosition, float force)
 
 void Role::flashWhenHit()
 {
-    // ¼òµ¥ÊÜ»÷ÉÁË¸£¬±ÜÃâºÍ¶¯»­ÏµÍ³Ç¿°ó¶¨
+    // ï¿½ï¿½ï¿½Ü»ï¿½ï¿½ï¿½Ë¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¶ï¿½ï¿½ï¿½ÏµÍ³Ç¿ï¿½ï¿½
     this->setOpacity(120);
 
     auto delay = DelayTime::create(0.08f);
@@ -872,7 +884,7 @@ void Role::flashWhenHit()
 }
 
 // =========================
-// ÊôÐÔÐÞ¸Ä½Ó¿Ú
+// ï¿½ï¿½ï¿½ï¿½ï¿½Þ¸Ä½Ó¿ï¿½
 // =========================
 
 void Role::addMaxHp(int value)
@@ -951,7 +963,7 @@ void Role::addDodgeChance(float value)
 }
 
 // =========================
-// µ÷ÊÔ
+// ï¿½ï¿½ï¿½ï¿½
 // =========================
 
 std::string Role::getDebugInfo() const
