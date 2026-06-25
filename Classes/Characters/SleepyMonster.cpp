@@ -3,6 +3,33 @@
 
 USING_NS_CC;
 
+static void createBurstEffect(Node* parent, const Vec2& pos,
+    const Color4F& innerColor, const Color4F& outerColor,
+    int particleCount, float radius, float duration)
+{
+    auto burstNode = DrawNode::create();
+    burstNode->setPosition(pos);
+    burstNode->drawSolidCircle(Vec2::ZERO, radius * 0.3f, 0, 16, innerColor);
+    burstNode->drawCircle(Vec2::ZERO, radius * 0.5f, 0, 20, false,
+        Color4F(innerColor.r, innerColor.g, innerColor.b, 0.6f));
+    for (int i = 0; i < particleCount; i++)
+    {
+        float angle = (i * 2.0f * M_PI) / particleCount;
+        float r = radius * 0.4f + (rand() % 100) / 100.0f * radius * 0.6f;
+        Vec2 pt = Vec2(cosf(angle), sinf(angle)) * r;
+        float size = 2.0f + (rand() % 100) / 100.0f * 4.0f;
+        float alpha = 0.5f + (rand() % 100) / 100.0f * 0.5f;
+        burstNode->drawDot(pt, size,
+            Color4F(outerColor.r, outerColor.g, outerColor.b, alpha));
+    }
+    parent->addChild(burstNode, 100);
+    auto scaleUp = ScaleTo::create(duration * 0.5f, 2.0f);
+    auto fadeOut = FadeOut::create(duration);
+    burstNode->runAction(Sequence::create(
+        Spawn::create(scaleUp, fadeOut, nullptr),
+        RemoveSelf::create(), nullptr));
+}
+
 SleepyMonster* SleepyMonster::create(const std::string& imagePath,
     const Vec2& startPosition,
     Player* target,
@@ -23,8 +50,6 @@ bool SleepyMonster::initSleepyMonster(const std::string& imagePath,
     Player* target,
     int waveLevel)
 {
-    // Sleepy monster: low HP, slow speed, low attack, random movement
-    // Stats scale with wave level
     int scaledHp = 20 + waveLevel * 4;
     float scaledSpeed = 82.0f + waveLevel * 2.5f;
     int scaledAtk = 7 + waveLevel * 1;
@@ -98,6 +123,22 @@ void SleepyMonster::move(float dt)
         setPosition(newPos);
     }
 
+    // Shoot slow green sleep bubble occasionally
+    if (_projectileCooldown > 0.0f)
+        _projectileCooldown -= dt;
+    if (_projectileCooldown <= 0.0f)
+    {
+        float distToPlayer = getPosition().distance(_targetPlayer->getPosition());
+        if (distToPlayer > 60.0f && distToPlayer < 300.0f)
+        {
+            fireProjectileAtPlayer(140.0f,  // slow!
+                Color4F(0.2f, 0.7f, 0.4f, 0.7f),    // glow: sleepy green
+                Color4F(0.4f, 0.85f, 0.6f, 0.45f),  // trail: soft teal
+                _attackDamage / 2, 10.0f, 3.5f);
+            _projectileCooldown = _projectileCooldownMax + CCRANDOM_0_1() * 1.0f;
+        }
+    }
+
     if (CCRANDOM_0_1() < 0.01f)
     {
         changeRandomDirection();
@@ -108,4 +149,38 @@ void SleepyMonster::attack()
 {
     if (_targetPlayer == nullptr) return;
     _targetPlayer->takeDamage(_attackDamage);
+}
+
+void SleepyMonster::playAttackEffect()
+{
+    // Sleepy burst: dreamy green-teal wave with "ZZZ" particles
+    createBurstEffect(this, Vec2::ZERO,
+        Color4F(0.2f, 0.65f, 0.35f, 0.8f),   // inner: forest green
+        Color4F(0.4f, 0.85f, 0.55f, 0.65f),  // outer: soft teal sparks
+        12, 30.0f, 0.4f);
+
+    // ZZZ floating text effect (three expanding rings)
+    for (int ring = 0; ring < 3; ring++)
+    {
+        auto zNode = DrawNode::create();
+        zNode->setPosition(Vec2(0, 10 + ring * 6));
+        zNode->drawSolidCircle(Vec2::ZERO, 6.0f - ring * 1.5f, 0, 8,
+            Color4F(0.5f, 0.9f, 0.7f, 0.5f - ring * 0.12f));
+        this->addChild(zNode, 100);
+
+        auto delay = DelayTime::create(ring * 0.08f);
+        auto fadeAndFloat = Spawn::create(
+            FadeOut::create(0.5f),
+            MoveBy::create(0.5f, Vec2(0, 20)),
+            ScaleTo::create(0.5f, 2.0f),
+            nullptr);
+        zNode->runAction(Sequence::create(delay, fadeAndFloat, RemoveSelf::create(), nullptr));
+    }
+
+    float curScale = getScale();
+    auto pulse = Sequence::create(
+        EaseSineInOut::create(ScaleTo::create(0.12f, curScale * 1.1f)),
+        EaseSineInOut::create(ScaleTo::create(0.25f, curScale)),
+        nullptr);
+    this->runAction(pulse);
 }

@@ -682,6 +682,7 @@ void GameScene::update(float dt)
     // --- WaveManager ---
     if (_waveManager)
     {
+        _waveManager->setElapsedTime(m_survivalTime);
         updateFreezeEffect(dt);
         _waveManager->update(dt);
     }
@@ -727,9 +728,9 @@ void GameScene::update(float dt)
 
             float enemyScale = enemy->getScale();
             float invScale = enemyScale > 0.001f ? 1.0f / enemyScale : 1.0f;
-            float fullBarWidth = 36.0f * invScale;
-            float barHeight = 5.0f * invScale;
-            float barY = 24.0f * invScale;
+            float fullBarWidth = 20.0f * invScale;
+            float barHeight = 3.0f * invScale;
+            float barY = 14.0f * invScale;
 
             // Find or create HP bar background + fill
             Node* barNode = enemy->getChildByTag(HP_BAR_TAG);

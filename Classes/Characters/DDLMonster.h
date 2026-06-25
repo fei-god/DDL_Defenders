@@ -19,10 +19,11 @@ public:
 
     virtual void move(float dt) override;
     virtual void attack() override;
+    virtual void playAttackEffect() override;
 
 private:
-    float _chargeCooldown;     // �����ȴ
-    bool _isCharging;          // �Ƿ����ڳ��
-    cocos2d::Vec2 _chargeDirection; // ��̷���
+    float _chargeCooldown;
+    bool _isCharging;
+    cocos2d::Vec2 _chargeDirection;
 };
 #endif

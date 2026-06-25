@@ -1,0 +1,497 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Scenes\AppDelegate.cpp">
+      <Filter>Source Files\Classes\Scenes</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Scenes\HelloWorldScene.cpp">
+      <Filter>Source Files\Classes\Scenes</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\MainMenuScene.cpp">
+      <Filter>Source Files\Classes</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\GameScene.cpp">
+      <Filter>Source Files\Classes</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\GameOverScene.cpp">
+      <Filter>Source Files\Classes</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\VictoryScene.cpp">
+      <Filter>Source Files\Classes</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\LeaderboardScene.cpp">
+      <Filter>Source Files\Classes</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\SettingsScene.cpp">
+      <Filter>Source Files\Classes</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\StoryModeScene.cpp">
+      <Filter>Source Files\Classes</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Core\GameObject.cpp">
+      <Filter>Source Files\Classes\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Core\Role.cpp">
+      <Filter>Source Files\Classes\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Characters\Player.cpp">
+      <Filter>Source Files\Classes\Characters</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Systems\MoodSystem.cpp">
+      <Filter>Source Files\Classes\Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Characters\Enemy.cpp">
+      <Filter>Source Files\Classes\Characters</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Characters\SleepyMonster.cpp">
+      <Filter>Source Files\Classes\Characters</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Characters\PhoneMonster.cpp">
+      <Filter>Source Files\Classes\Characters</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Characters\DDLMonster.cpp">
+      <Filter>Source Files\Classes\Characters</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Characters\BossMonster.cpp">
+      <Filter>Source Files\Classes\Characters</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Characters\ThesisBoss.cpp">
+      <Filter>Source Files\Classes\Characters</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Managers\WaveManager.cpp">
+      <Filter>Source Files\Classes\Managers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Managers\LanguageManager.cpp">
+      <Filter>Source Files\Classes\Managers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Environment\EnvironmentZone.cpp">
+      <Filter>Source Files\Classes\Environment</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Weapons\Bullet.cpp">
+      <Filter>Source Files\Classes\Weapons</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Weapons\BulletPool.cpp">
+      <Filter>Source Files\Classes\Weapons</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Weapons\Weapon.cpp">
+      <Filter>Source Files\Classes\Weapons</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Weapons\CoffeeGun.cpp">
+      <Filter>Source Files\Classes\Weapons</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Weapons\KeyboardWave.cpp">
+      <Filter>Source Files\Classes\Weapons</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Weapons\CoffeeLaser.cpp">
+      <Filter>Source Files\Classes\Weapons</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Weapons\KeyboardWeap.cpp">
+      <Filter>Source Files\Classes\Weapons</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Weapons\DeskLampLaser.cpp">
+      <Filter>Source Files\Classes\Weapons</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Weapons\CoffeeBlast.cpp">
+      <Filter>Source Files\Classes\Weapons</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Managers\CollisionManager.cpp">
+      <Filter>Source Files\Classes\Managers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Managers\SaveManager.cpp">
+      <Filter>Source Files\Classes\Managers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Managers\AudioManager.cpp">
+      <Filter>Source Files\Classes\Managers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\proj.win32\main.cpp">
+      <Filter>Source Files\proj.win32</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_Defenders-main\DDL_Defenders\cocos2d\cocos2d\cocos\precheader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Scenes\AppDelegate.h">
+      <Filter>Source Files\Classes\Scenes</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Scenes\HelloWorldScene.h">
+      <Filter>Source Files\Classes\Scenes</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\MainMenuScene.h">
+      <Filter>Source Files\Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\GameScene.h">
+      <Filter>Source Files\Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\GameOverScene.h">
+      <Filter>Source Files\Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\VictoryScene.h">
+      <Filter>Source Files\Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\LeaderboardScene.h">
+      <Filter>Source Files\Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\SettingsScene.h">
+      <Filter>Source Files\Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\StoryModeScene.h">
+      <Filter>Source Files\Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Core\AssetPaths.h">
+      <Filter>Source Files\Classes\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Core\GameObject.h">
+      <Filter>Source Files\Classes\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Core\Role.h">
+      <Filter>Source Files\Classes\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Characters\Player.h">
+      <Filter>Source Files\Classes\Characters</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Systems\MoodSystem.h">
+      <Filter>Source Files\Classes\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Characters\Enemy.h">
+      <Filter>Source Files\Classes\Characters</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Characters\SleepyMonster.h">
+      <Filter>Source Files\Classes\Characters</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Characters\PhoneMonster.h">
+      <Filter>Source Files\Classes\Characters</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Characters\DDLMonster.h">
+      <Filter>Source Files\Classes\Characters</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Characters\BossMonster.h">
+      <Filter>Source Files\Classes\Characters</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Characters\ThesisBoss.h">
+      <Filter>Source Files\Classes\Characters</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Managers\WaveManager.h">
+      <Filter>Source Files\Classes\Managers</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Managers\LanguageManager.h">
+      <Filter>Source Files\Classes\Managers</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Environment\EnvironmentZone.h">
+      <Filter>Source Files\Classes\Environment</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Weapons\Bullet.h">
+      <Filter>Source Files\Classes\Weapons</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Weapons\BulletPool.h">
+      <Filter>Source Files\Classes\Weapons</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Weapons\Weapon.h">
+      <Filter>Source Files\Classes\Weapons</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Weapons\CoffeeGun.h">
+      <Filter>Source Files\Classes\Weapons</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Weapons\KeyboardWave.h">
+      <Filter>Source Files\Classes\Weapons</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Weapons\CoffeeLaser.h">
+      <Filter>Source Files\Classes\Weapons</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Weapons\KeyboardWeap.h">
+      <Filter>Source Files\Classes\Weapons</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Weapons\DeskLampLaser.h">
+      <Filter>Source Files\Classes\Weapons</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Weapons\CoffeeBlast.h">
+      <Filter>Source Files\Classes\Weapons</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Managers\CollisionManager.h">
+      <Filter>Source Files\Classes\Managers</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Core\DamageCalculator.h">
+      <Filter>Source Files\Classes\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Core\PlayerRecord.h">
+      <Filter>Source Files\Classes\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Managers\SaveManager.h">
+      <Filter>Source Files\Classes\Managers</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Classes\Managers\AudioManager.h">
+      <Filter>Source Files\Classes\Managers</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\proj.win32\main.h">
+      <Filter>Source Files\proj.win32</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\proj.win32\resource.h">
+      <Filter>Source Files\proj.win32</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\CloseNormal.png">
+      <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\CloseSelected.png">
+      <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\HelloWorld.png">
+      <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\backgrounds\dorm_room.png">
+      <Filter>Resources\art\backgrounds</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\characters\player_mood_calm.png">
+      <Filter>Resources\art\characters</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\characters\player_mood_excited.png">
+      <Filter>Resources\art\characters</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\characters\player_mood_exhausted.png">
+      <Filter>Resources\art\characters</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\characters\player_mood_fear.png">
+      <Filter>Resources\art\characters</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\characters\player_mood_focus.png">
+      <Filter>Resources\art\characters</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\characters\player_mood_irritable.png">
+      <Filter>Resources\art\characters</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\characters\player_mood_normal.png">
+      <Filter>Resources\art\characters</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\characters\player_mood_panic.png">
+      <Filter>Resources\art\characters</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\monsters\DDLmonster.png">
+      <Filter>Resources\art\monsters</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\monsters\ThesisBoss.png">
+      <Filter>Resources\art\monsters</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\monsters\ddl_monster.png">
+      <Filter>Resources\art\monsters</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\monsters\phone_monster.png">
+      <Filter>Resources\art\monsters</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\monsters\phonemonster.png">
+      <Filter>Resources\art\monsters</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\monsters\sleepy_monster.png">
+      <Filter>Resources\art\monsters</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\monsters\sleepymonster.png">
+      <Filter>Resources\art\monsters</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\monsters\thesis_boss.png">
+      <Filter>Resources\art\monsters</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\rewards\coffee.png">
+      <Filter>Resources\art\rewards</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\rewards\freeze_device.png">
+      <Filter>Resources\art\rewards</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\rewards\pen.png">
+      <Filter>Resources\art\rewards</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\rewards\power.png">
+      <Filter>Resources\art\rewards</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\ui\equipment_panel.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\ui\leaderboard_panel.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\ui\main_menu_background.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\ui\menu_endless.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\ui\menu_exit.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\ui\menu_leaderboard.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\ui\menu_level1.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\ui\menu_level2.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\ui\menu_level3.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\ui\menu_level4.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\ui\menu_level5.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\ui\menu_settings.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\ui\pause_back_to_menu.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\ui\pause_restart.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\ui\pause_resume.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\ui\pause_settings.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\art\ui\pause_title.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\audio\button_click.mp3">
+      <Filter>Resources\audio</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\audio\game_bgm.mp3">
+      <Filter>Resources\audio</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\audio\monster_hit.mp3">
+      <Filter>Resources\audio</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\audio\start_bgm.mp3">
+      <Filter>Resources\audio</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\fonts\Marker Felt.ttf">
+      <Filter>Resources\fonts</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\fonts\arial.ttf">
+      <Filter>Resources\fonts</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\res\.gitkeep">
+      <Filter>Resources\res</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\weapon\coffee_blast.png">
+      <Filter>Resources\weapon</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\weapon\coffee_blast_sprite.png">
+      <Filter>Resources\weapon</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\weapon\coffee_bullet_sprite.png">
+      <Filter>Resources\weapon</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\weapon\coffee_gun.png">
+      <Filter>Resources\weapon</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\weapon\coffee_gun_sprite.png">
+      <Filter>Resources\weapon</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\weapon\coffee_laser.png">
+      <Filter>Resources\weapon</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\weapon\desk_lamp_laser.png">
+      <Filter>Resources\weapon</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\weapon\desk_lamp_laser_sprite.png">
+      <Filter>Resources\weapon</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\weapon\desk_lamp_weapon_sprite.png">
+      <Filter>Resources\weapon</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\weapon\focus_orb.png">
+      <Filter>Resources\weapon</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\weapon\focus_orb_sprite.png">
+      <Filter>Resources\weapon</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\weapon\keyboard_wave.png">
+      <Filter>Resources\weapon</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\weapon\keyboard_wave_sprite.png">
+      <Filter>Resources\weapon</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\weapon\keyboard_weap_bolt_sprite.png">
+      <Filter>Resources\weapon</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\weapon\keyboard_weapon.png">
+      <Filter>Resources\weapon</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_Defenders-main\DDL_Defenders\Resources\weapon\keyboard_weapon_sprite.png">
+      <Filter>Resources\weapon</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\DDL_Defenders-main\DDL_Defenders\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="D:\DDL_Defenders-main\DDL_Defenders\proj.win32\game.rc">
+      <Filter>Source Files\proj.win32</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Resources">
+      <UniqueIdentifier>{4FBD1012-2D7E-3042-9F59-8CAEFB1969AD}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources\art">
+      <UniqueIdentifier>{C5A28D7C-8014-3BF3-9C79-1D0290F123B6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources\art\backgrounds">
+      <UniqueIdentifier>{EA976CE7-FBA8-3213-8A93-24A9A0427413}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources\art\characters">
+      <UniqueIdentifier>{49D3501A-1D77-3262-98D9-0FD972804F3C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources\art\monsters">
+      <UniqueIdentifier>{CE347A12-5D3F-3FDD-8204-6B69E47157AE}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources\art\rewards">
+      <UniqueIdentifier>{465D2AB8-94BE-3E19-B79A-77024FD13E9A}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources\art\ui">
+      <UniqueIdentifier>{90E4C9C2-8FDE-3CDE-B5D8-C620110E10EA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources\audio">
+      <UniqueIdentifier>{E9112843-05E6-3509-863B-430A56CD38C3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources\fonts">
+      <UniqueIdentifier>{5A3348DA-9928-3677-BFD9-146C2D5AD312}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources\res">
+      <UniqueIdentifier>{63F59A86-E05E-3EE5-82F7-D1C3CEC5FD6D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources\weapon">
+      <UniqueIdentifier>{EC6F3BB8-25E7-3ABD-976A-044FE8D1751D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{8BDB628D-6D1F-3F08-BBBA-13EF0DADFBFB}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Classes">
+      <UniqueIdentifier>{14399686-026E-3BB6-8157-4A46C20CE591}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Classes\Characters">
+      <UniqueIdentifier>{4B4AB945-79CB-3AC5-9DFE-E7DC4B090BF0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Classes\Core">
+      <UniqueIdentifier>{1303C403-B980-317D-BC92-4484B2F4041A}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Classes\Environment">
+      <UniqueIdentifier>{CD0F81A7-0CAD-3629-9340-B77006238087}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Classes\Managers">
+      <UniqueIdentifier>{84610744-0FC5-35BF-89D8-6294600A3FA8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Classes\Scenes">
+      <UniqueIdentifier>{16F79091-009A-3DA9-88FA-268F5D19BF2F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Classes\Systems">
+      <UniqueIdentifier>{81B416DC-F5E3-3DBA-AB48-4A1E5A367F39}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Classes\Weapons">
+      <UniqueIdentifier>{44E40B7C-5491-390D-85A5-CC1FFBFE5C10}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\proj.win32">
+      <UniqueIdentifier>{38D721A6-B352-3746-95D2-F710BFEB5EBB}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

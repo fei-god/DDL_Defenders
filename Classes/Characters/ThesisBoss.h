@@ -19,6 +19,7 @@ public:
 
     virtual void move(float dt) override;
     virtual void attack() override;
+    virtual void playAttackEffect() override;
 };
 
 #endif

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #ifndef __WAVE_MANAGER_H__
 #define __WAVE_MANAGER_H__
 
@@ -14,12 +14,11 @@ public:
     static WaveManager* create(Player* player, cocos2d::Node* parentLayer);
     bool init(Player* player, cocos2d::Node* parentLayer);
 
-    void update(float dt);          // 鍦?GameScene 鐨?update 涓皟鐢?
-    void startWave(int waveIndex);  // 寮€濮嬬鍑犳尝
-    void stopSpawn();               // 鍋滄鍒锋€紙娓告垙缁撴潫/閫氬叧鏃讹級
-    std::vector<Enemy*>& getAliveEnemies();  // 鑾峰彇褰撳墠瀛樻椿鐨勬晫浜哄垪琛?
+    void update(float dt);
+    void startWave(int waveIndex);
+    void stopSpawn();
+    std::vector<Enemy*>& getAliveEnemies();
 
-    // 娉㈡淇℃伅
     int getCurrentWave() const { return _currentWave; }
     int getTotalWaves() const { return _totalWaves; }
     int getKillCount() const { return _killCount; }
@@ -29,47 +28,52 @@ public:
     void setFrozen(bool frozen);
     bool isFrozen() const { return _isFrozen; }
 
-    // 鍥炶皟锛氭尝娆℃竻鐞嗗畬鎴愭椂璋冪敤
+    // Time-based difficulty scaling
+    void setElapsedTime(float elapsed) { _elapsedTime = elapsed; }
+    float getElapsedTime() const { return _elapsedTime; }
+
     void setWaveClearedCallback(std::function<void(int)> callback);
-    // 鍥炶皟锛氭墍鏈夋尝娆″畬鎴愶紙閫氬叧锛夋椂璋冪敤
     void setAllWavesClearedCallback(std::function<void()> callback);
-    // 鍥炶皟锛欱oss娉㈠紑濮?
     void setBossWaveCallback(std::function<void(int)> callback);
     void setEnemyKilledCallback(std::function<void(Enemy*)> callback);
 
 private:
-    void spawnEnemy();              // 鐢熸垚涓€涓晫浜?
+    void spawnEnemy();
     Enemy* createEnemyByType(int enemyType, const cocos2d::Vec2& pos, int waveLevel);
-    void onWaveCleared();           // 褰撳墠娉㈡墍鏈夋晫浜鸿娑堢伃
-    void showWaveAnnouncement(int wave); // 鏄剧ず娉㈡鍏憡
-    int getEnemyCountForWave(int wave);  // 鏍规嵁娉㈡璁＄畻鏁屼汉鏁伴噺
+    void onWaveCleared();
+    void showWaveAnnouncement(int wave);
+    int getEnemyCountForWave(int wave);
 
     Player* _player;
-    cocos2d::Node* _parentLayer;   // 鏁屼汉娣诲姞鍒扮殑灞?
+    cocos2d::Node* _parentLayer;
 
-    int _currentWave;               // 褰撳墠娉㈡锛堜粠1寮€濮嬶級
-    int _totalWaves;                // 鎬绘尝娆℃暟锛堥粯璁?0娉級
-    int _enemiesToSpawn;            // 鏈尝杩橀渶鐢熸垚鐨勬晫浜烘暟
-    float _spawnTimer;              // 鐢熸垚璁℃椂鍣?
-    float _spawnInterval;           // 鐢熸垚闂撮殧锛堢锛?
+    int _currentWave;
+    int _totalWaves;
+    int _enemiesToSpawn;
+    float _spawnTimer;
+    float _spawnInterval;
     float _spawnElapsed;
     float _waveTimer;
     float _waveDuration;
-    bool _isSpawning;               // 鏄惁姝ｅ湪鐢熸垚
+    bool _isSpawning;
 
-    std::vector<Enemy*> _aliveEnemies; // 褰撳墠瀛樻椿鐨勬晫浜哄垪琛?
-    int _totalEnemiesThisWave;      // 鏈尝鎬绘晫浜烘暟
-    int _enemiesSpawnedCount;       // 鏈尝宸茬敓鎴愮殑鏁屼汉鏁?
+    std::vector<Enemy*> _aliveEnemies;
+    int _totalEnemiesThisWave;
+    int _enemiesSpawnedCount;
 
-    int _killCount;                 // 鏈眬鎬诲嚮鏉€鏁?
-    bool _isBossWave;               // 褰撳墠娉㈡槸鍚︿负Boss娉?
-    bool _bossSpawned;              // Boss鏄惁宸茬敓鎴?
+    int _killCount;
+    bool _isBossWave;
+    bool _bossSpawned;
 
-    float _waveDelayTimer;          // 娉㈡闂村欢杩熻鏃跺櫒
-    bool _waitingForNextWave;       // 鏄惁鍦ㄧ瓑寰呬笅涓€娉?
+    float _waveDelayTimer;
+    bool _waitingForNextWave;
     bool _isFrozen;
 
-    // 鍥炶皟鍑芥暟
+    float _elapsedTime;
+
+    // Orphaned projectiles (from dead enemies that still have active projectiles)
+    std::vector<EnemyProjectile> _orphanProjectiles;
+
     std::function<void(int)> _waveClearedCallback;
     std::function<void()> _allWavesClearedCallback;
     std::function<void(int)> _bossWaveCallback;
@@ -77,4 +81,3 @@ private:
 };
 
 #endif
-

@@ -3,6 +3,33 @@
 
 USING_NS_CC;
 
+static void createBurstEffect(Node* parent, const Vec2& pos,
+    const Color4F& innerColor, const Color4F& outerColor,
+    int particleCount, float radius, float duration)
+{
+    auto burstNode = DrawNode::create();
+    burstNode->setPosition(pos);
+    burstNode->drawSolidCircle(Vec2::ZERO, radius * 0.3f, 0, 16, innerColor);
+    burstNode->drawCircle(Vec2::ZERO, radius * 0.5f, 0, 20, false,
+        Color4F(innerColor.r, innerColor.g, innerColor.b, 0.6f));
+    for (int i = 0; i < particleCount; i++)
+    {
+        float angle = (i * 2.0f * M_PI) / particleCount;
+        float r = radius * 0.4f + (rand() % 100) / 100.0f * radius * 0.6f;
+        Vec2 pt = Vec2(cosf(angle), sinf(angle)) * r;
+        float size = 2.0f + (rand() % 100) / 100.0f * 4.0f;
+        float alpha = 0.5f + (rand() % 100) / 100.0f * 0.5f;
+        burstNode->drawDot(pt, size,
+            Color4F(outerColor.r, outerColor.g, outerColor.b, alpha));
+    }
+    parent->addChild(burstNode, 100);
+    auto scaleUp = ScaleTo::create(duration * 0.5f, 2.0f);
+    auto fadeOut = FadeOut::create(duration);
+    burstNode->runAction(Sequence::create(
+        Spawn::create(scaleUp, fadeOut, nullptr),
+        RemoveSelf::create(), nullptr));
+}
+
 BossMonster* BossMonster::create(const std::string& imagePath,
     const Vec2& startPosition,
     Player* target,
@@ -23,8 +50,6 @@ bool BossMonster::initBossMonster(const std::string& imagePath,
     Player* target,
     int waveLevel)
 {
-    // Boss属性：高血量，慢速度，高攻击，高防御
-    // 根据波次等级调整基础属性
     int baseHp = 85 + waveLevel * 10;
     float baseSpeed = 40.0f + waveLevel * 3.0f;
     int baseDefense = 2 + waveLevel / 2;
@@ -45,15 +70,14 @@ bool BossMonster::initBossMonster(const std::string& imagePath,
 
     setTargetPlayer(target);
 
-    // 初始化Boss特有属性
     _chargeTimer = 0.0f;
-    _chargeInterval = 3.0f;        // 每3秒尝试冲锋
+    _chargeInterval = 3.0f;
     _isCharging = false;
     _chargeDir = Vec2::ZERO;
     _chargeDuration = 0.0f;
 
     _specialAttackTimer = 0.0f;
-    _specialAttackInterval = 5.0f; // 每5秒特殊攻击
+    _specialAttackInterval = 5.0f;
 
     _isEnraged = false;
     _waveLevel = waveLevel;
@@ -62,8 +86,7 @@ bool BossMonster::initBossMonster(const std::string& imagePath,
     _wanderTarget = Vec2::ZERO;
     _isWandering = true;
 
-    // Boss体型放大1.5倍
-    setScale(1.5f);
+    setScale(1.3f);
 
     CCLOG("BossMonster created! HP:%d Speed:%.1f Atk:%d (Wave %d)",
         getMaxHp(), getSpeed(), getAttackDamage(), waveLevel);
@@ -75,18 +98,51 @@ void BossMonster::move(float dt)
 {
     if (_targetPlayer == nullptr) return;
 
-    // 检查是否进入狂暴状态
     if (!_isEnraged && getHp() <= getMaxHp() / 2)
     {
         _isEnraged = true;
-        // 狂暴：速度提升50%，攻击间隔缩短
         setSpeed(getSpeed() * 1.5f);
         _chargeInterval = 2.0f;
         _specialAttackInterval = 3.0f;
+        showEnrageAura();
         CCLOG("BossMonster ENRAGED! Speed:%.1f", getSpeed());
     }
 
-    // 更新技能计时器
+    // Shoot fireball volleys periodically
+    if (_projectileCooldown > 0.0f)
+        _projectileCooldown -= dt;
+    if (_projectileCooldown <= 0.0f)
+    {
+        float distToPlayer = getPosition().distance(_targetPlayer->getPosition());
+        if (distToPlayer > 80.0f)
+        {
+            // Boss shoots a spread volley of 3-5 fireballs
+            int volleyCount = _isEnraged ? 5 : 3;
+            Vec2 baseDir = _targetPlayer->getPosition() - getPosition();
+            baseDir.normalize();
+            for (int i = 0; i < volleyCount; i++)
+            {
+                float spreadAngle = (i - (volleyCount - 1) * 0.5f) * 0.25f;
+                Vec2 dir = Vec2(
+                    baseDir.x * cosf(spreadAngle) - baseDir.y * sinf(spreadAngle),
+                    baseDir.x * sinf(spreadAngle) + baseDir.y * cosf(spreadAngle)
+                );
+                // Stagger the shots slightly
+                auto delayedFire = CallFunc::create([this, dir]() {
+                    fireProjectile(dir, 260.0f,
+                        Color4F(1.0f, 0.15f, 0.03f, 0.8f),   // glow: crimson
+                        Color4F(1.0f, 0.4f, 0.1f, 0.55f),     // trail: fire orange
+                        _attackDamage / 2, 14.0f, 3.0f);       // big projectiles
+                });
+                this->runAction(Sequence::create(
+                    DelayTime::create(i * 0.1f),
+                    delayedFire,
+                    nullptr));
+            }
+            _projectileCooldown = _isEnraged ? 1.5f : 2.5f;
+        }
+    }
+
     if (_chargeTimer > 0.0f)
         _chargeTimer -= dt;
     if (_specialAttackTimer > 0.0f)
@@ -94,51 +150,62 @@ void BossMonster::move(float dt)
 
     if (_isCharging)
     {
-        // 冲锋状态
         _chargeDuration -= dt;
         float chargeSpeed = getSpeed() * 3.0f;
         Vec2 newPos = getPosition() + _chargeDir * chargeSpeed * dt;
         setPosition(newPos);
 
+        // Large charge trail
+        if (CCRANDOM_0_1() < 0.6f)
+        {
+            auto trail = DrawNode::create();
+            trail->setPosition(Vec2::ZERO);
+            float r = 8.0f + (rand() % 10);
+            trail->drawSolidCircle(Vec2::ZERO, r, 0, 10, Color4F(0.9f, 0.2f, 0.05f, 0.6f));
+            trail->drawSolidCircle(Vec2::ZERO, r * 0.5f, 0, 6, Color4F(1.0f, 0.5f, 0.1f, 0.8f));
+            this->addChild(trail, -1);
+            auto fade = FadeOut::create(0.4f);
+            auto shrink = ScaleTo::create(0.4f, 0.2f);
+            trail->runAction(Sequence::create(
+                Spawn::create(fade, shrink, nullptr),
+                RemoveSelf::create(), nullptr));
+        }
+
         if (_chargeDuration <= 0.0f)
         {
             _isCharging = false;
             _isWandering = true;
-            _wanderTimer = 1.0f; // 冲锋后短暂徘徊
+            _wanderTimer = 1.0f;
         }
         return;
     }
 
-    // 特殊攻击：在攻击范围内释放AOE
     float distToPlayer = getPosition().distance(_targetPlayer->getPosition());
     if (_specialAttackTimer <= 0.0f && distToPlayer <= _attackRange * 1.5f)
     {
+        showAOEIndicator();
         performSpecialAttack();
         _specialAttackTimer = _specialAttackInterval;
         return;
     }
 
-    // 冲锋判定：冷却完毕且玩家在中等距离
     if (_chargeTimer <= 0.0f && distToPlayer > 60.0f && distToPlayer < 300.0f)
     {
         startCharge();
         return;
     }
 
-    // 正常移动：缓慢接近玩家 + 小幅度徘徊
     if (_isWandering)
     {
         _wanderTimer -= dt;
         if (_wanderTimer <= 0.0f || _wanderTarget == Vec2::ZERO)
         {
-            // 生成新的徘徊目标（玩家周围随机偏移）
             float offsetX = (CCRANDOM_0_1() - 0.5f) * 200.0f;
             float offsetY = (CCRANDOM_0_1() - 0.5f) * 200.0f;
             _wanderTarget = _targetPlayer->getPosition() + Vec2(offsetX, offsetY);
             _wanderTimer = 2.0f + CCRANDOM_0_1() * 2.0f;
         }
 
-        // 移向徘徊目标
         Vec2 dir = _wanderTarget - getPosition();
         float wanderDist = dir.length();
         if (wanderDist < 20.0f)
@@ -155,14 +222,12 @@ void BossMonster::move(float dt)
     }
     else
     {
-        // 直接追踪玩家
         Vec2 dir = _targetPlayer->getPosition() - getPosition();
         dir.normalize();
         setDirection(dir);
         Vec2 newPos = getPosition() + dir * getSpeed() * dt;
         setPosition(newPos);
 
-        // 2-3秒后恢复徘徊
         _wanderTimer -= dt;
         if (_wanderTimer <= 0.0f)
         {
@@ -178,19 +243,117 @@ void BossMonster::startCharge()
     _isWandering = false;
     _chargeDir = _targetPlayer->getPosition() - getPosition();
     _chargeDir.normalize();
-    _chargeDuration = 0.6f;  // 冲锋持续0.6秒
+    _chargeDuration = 0.6f;
     _chargeTimer = _chargeInterval;
+
+    // Charge wind-up: expanding ring + ground crackle
+    auto windUpRing = DrawNode::create();
+    windUpRing->setPosition(Vec2::ZERO);
+    windUpRing->drawCircle(Vec2::ZERO, 15.0f, 0, 24, false, Color4F(0.9f, 0.3f, 0.05f, 0.5f));
+    this->addChild(windUpRing, 50);
+    auto expand = ScaleTo::create(0.4f, 3.0f);
+    auto fade = FadeOut::create(0.4f);
+    windUpRing->runAction(Sequence::create(
+        Spawn::create(expand, fade, nullptr),
+        RemoveSelf::create(), nullptr));
+
+    float curScale = getScale();
+    auto windUp = Sequence::create(
+        EaseBackIn::create(ScaleTo::create(0.15f, curScale * 0.85f)),
+        EaseBackOut::create(ScaleTo::create(0.25f, curScale * 1.15f)),
+        nullptr);
+    this->runAction(windUp);
 
     CCLOG("BossMonster starts charging!");
 }
 
+void BossMonster::showAOEIndicator()
+{
+    // Large expanding red danger zone
+    float aoeRadius = _attackRange * 1.5f;
+
+    // Outer warning ring
+    auto outerRing = DrawNode::create();
+    outerRing->setPosition(Vec2::ZERO);
+    outerRing->drawCircle(Vec2::ZERO, aoeRadius, 0, 32, false, Color4F(1.0f, 0.1f, 0.05f, 0.4f));
+    this->addChild(outerRing, 50);
+
+    // Inner danger circle
+    auto innerCircle = DrawNode::create();
+    innerCircle->setPosition(Vec2::ZERO);
+    innerCircle->drawSolidCircle(Vec2::ZERO, aoeRadius * 0.4f, 0, 20, Color4F(1.0f, 0.2f, 0.1f, 0.15f));
+    this->addChild(innerCircle, 49);
+
+    // Both pulse and fade
+    auto pulseOuter = Sequence::create(
+        Spawn::create(ScaleTo::create(0.5f, 2.0f), FadeOut::create(0.5f), nullptr),
+        RemoveSelf::create(), nullptr);
+    auto pulseInner = Sequence::create(DelayTime::create(0.1f),
+        Spawn::create(ScaleTo::create(0.4f, 2.5f), FadeOut::create(0.4f), nullptr),
+        RemoveSelf::create(), nullptr);
+    outerRing->runAction(pulseOuter);
+    innerCircle->runAction(pulseInner);
+
+    // Ground crackle particles inside AOE
+    for (int i = 0; i < 15; i++)
+    {
+        auto crack = DrawNode::create();
+        float angle = (rand() % 360) * M_PI / 180.0f;
+        float dist = (rand() % 80) / 100.0f * aoeRadius;
+        crack->setPosition(Vec2(cosf(angle) * dist, sinf(angle) * dist));
+        crack->drawDot(Vec2::ZERO, 2.0f + (rand() % 4),
+            Color4F(1.0f, 0.3f, 0.1f, 0.6f));
+        this->addChild(crack, 51);
+        auto fadeCrack = Sequence::create(
+            DelayTime::create((rand() % 30) / 100.0f),
+            FadeOut::create(0.3f),
+            RemoveSelf::create(), nullptr);
+        crack->runAction(fadeCrack);
+    }
+}
+
+void BossMonster::showEnrageAura()
+{
+    // Remove old aura if exists
+    this->removeChildByTag(777);
+
+    // Pulsing dark-red aura
+    auto auraContainer = DrawNode::create();
+    auraContainer->setPosition(Vec2::ZERO);
+    auraContainer->setTag(777);
+
+    // Outer misty ring
+    auraContainer->drawSolidCircle(Vec2::ZERO, 55.0f, 0, 28, Color4F(0.8f, 0.08f, 0.05f, 0.15f));
+    // Middle ring
+    auraContainer->drawCircle(Vec2::ZERO, 45.0f, 0, 24, false, Color4F(1.0f, 0.15f, 0.08f, 0.3f));
+    // Inner close ring
+    auraContainer->drawCircle(Vec2::ZERO, 30.0f, 0, 18, false, Color4F(1.0f, 0.25f, 0.12f, 0.25f));
+
+    this->addChild(auraContainer, -5);
+
+    // Pulsing animation
+    auto scaleUp = EaseSineInOut::create(ScaleTo::create(0.7f, 1.2f));
+    auto scaleDown = EaseSineInOut::create(ScaleTo::create(0.7f, 0.85f));
+    auto pulse = RepeatForever::create(Sequence::create(scaleUp, scaleDown, nullptr));
+    auraContainer->runAction(pulse);
+
+    // Enrage burst flash
+    auto flashNode = DrawNode::create();
+    flashNode->setPosition(Vec2::ZERO);
+    flashNode->drawSolidCircle(Vec2::ZERO, 60.0f, 0, 20, Color4F(1.0f, 0.2f, 0.05f, 0.4f));
+    this->addChild(flashNode, 150);
+    auto flashFade = Sequence::create(
+        Spawn::create(ScaleTo::create(0.5f, 2.5f), FadeOut::create(0.5f), nullptr),
+        RemoveSelf::create(), nullptr);
+    flashNode->runAction(flashFade);
+}
+
 void BossMonster::performSpecialAttack()
 {
-    // Boss范围攻击：对玩家造成额外伤害
-    // 实际伤害计算在attack()中，这里只是触发布局
     CCLOG("BossMonster performs special AOE attack!");
 
-    // 对玩家造成双倍伤害（通过临时提升攻击力）
+    _attackCooldown = _attackCooldownMax;
+
     int originalDamage = getAttackDamage();
     setAttackDamage(originalDamage * 2);
     attack();
@@ -200,18 +363,59 @@ void BossMonster::performSpecialAttack()
 void BossMonster::attack()
 {
     if (_targetPlayer == nullptr) return;
-
-    // Boss攻击：造成基础伤害
     _targetPlayer->takeDamage(_attackDamage);
+}
 
-    // Boss攻击带有短暂击退效果（如果玩家类支持的话，通过修改位置模拟）
-    // 注：此功能可选，可根据需要启用
-    /*
-    Vec2 knockDir = _targetPlayer->getPosition() - getPosition();
-    knockDir.normalize();
-    Vec2 knockPos = _targetPlayer->getPosition() + knockDir * 30.0f;
-    _targetPlayer->setPosition(knockPos);
-    */
+void BossMonster::playAttackEffect()
+{
+    // Boss attack: massive crimson shockwave with debris
+    createBurstEffect(this, Vec2::ZERO,
+        Color4F(1.0f, 0.12f, 0.05f, 0.9f),   // inner: blood red
+        Color4F(1.0f, 0.4f, 0.15f, 0.7f),     // outer: fire orange
+        22, 55.0f, 0.5f);
+
+    // Three expanding shockwave rings
+    for (int ring = 0; ring < 3; ring++)
+    {
+        auto waveRing = DrawNode::create();
+        waveRing->setPosition(Vec2::ZERO);
+        waveRing->drawCircle(Vec2::ZERO, 25.0f, 0, 24, false,
+            Color4F(1.0f, 0.3f, 0.1f, 0.5f - ring * 0.12f));
+        this->addChild(waveRing, 90);
+
+        auto delay = DelayTime::create(ring * 0.06f);
+        auto expand = ScaleTo::create(0.4f, 3.0f + ring * 0.5f);
+        auto fade = FadeOut::create(0.4f);
+        waveRing->runAction(Sequence::create(delay,
+            Spawn::create(expand, fade, nullptr),
+            RemoveSelf::create(), nullptr));
+    }
+
+    // Radial spike particles
+    for (int i = 0; i < 12; i++)
+    {
+        auto spike = DrawNode::create();
+        float angle = i * M_PI / 6;
+        spike->setPosition(Vec2::ZERO);
+        spike->drawSolidCircle(Vec2(cosf(angle) * 35.0f, sinf(angle) * 35.0f),
+            5.0f, 0, 6, Color4F(1.0f, 0.5f, 0.1f, 0.8f));
+        this->addChild(spike, 100);
+        auto flyOut = MoveBy::create(0.35f, Vec2(cosf(angle) * 40.0f, sinf(angle) * 40.0f));
+        auto fadeOut = FadeOut::create(0.35f);
+        spike->runAction(Sequence::create(
+            Spawn::create(flyOut, fadeOut, nullptr),
+            RemoveSelf::create(), nullptr));
+    }
+
+    // Heavy slam shake
+    float curScale = getScale();
+    auto slam = Sequence::create(
+        EaseBackOut::create(ScaleTo::create(0.05f, curScale * 1.35f)),
+        ScaleTo::create(0.04f, curScale * 0.8f),
+        ScaleTo::create(0.05f, curScale * 1.2f),
+        EaseBackIn::create(ScaleTo::create(0.2f, curScale)),
+        nullptr);
+    this->runAction(slam);
 }
 
 void BossMonster::die()
@@ -220,19 +424,28 @@ void BossMonster::die()
 
     CCLOG("Boss defeated! Player gained %d exp!", _expReward);
 
-    // 先禁用碰撞，防止死亡动画期间继续造成伤害
     setCollisionEnabled(false);
 
-    // 创建死亡特效（缩放缩小消失），动画结束后执行真正的死亡逻辑
-    auto fadeOut = ScaleTo::create(0.3f, 0.1f);
+    // Death explosion - massive multi-layer burst
+    createBurstEffect(this, Vec2::ZERO,
+        Color4F(1.0f, 0.5f, 0.1f, 0.9f),
+        Color4F(1.0f, 0.8f, 0.3f, 0.7f),
+        25, 70.0f, 0.6f);
+
+    // Delayed second burst
+    auto delayedBurst = CallFunc::create([this]() {
+        createBurstEffect(this, Vec2::ZERO,
+            Color4F(1.0f, 0.6f, 0.2f, 0.7f),
+            Color4F(0.9f, 0.7f, 0.1f, 0.5f),
+            18, 50.0f, 0.5f);
+    });
+
+    // Death shrink
+    auto delay = DelayTime::create(0.12f);
+    auto fadeOut = ScaleTo::create(0.35f, 0.05f);
     auto dieCallback = CallFunc::create([this]() {
         Enemy::die();
     });
-    auto remove = RemoveSelf::create();
-    this->runAction(Sequence::create(fadeOut, dieCallback, remove, nullptr));
-}
-
-bool BossMonster::isEnraged() const
-{
-    return _isEnraged;
+    auto removeBoss = RemoveSelf::create();
+    this->runAction(Sequence::create(delay, delayedBurst, fadeOut, dieCallback, removeBoss, nullptr));
 }

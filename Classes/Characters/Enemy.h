@@ -3,7 +3,28 @@
 #define __ENEMY_H__
 
 #include "Role.h"
-#include "Player.h"   // ǰ������Ҳ���ԣ�����Ҫ֪�� Player ��
+#include "Player.h"
+#include <vector>
+
+// Enemy projectile: visible bullet that flies toward player
+struct EnemyProjectile
+{
+    cocos2d::Node* node;        // Visual node (DrawNode)
+    cocos2d::Vec2 position;
+    cocos2d::Vec2 direction;    // Normalized
+    float speed;
+    int damage;
+    float lifetime;
+    float elapsed;
+    bool active;
+    float radius;               // Collision radius
+
+    EnemyProjectile()
+        : node(nullptr), position(cocos2d::Vec2::ZERO), direction(cocos2d::Vec2::ZERO)
+        , speed(200.0f), damage(10), lifetime(3.0f), elapsed(0.0f)
+        , active(false), radius(12.0f)
+    {}
+};
 
 class Enemy : public Role
 {
@@ -11,7 +32,6 @@ public:
     Enemy();
     virtual ~Enemy();
 
-    // ��ʼ������
     virtual bool initEnemy(const std::string& name,
         const std::string& imagePath,
         const cocos2d::Vec2& startPosition,
@@ -22,15 +42,12 @@ public:
         float attackRange,
         int expReward);
 
-    // ���麯����ǿ��������ʵ���Լ����ƶ��͹�����Ϊ�����ֶ�̬��
     virtual void move(float dt) = 0;
     virtual void attack() = 0;
 
-    // ����/��ȡĿ����ң����� AI ׷��
     void setTargetPlayer(Player* player);
     Player* getTargetPlayer() const;
 
-    // ��������������Χ�����齱���Ĵ�ȡ
     void setAttackDamage(int damage);
     int getAttackDamage() const;
     void setAttackRange(float range);
@@ -38,26 +55,71 @@ public:
     void setExpReward(int exp);
     int getExpReward() const;
 
-    // ��������ʱ����������Ӿ���
     virtual void die() override;
     virtual void takeDamage(int damage) override;
     virtual void takeDamage(int damage, DamageType damageType, Role* attacker = nullptr) override;
 
-    // ���ⲿ���ã�ÿ֡���µ��˵��ƶ��͹�����ȴ
     void updateEnemy(float dt);
 
+    // Idle animation (Brotato-style bobbing)
+    void startIdleAnimation();
+    void stopIdleAnimation();
+
+    // Attack telegraph (flash warning so player can dodge)
+    void playAttackTelegraph();
+
+    // Attack visual effect (override in derived classes)
+    virtual void playAttackEffect();
+
+    // Hit flash effect
+    void playHitEffect();
+
+    // Get time scaling factor (monsters get stronger over time)
+    static float getTimeScaleFactor(float elapsedTime);
+
+    // --- Enemy Projectile System ---
+    // Fire a visible projectile toward the player (or in a direction)
+    // Returns the projectile for tracking
+    void fireProjectile(const cocos2d::Vec2& direction, float speed,
+        const cocos2d::Color4F& glowColor, const cocos2d::Color4F& trailColor,
+        int damage, float radius = 10.0f, float lifetime = 3.0f);
+
+    // Fire a projectile aimed at the player
+    void fireProjectileAtPlayer(float speed,
+        const cocos2d::Color4F& glowColor, const cocos2d::Color4F& trailColor,
+        int damage, float radius = 10.0f, float lifetime = 3.0f);
+
+    // Get all active projectiles from this enemy
+    std::vector<EnemyProjectile>& getProjectiles() { return _projectiles; }
+
+    // Update projectile positions (called by WaveManager)
+    void updateProjectiles(float dt);
+
+    // Clean up dead projectiles
+    void cleanupProjectiles();
+
 protected:
-    Player* _targetPlayer;      // ���ָ�루�����ã�����Ҫ�ͷţ�
-    int _attackDamage;          // ������
-    float _attackRange;         // ������Χ
-    int _expReward;             // ���ܺ����ľ���ֵ
+    Player* _targetPlayer;
+    int _attackDamage;
+    float _attackRange;
+    int _expReward;
     int _hitCount;
     int _hitsToDie;
 
     virtual int getHitsToDieForPlayer(Player* player) const;
 
-    float _attackCooldown;      // ������ȴʣ��ʱ��
-    float _attackCooldownMax;   // ������ȴ���ֵ��Ĭ��Ϊ1�룩
+    float _attackCooldown;
+    float _attackCooldownMax;
+
+    cocos2d::Action* _idleAction;
+    float _idleBaseScale;
+    bool _isAttacking;
+    float _telegraphTimer;
+
+    // Projectile system
+    std::vector<EnemyProjectile> _projectiles;
+    float _projectileCooldown;
+    float _projectileCooldownMax;
 };
 
 #endif

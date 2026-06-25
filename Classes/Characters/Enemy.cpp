@@ -1,6 +1,5 @@
 #include "Enemy.h"
 
-
 USING_NS_CC;
 
 Enemy::Enemy()
@@ -12,11 +11,18 @@ Enemy::Enemy()
     , _hitsToDie(3)
     , _attackCooldown(0.0f)
     , _attackCooldownMax(1.0f)
+    , _idleAction(nullptr)
+    , _idleBaseScale(1.0f)
+    , _isAttacking(false)
+    , _telegraphTimer(0.0f)
+    , _projectileCooldown(0.0f)
+    , _projectileCooldownMax(2.5f)
 {
 }
 
 Enemy::~Enemy()
 {
+    stopIdleAnimation();
 }
 
 bool Enemy::initEnemy(const std::string& name,
@@ -40,6 +46,10 @@ bool Enemy::initEnemy(const std::string& name,
     _attackCooldown = 0.0f;
     hurtCooldown = 0.08f;
     hurtCooldownTimer = 0.0f;
+    _idleAction = nullptr;
+    _idleBaseScale = 1.0f;
+    _isAttacking = false;
+    _telegraphTimer = 0.0f;
     return true;
 }
 
@@ -106,6 +116,7 @@ int Enemy::getHitsToDieForPlayer(Player* player) const
         return 3;
     }
 }
+
 void Enemy::takeDamage(int damage)
 {
     takeDamage(damage, DamageType::Normal, nullptr);
@@ -138,18 +149,23 @@ void Enemy::takeDamage(int damage, DamageType damageType, Role* attacker)
     if (newHp < 1) newHp = 1;
     setHp(newHp);
     hurtCooldownTimer = hurtCooldown;
+
+    // Play hit effect
+    playHitEffect();
 }
+
 void Enemy::die()
 {
     if (!isRoleAlive()) return;
 
-    // 给玩家增加经验
+    stopIdleAnimation();
+
     if (_targetPlayer != nullptr && _targetPlayer->isRoleAlive())
     {
         _targetPlayer->addExp(_expReward);
     }
 
-    Role::die();  // 调用基类死亡逻辑（设置 isAlive=false，停止激活等）
+    Role::die();
 }
 
 void Enemy::updateEnemy(float dt)
@@ -166,21 +182,423 @@ void Enemy::updateEnemy(float dt)
         }
     }
 
-    // 更新攻击冷却
+    // Update attack telegraph timer
+    if (_isAttacking)
+    {
+        _telegraphTimer -= dt;
+        if (_telegraphTimer <= 0.0f)
+        {
+            _isAttacking = false;
+            // Execute the actual attack after telegraph
+            attack();
+            playAttackEffect();
+        }
+        return; // Don't move during telegraph
+    }
+
+    // Update attack cooldown
     if (_attackCooldown > 0.0f)
         _attackCooldown -= dt;
 
-    // 调用派生类实现的移动逻辑
+    // Execute movement
     move(dt);
 
-    // 自动检测与玩家的距离，如果在攻击范围内且冷却就绪则攻击
-    if (_targetPlayer != nullptr && _targetPlayer->isRoleAlive())
+    // Check attack range
+    if (_targetPlayer != nullptr && _targetPlayer->isRoleAlive() && !_isAttacking)
     {
         float dist = getPosition().distance(_targetPlayer->getPosition());
         if (dist <= _attackRange && _attackCooldown <= 0.0f)
         {
-            attack();
+            // Start attack telegraph instead of instant attack
+            playAttackTelegraph();
             _attackCooldown = _attackCooldownMax;
         }
     }
+}
+
+// ==================== Idle Animation (Brotato-style) ====================
+
+void Enemy::startIdleAnimation()
+{
+    if (_idleAction != nullptr) return;
+
+    _idleBaseScale = getScale();
+
+    // Brotato-style organic bobbing:
+    // - Smooth scale breathing with EaseSineInOut
+    // - Gentle rotation wobble
+    // - Vertical float
+    // - Staggered timing for natural feel
+
+    auto scaleUp = EaseSineInOut::create(ScaleTo::create(0.55f, _idleBaseScale * 1.05f));
+    auto scaleDown = EaseSineInOut::create(ScaleTo::create(0.55f, _idleBaseScale * 0.95f));
+    auto scaleSeq = Sequence::create(scaleUp, scaleDown, nullptr);
+
+    auto rotRight = EaseSineInOut::create(RotateTo::create(0.7f, 3.5f));
+    auto rotLeft = EaseSineInOut::create(RotateTo::create(0.7f, -3.5f));
+    auto rotSeq = Sequence::create(rotRight, rotLeft, nullptr);
+
+    auto moveUp = EaseSineInOut::create(MoveBy::create(0.45f, Vec2(0, 4)));
+    auto moveDown = EaseSineInOut::create(MoveBy::create(0.45f, Vec2(0, -4)));
+    auto moveSeq = Sequence::create(moveUp, moveDown, nullptr);
+
+    auto spawn = Spawn::create(scaleSeq, rotSeq, moveSeq, nullptr);
+    auto repeat = RepeatForever::create(spawn);
+    repeat->setTag(999);
+    this->runAction(repeat);
+    _idleAction = repeat;
+}
+
+void Enemy::stopIdleAnimation()
+{
+    if (_idleAction != nullptr)
+    {
+        this->stopAction(_idleAction);
+        _idleAction = nullptr;
+    }
+    // Restore base state
+    if (_idleBaseScale > 0.0f)
+    {
+        setScale(_idleBaseScale);
+    }
+    setRotation(0.0f);
+}
+
+// ==================== Attack Telegraph ====================
+
+void Enemy::playAttackTelegraph()
+{
+    _isAttacking = true;
+    _telegraphTimer = 0.28f; // 280ms warning before attack hits
+
+    // Expanding warning circle at enemy's position (ground indicator)
+    auto warningRing = DrawNode::create();
+    warningRing->setPosition(Vec2::ZERO);
+    warningRing->drawCircle(Vec2::ZERO, 10.0f, 0, 24, false, Color4F(1.0f, 0.15f, 0.1f, 0.5f));
+    warningRing->setOpacity(200);
+    this->addChild(warningRing, 50);
+
+    auto expand = ScaleTo::create(0.28f, 3.0f);
+    auto fadeRing = FadeOut::create(0.28f);
+    auto ringSpawn = Spawn::create(expand, fadeRing, nullptr);
+    auto removeRing = RemoveSelf::create();
+    warningRing->runAction(Sequence::create(ringSpawn, removeRing, nullptr));
+
+    // Flash monster red to warn player
+    auto tintRed = TintTo::create(0.07f, 255, 60, 60);
+    auto tintWhite = TintTo::create(0.07f, 255, 255, 255);
+    auto tintRed2 = TintTo::create(0.07f, 255, 40, 40);
+    auto tintNormal = TintTo::create(0.07f, 255, 255, 255);
+    auto flashSeq = Sequence::create(tintRed, tintWhite, tintRed2, tintNormal, nullptr);
+    this->runAction(flashSeq);
+
+    // Scale pulse as warning (squash and stretch)
+    float curScale = getScale();
+    auto squash = ScaleTo::create(0.07f, curScale * 0.9f, curScale * 1.1f);
+    auto stretch = ScaleTo::create(0.07f, curScale * 1.15f, curScale * 0.9f);
+    auto restore = ScaleTo::create(0.14f, curScale);
+    auto pulseSeq = Sequence::create(squash, stretch, restore, nullptr);
+    this->runAction(pulseSeq);
+}
+
+// ==================== Attack Effect Helper ====================
+
+// Creates a burst of particles radiating from a point
+static void createBurstEffect(cocos2d::Node* parent, const cocos2d::Vec2& pos,
+    const cocos2d::Color4F& innerColor, const cocos2d::Color4F& outerColor,
+    int particleCount, float radius, float duration)
+{
+    auto burstNode = DrawNode::create();
+    burstNode->setPosition(pos);
+
+    // Inner solid circle
+    burstNode->drawSolidCircle(Vec2::ZERO, radius * 0.3f, 0, 16, innerColor);
+
+    // Outer expanding ring
+    burstNode->drawCircle(Vec2::ZERO, radius * 0.5f, 0, 20, false,
+        Color4F(innerColor.r, innerColor.g, innerColor.b, 0.6f));
+
+    // Radial particles
+    for (int i = 0; i < particleCount; i++)
+    {
+        float angle = (i * 2.0f * M_PI) / particleCount;
+        float r = radius * 0.4f + (rand() % 100) / 100.0f * radius * 0.6f;
+        Vec2 pt = Vec2(cosf(angle), sinf(angle)) * r;
+        float size = 2.0f + (rand() % 100) / 100.0f * 4.0f;
+        float alpha = 0.5f + (rand() % 100) / 100.0f * 0.5f;
+        burstNode->drawDot(pt, size,
+            Color4F(outerColor.r, outerColor.g, outerColor.b, alpha));
+    }
+
+    parent->addChild(burstNode, 100);
+
+    // Expand and fade
+    auto scaleUp = ScaleTo::create(duration * 0.5f, 2.0f);
+    auto fadeOut = FadeOut::create(duration);
+    auto removeSelf = RemoveSelf::create();
+    burstNode->runAction(Sequence::create(
+        Spawn::create(scaleUp, fadeOut, nullptr),
+        removeSelf, nullptr));
+}
+
+// ==================== Attack Effect ====================
+
+void Enemy::playAttackEffect()
+{
+    // Default melee burst: red/orange explosion
+    createBurstEffect(this, Vec2::ZERO,
+        Color4F(1.0f, 0.3f, 0.1f, 0.8f),   // inner: bright red-orange
+        Color4F(1.0f, 0.6f, 0.2f, 0.6f),   // outer: orange sparkles
+        14, 35.0f, 0.4f);
+
+    // Scale pop with overshoot
+    float curScale = getScale();
+    auto pop = Sequence::create(
+        EaseBackOut::create(ScaleTo::create(0.08f, curScale * 1.25f)),
+        EaseBackIn::create(ScaleTo::create(0.2f, curScale)),
+        nullptr);
+    this->runAction(pop);
+}
+
+// ==================== Hit Effect ====================
+
+void Enemy::playHitEffect()
+{
+    // White flash with tint
+    this->setColor(Color3B(255, 255, 255));
+    auto restoreColor = CallFunc::create([this]() {
+        this->setColor(Color3B(255, 255, 255));
+    });
+    auto delay = DelayTime::create(0.06f);
+    auto seq = Sequence::create(delay, restoreColor, nullptr);
+    this->runAction(seq);
+
+    // Hit sparks burst
+    auto sparkNode = DrawNode::create();
+    sparkNode->setPosition(Vec2::ZERO);
+    for (int i = 0; i < 8; i++)
+    {
+        float angle = (i * 2.0f * M_PI) / 8 + (rand() % 100) / 500.0f;
+        float r = 8.0f + (rand() % 15);
+        Vec2 pt = Vec2(cosf(angle), sinf(angle)) * r;
+        sparkNode->drawDot(pt, 3.0f + (rand() % 4),
+            Color4F(1.0f, 0.9f, 0.5f, 0.9f));
+    }
+    this->addChild(sparkNode, 200);
+
+    auto fadeSparks = FadeOut::create(0.2f);
+    auto removeSparks = RemoveSelf::create();
+    auto moveOut = MoveBy::create(0.2f, Vec2(0, 8));
+    sparkNode->runAction(Sequence::create(
+        Spawn::create(fadeSparks, moveOut, nullptr),
+        removeSparks, nullptr));
+
+    // Knockback squash
+    float curScale = getScale();
+    auto squash = ScaleTo::create(0.04f, curScale * 0.85f, curScale * 1.1f);
+    auto bounce = ScaleTo::create(0.08f, curScale * 1.05f, curScale * 0.95f);
+    auto settle = ScaleTo::create(0.1f, curScale);
+    this->runAction(Sequence::create(squash, bounce, settle, nullptr));
+}
+
+// ==================== Time Scaling ====================
+
+float Enemy::getTimeScaleFactor(float elapsedTime)
+{
+    // Monsters get progressively stronger as time passes
+    // Every 60 seconds, monsters gain ~1 wave worth of stats
+    // Caps at 6x after 360 seconds (6 minutes)
+    float factor = 1.0f + (elapsedTime / 60.0f) * 0.8f;
+    if (factor > 6.0f) factor = 6.0f;
+    return factor;
+}
+
+// ==================== Enemy Projectile System ====================
+
+void Enemy::fireProjectile(const Vec2& direction, float speed,
+    const Color4F& glowColor, const Color4F& trailColor,
+    int damage, float radius, float lifetime)
+{
+    EnemyProjectile proj;
+    proj.position = this->getPosition();
+    proj.direction = direction;
+    proj.direction.normalize();
+    proj.speed = speed;
+    proj.damage = damage;
+    proj.lifetime = lifetime;
+    proj.elapsed = 0.0f;
+    proj.active = true;
+    proj.radius = radius;
+
+    // === Create impressive projectile visual ===
+    auto container = Node::create();
+    container->setPosition(proj.position);
+
+    // Draw all layers on a DrawNode
+    auto drawNode = DrawNode::create();
+    drawNode->setPosition(Vec2::ZERO);
+
+    // Layer 1: Large outer aura (soft glow)
+    drawNode->drawSolidCircle(Vec2::ZERO, radius * 2.5f, 0, 16,
+        Color4F(glowColor.r * 0.5f, glowColor.g * 0.5f, glowColor.b * 0.5f, 0.18f));
+    // Layer 2: Medium glow ring
+    drawNode->drawSolidCircle(Vec2::ZERO, radius * 1.6f, 0, 12,
+        Color4F(glowColor.r * 0.7f, glowColor.g * 0.7f, glowColor.b * 0.7f, 0.3f));
+    // Layer 3: Main body
+    drawNode->drawSolidCircle(Vec2::ZERO, radius, 0, 14, glowColor);
+    // Layer 4: Inner bright ring (energy edge)
+    drawNode->drawCircle(Vec2::ZERO, radius * 0.85f, 0, 16, false,
+        Color4F(glowColor.r * 1.2f, glowColor.g * 1.2f, glowColor.b * 1.2f, 0.85f));
+    // Layer 5: Hot core
+    drawNode->drawSolidCircle(Vec2::ZERO, radius * 0.45f, 0, 8,
+        Color4F(std::min(1.0f, glowColor.r * 1.5f), std::min(1.0f, glowColor.g * 1.5f),
+                std::min(1.0f, glowColor.b * 1.5f), 0.95f));
+    // Layer 6: White-hot center
+    drawNode->drawSolidCircle(Vec2::ZERO, radius * 0.2f, 0, 4,
+        Color4F(1.0f, 1.0f, 1.0f, 0.85f));
+    // Layer 7: Sparkle highlight
+    drawNode->drawSolidCircle(Vec2(radius * 0.25f, radius * 0.3f), radius * 0.25f, 0, 4,
+        Color4F(1.0f, 1.0f, 1.0f, 0.8f));
+
+    container->addChild(drawNode);
+
+    // Add trail ring that expands behind projectile
+    auto trailRing = DrawNode::create();
+    trailRing->setPosition(Vec2::ZERO);
+    trailRing->drawCircle(Vec2::ZERO, radius * 1.3f, 0, 20, false, trailColor);
+    container->addChild(trailRing, -1);
+
+    proj.node = container;
+
+    // Pulsing animation on the projectile
+    auto pulseUp = ScaleTo::create(0.3f, 1.15f);
+    auto pulseDown = ScaleTo::create(0.3f, 0.9f);
+    auto pulse = RepeatForever::create(Sequence::create(pulseUp, pulseDown, nullptr));
+    container->runAction(pulse);
+
+    // Add to the same parent layer as the enemy
+    Node* parent = this->getParent();
+    if (parent)
+    {
+        parent->addChild(container, 15); // Above enemies, below UI
+    }
+
+    _projectiles.push_back(proj);
+
+    // === Muzzle flash at enemy position ===
+    auto muzzleFlash = DrawNode::create();
+    muzzleFlash->setPosition(Vec2::ZERO);
+    // Expanding ring from muzzle
+    muzzleFlash->drawSolidCircle(Vec2::ZERO, radius * 2.5f, 0, 12,
+        Color4F(glowColor.r, glowColor.g, glowColor.b, 0.5f));
+    muzzleFlash->drawSolidCircle(Vec2::ZERO, radius * 1.2f, 0, 8,
+        Color4F(1.0f, 1.0f, 1.0f, 0.7f));
+    // Side sparkles at muzzle
+    for (int i = 0; i < 8; i++)
+    {
+        float a = i * M_PI / 4;
+        Vec2 pt = Vec2(cosf(a), sinf(a)) * radius * 2.0f;
+        muzzleFlash->drawDot(pt, radius * 0.35f,
+            Color4F(glowColor.r, glowColor.g, glowColor.b, 0.7f));
+    }
+    this->addChild(muzzleFlash, 150);
+    auto muzzleAnim = Sequence::create(
+        Spawn::create(ScaleTo::create(0.25f, 3.0f), FadeOut::create(0.25f), nullptr),
+        RemoveSelf::create(), nullptr);
+    muzzleFlash->runAction(muzzleAnim);
+}
+
+void Enemy::fireProjectileAtPlayer(float speed,
+    const Color4F& glowColor, const Color4F& trailColor,
+    int damage, float radius, float lifetime)
+{
+    if (_targetPlayer == nullptr) return;
+
+    Vec2 dir = _targetPlayer->getPosition() - this->getPosition();
+    dir.normalize();
+    fireProjectile(dir, speed, glowColor, trailColor, damage, radius, lifetime);
+}
+
+void Enemy::updateProjectiles(float dt)
+{
+    for (auto& proj : _projectiles)
+    {
+        if (!proj.active) continue;
+
+        proj.elapsed += dt;
+        if (proj.elapsed >= proj.lifetime)
+        {
+            proj.active = false;
+            if (proj.node)
+            {
+                // Fade out and remove
+                proj.node->runAction(Sequence::create(
+                    FadeOut::create(0.15f),
+                    RemoveSelf::create(),
+                    nullptr));
+                proj.node = nullptr;
+            }
+            continue;
+        }
+
+        // Move projectile
+        proj.position += proj.direction * proj.speed * dt;
+        if (proj.node)
+        {
+            proj.node->setPosition(proj.position);
+
+            // Rotate for visual interest
+            proj.node->setRotation(proj.node->getRotation() + dt * 120.0f);
+
+            // Continuous trail behind projectile (every frame creates glow trail)
+            auto trailDot = DrawNode::create();
+            trailDot->setPosition(Vec2::ZERO);
+            // Glowing trail dot behind the projectile
+            float trailAlpha = 0.45f;
+            trailDot->drawSolidCircle(Vec2::ZERO, proj.radius * 1.4f, 0, 6,
+                Color4F(1.0f, 0.9f, 0.7f, trailAlpha));
+            trailDot->drawSolidCircle(Vec2::ZERO, proj.radius * 0.7f, 0, 4,
+                Color4F(1.0f, 1.0f, 0.9f, trailAlpha * 1.3f));
+            proj.node->addChild(trailDot, -1);
+
+            auto trailAnim = Sequence::create(
+                Spawn::create(
+                    FadeOut::create(0.35f),
+                    ScaleTo::create(0.35f, 0.15f),
+                    nullptr),
+                RemoveSelf::create(),
+                nullptr);
+            trailDot->runAction(trailAnim);
+
+            // Extra sparkle occasionally
+            if (CCRANDOM_0_1() < 0.15f)
+            {
+                auto spark = DrawNode::create();
+                spark->setPosition(Vec2(
+                    (CCRANDOM_0_1() - 0.5f) * proj.radius * 2,
+                    (CCRANDOM_0_1() - 0.5f) * proj.radius * 2));
+                spark->drawDot(Vec2::ZERO, proj.radius * 0.25f,
+                    Color4F(1.0f, 1.0f, 1.0f, 0.8f));
+                proj.node->addChild(spark, 10);
+                spark->runAction(Sequence::create(
+                    Spawn::create(
+                        FadeOut::create(0.2f),
+                        MoveBy::create(0.2f, Vec2(
+                            (CCRANDOM_0_1() - 0.5f) * proj.radius * 3,
+                            (CCRANDOM_0_1() - 0.5f) * proj.radius * 3)),
+                        nullptr),
+                    RemoveSelf::create(),
+                    nullptr));
+            }
+        }
+    }
+}
+
+void Enemy::cleanupProjectiles()
+{
+    _projectiles.erase(
+        std::remove_if(_projectiles.begin(), _projectiles.end(),
+            [](const EnemyProjectile& p) { return !p.active; }),
+        _projectiles.end()
+    );
 }

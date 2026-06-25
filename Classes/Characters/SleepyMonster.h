@@ -17,14 +17,14 @@ public:
         Player* target,
         int waveLevel = 1);
 
-    // ʵ�ִ��麯��
     virtual void move(float dt) override;
     virtual void attack() override;
+    virtual void playAttackEffect() override;
 
 private:
-    float _pauseTimer;      // ͣ�ټ�ʱ��
-    bool _isPausing;        // �Ƿ�����ͣ��
-    cocos2d::Vec2 _randomDirection; // ����ƶ�����
+    float _pauseTimer;
+    bool _isPausing;
+    cocos2d::Vec2 _randomDirection;
     void changeRandomDirection();
 };
 #endif

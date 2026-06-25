@@ -1,4 +1,4 @@
-﻿#include "WaveManager.h"
+#include "WaveManager.h"
 #include "SleepyMonster.h"
 #include "DDLMonster.h"
 #include "BossMonster.h"
@@ -44,14 +44,16 @@ bool WaveManager::init(Player* player, Node* parentLayer)
     _waveDelayTimer = 0.0f;
     _waitingForNextWave = false;
     _isFrozen = false;
+    _elapsedTime = 0.0f;
 
     return true;
 }
 
 int WaveManager::getEnemyCountForWave(int wave)
 {
-    int count = 12 + wave * 4;
-    if (count > 55) count = 55;
+    // Increased spawn counts: base of 15 + wave*6, cap raised to 80
+    int count = 15 + wave * 6;
+    if (count > 80) count = 80;
     return count;
 }
 
@@ -82,8 +84,6 @@ void WaveManager::stopSpawn()
 
 void WaveManager::showWaveAnnouncement(int wave)
 {
-    // 在屏幕上显示波次公告
-    // 使用Label显示，持续2秒后消失
     Size visibleSize = Director::getInstance()->getVisibleSize();
     if (_parentLayer && _parentLayer->getContentSize().width > 0.0f &&
         _parentLayer->getContentSize().height > 0.0f)
@@ -109,9 +109,8 @@ void WaveManager::showWaveAnnouncement(int wave)
     }
     label->setPosition(labelPos);
     label->setOpacity(0);
-    _parentLayer->addChild(label, 100);  // 高层级确保显示在最前
+    _parentLayer->addChild(label, 100);
 
-    // 淡入 → 停留 → 淡出 → 移除
     auto fadeIn = FadeIn::create(0.3f);
     auto delay = DelayTime::create(1.5f);
     auto fadeOut = FadeOut::create(0.5f);
@@ -125,31 +124,33 @@ Enemy* WaveManager::createEnemyByType(int enemyType, const Vec2& pos, int waveLe
 
     switch (enemyType)
     {
-    case 0: // SleepyMonster - 基础敌人
+    case 0: // SleepyMonster
         {
-            std::string path = AssetPaths::resolve("art/monsters/sleepy_monster.png");
+            // Use new root-level sprite
+            std::string path = AssetPaths::resolve("art/monsters/sleepymonster.png");
+            if (path.empty()) path = AssetPaths::resolve("art/monsters/sleepy_monster.png");
             enemy = SleepyMonster::create(path.empty() ? "enemy_sleepy.png" : path, pos, _player, waveLevel);
         }
         break;
-    case 1: // DDLMonster - 冲锋敌人
+    case 1: // DDLMonster
         {
-            std::string path = AssetPaths::resolve("art/monsters/ddl_monster.png");
+            std::string path = AssetPaths::resolve("art/monsters/DDLmonster.png");
+            if (path.empty()) path = AssetPaths::resolve("art/monsters/ddl_monster.png");
             enemy = DDLMonster::create(path.empty() ? "enemy_ddl.png" : path, pos, _player, waveLevel);
         }
         break;
     case 2: // ThesisBoss
         {
-            std::string path = AssetPaths::resolve("art/monsters/thesis_monster.png");
-            if (path.empty())
-            {
-                path = AssetPaths::resolve("art/monsters/thesis_boss.png");
-            }
+            std::string path = AssetPaths::resolve("art/monsters/ThesisBoss.png");
+            if (path.empty()) path = AssetPaths::resolve("art/monsters/thesis_boss.png");
+            if (path.empty()) path = AssetPaths::resolve("art/monsters/thesis_monster.png");
             enemy = ThesisBoss::create(path.empty() ? "enemy_boss.png" : path, pos, _player, waveLevel);
         }
         break;
     case 3: // PhoneMonster
         {
-            std::string path = AssetPaths::resolve("art/monsters/phone_monster.png");
+            std::string path = AssetPaths::resolve("art/monsters/phonemonster.png");
+            if (path.empty()) path = AssetPaths::resolve("art/monsters/phone_monster.png");
             enemy = PhoneMonster::create(path.empty() ? "enemy_phone.png" : path, pos, _player, waveLevel);
         }
         break;
@@ -201,9 +202,22 @@ void WaveManager::spawnEnemy()
 
     if (enemy)
     {
+        // Apply time-based difficulty scaling
+        float timeFactor = Enemy::getTimeScaleFactor(_elapsedTime);
+        if (timeFactor > 1.0f)
+        {
+            int scaledHp = static_cast<int>(enemy->getMaxHp() * timeFactor);
+            enemy->setMaxHp(scaledHp);
+            enemy->setHp(scaledHp);
+            enemy->setAttackDamage(static_cast<int>(enemy->getAttackDamage() * timeFactor));
+            enemy->setSpeed(enemy->getSpeed() * (1.0f + (timeFactor - 1.0f) * 0.5f));
+        }
+
         bool isBossEnemy = enemy->hasTag("Boss") || enemy->getObjectName() == "ThesisBoss" ||
             enemy->getObjectName() == "BossMonster";
-        float targetSize = isBossEnemy ? 240.0f : 114.0f;
+
+        // Smaller monster sizes: 60px for regular, 120px for boss
+        float targetSize = isBossEnemy ? 120.0f : 60.0f;
         Size enemySize = enemy->getContentSize();
         float targetScale = 1.0f;
         if (enemySize.width > 0.0f && enemySize.height > 0.0f)
@@ -211,11 +225,15 @@ void WaveManager::spawnEnemy()
             targetScale = std::min(targetSize / enemySize.width, targetSize / enemySize.height);
         }
 
+        // Spawn animation: start tiny and scale up
         enemy->setScale(targetScale * 0.1f);
         auto scaleUp = ScaleTo::create(0.3f, targetScale);
-        enemy->runAction(scaleUp);
+        auto startAnim = CallFunc::create([enemy]() {
+            enemy->startIdleAnimation();
+        });
+        enemy->runAction(Sequence::create(scaleUp, startAnim, nullptr));
 
-        _parentLayer->addChild(enemy, 10);  // 添加到游戏层
+        _parentLayer->addChild(enemy, 10);
 
         _aliveEnemies.push_back(enemy);
     }
@@ -233,14 +251,13 @@ void WaveManager::update(float dt)
         return;
     }
 
-    // 检查玩家是否存活
     if (_player == nullptr || !_player->isRoleAlive())
     {
         stopSpawn();
         return;
     }
 
-    // 更新所有存活的敌人
+    // Update all alive enemies
     for (auto it = _aliveEnemies.begin(); it != _aliveEnemies.end(); )
     {
         Enemy* enemy = *it;
@@ -251,14 +268,19 @@ void WaveManager::update(float dt)
             continue;
         }
 
-        // 检查敌人是否死亡或非活跃
         if (!enemy->isRoleAlive() || !enemy->isObjectActive())
         {
-            // 如果敌人还活着但从场景移除了，执行死亡逻辑
             if (enemy->isRoleAlive())
             {
                 enemy->die();
             }
+            // Move remaining projectiles to orphan list
+            auto& projs = enemy->getProjectiles();
+            for (auto& p : projs)
+            {
+                if (p.active) _orphanProjectiles.push_back(p);
+            }
+            projs.clear();
             if (_enemyKilledCallback)
             {
                 _enemyKilledCallback(enemy);
@@ -269,20 +291,24 @@ void WaveManager::update(float dt)
             continue;
         }
 
-        // 更新敌人AI
         if (!_isFrozen)
         {
             enemy->updateEnemy(dt);
         }
         else
         {
-            // 冻结时仍更新受伤冷却，确保怪物可以被攻击掉血
             enemy->updateHurtCooldown(dt);
         }
 
-        // 更新后再次检查
         if (!enemy->isRoleAlive() || !enemy->isObjectActive())
         {
+            // Move remaining projectiles to orphan list
+            auto& projs = enemy->getProjectiles();
+            for (auto& p : projs)
+            {
+                if (p.active) _orphanProjectiles.push_back(p);
+            }
+            projs.clear();
             if (_enemyKilledCallback)
             {
                 _enemyKilledCallback(enemy);
@@ -297,6 +323,138 @@ void WaveManager::update(float dt)
         }
     }
 
+    // --- Process orphan projectiles (from dead enemies) ---
+    for (auto& proj : _orphanProjectiles)
+    {
+        if (!proj.active || !proj.node) continue;
+        proj.elapsed += dt;
+        if (proj.elapsed >= proj.lifetime)
+        {
+            proj.active = false;
+            if (proj.node)
+            {
+                proj.node->runAction(Sequence::create(FadeOut::create(0.15f), RemoveSelf::create(), nullptr));
+                proj.node = nullptr;
+            }
+            continue;
+        }
+        proj.position += proj.direction * proj.speed * dt;
+        if (proj.node)
+        {
+            proj.node->setPosition(proj.position);
+            proj.node->setRotation(proj.node->getRotation() + dt * 180.0f);
+        }
+        // Check collision with player
+        if (_player && _player->isRoleAlive())
+        {
+            float dist = proj.position.distance(_player->getPosition());
+            if (dist < proj.radius + 25.0f)
+            {
+                _player->takeDamage(proj.damage);
+                proj.active = false;
+                if (proj.node)
+                {
+                    proj.node->runAction(Sequence::create(FadeOut::create(0.1f), RemoveSelf::create(), nullptr));
+                    proj.node = nullptr;
+                }
+            }
+        }
+    }
+    _orphanProjectiles.erase(
+        std::remove_if(_orphanProjectiles.begin(), _orphanProjectiles.end(),
+            [](const EnemyProjectile& p) { return !p.active; }),
+        _orphanProjectiles.end());
+
+    // --- Process enemy projectiles ---
+    Size visibleSize = Director::getInstance()->getVisibleSize();
+    if (_parentLayer && _parentLayer->getContentSize().width > 0.0f)
+    {
+        visibleSize = _parentLayer->getContentSize();
+    }
+    float projOffscreenMargin = 60.0f;
+
+    for (auto* enemy : _aliveEnemies)
+    {
+        if (enemy && enemy->isRoleAlive())
+        {
+            enemy->updateProjectiles(dt);
+
+            // Check projectile-player collision
+            if (_player && _player->isRoleAlive())
+            {
+                Vec2 playerPos = _player->getPosition();
+                for (auto& proj : enemy->getProjectiles())
+                {
+                    if (!proj.active || !proj.node) continue;
+
+                    // Off-screen cleanup
+                    if (proj.position.x < -projOffscreenMargin ||
+                        proj.position.y < -projOffscreenMargin ||
+                        proj.position.x > visibleSize.width + projOffscreenMargin ||
+                        proj.position.y > visibleSize.height + projOffscreenMargin)
+                    {
+                        proj.active = false;
+                        proj.node->runAction(Sequence::create(FadeOut::create(0.15f), RemoveSelf::create(), nullptr));
+                        proj.node = nullptr;
+                        continue;
+                    }
+
+                    float dist = proj.position.distance(playerPos);
+                    if (dist < proj.radius + 25.0f) // 25px player hit radius
+                    {
+                        // Hit the player!
+                        _player->takeDamage(proj.damage);
+
+                        // === Dramatic impact explosion ===
+                        auto hitFx = DrawNode::create();
+                        hitFx->setPosition(proj.position);
+
+                        // Expanding shockwave ring
+                        hitFx->drawSolidCircle(Vec2::ZERO, 28.0f, 0, 16, Color4F(1.0f, 0.25f, 0.05f, 0.7f));
+                        hitFx->drawSolidCircle(Vec2::ZERO, 18.0f, 0, 12, Color4F(1.0f, 0.5f, 0.15f, 0.8f));
+                        hitFx->drawSolidCircle(Vec2::ZERO, 8.0f, 0, 8, Color4F(1.0f, 0.9f, 0.6f, 0.9f));
+
+                        // Radial sparks flying outward
+                        for (int i = 0; i < 12; i++)
+                        {
+                            float a = i * M_PI / 6;
+                            Vec2 pt = Vec2(cosf(a), sinf(a)) * 15.0f;
+                            hitFx->drawSolidCircle(pt, 3.5f, 0, 4, Color4F(1.0f, 0.8f, 0.3f, 0.85f));
+                        }
+                        // Additional scattered debris
+                        for (int i = 0; i < 8; i++)
+                        {
+                            float a = (CCRANDOM_0_1()) * 2 * M_PI;
+                            float r = 10.0f + (CCRANDOM_0_1()) * 18.0f;
+                            Vec2 pt = Vec2(cosf(a), sinf(a)) * r;
+                            hitFx->drawDot(pt, 2.0f + (CCRANDOM_0_1()) * 3.0f,
+                                Color4F(1.0f, 0.7f, 0.2f, 0.7f));
+                        }
+
+                        _parentLayer->addChild(hitFx, 200);
+                        auto expand = ScaleTo::create(0.4f, 2.8f);
+                        auto fade = FadeOut::create(0.4f);
+                        hitFx->runAction(Sequence::create(
+                            Spawn::create(expand, fade, nullptr),
+                            RemoveSelf::create(), nullptr));
+
+                        // Deactivate projectile
+                        proj.active = false;
+                        if (proj.node)
+                        {
+                            proj.node->runAction(Sequence::create(
+                                FadeOut::create(0.1f),
+                                RemoveSelf::create(),
+                                nullptr));
+                            proj.node = nullptr;
+                        }
+                    }
+                }
+                enemy->cleanupProjectiles();
+            }
+        }
+    }
+
     if (!_isFrozen)
     {
         _spawnElapsed += dt;
@@ -305,17 +463,20 @@ void WaveManager::update(float dt)
 
         if (_spawnTimer <= 0.0f)
         {
-            int aliveCap = std::min(_isBossWave ? 42 : 38, 15 + _currentWave * 4);
+            // Increased alive cap: scales faster with waves
+            int aliveCap = std::min(_isBossWave ? 55 : 48, 18 + _currentWave * 5);
             if (static_cast<int>(_aliveEnemies.size()) < aliveCap)
             {
                 spawnEnemy();
             }
 
-            float waveDifficulty = std::min(0.85f, (_currentWave - 1) * 0.12f);
-            float linearPressure = std::min(0.55f, _waveTimer * 0.012f);
+            // Faster spawn intervals over time (was 0.85/0.55/0.65 min)
+            float waveDifficulty = std::min(1.0f, (_currentWave - 1) * 0.14f);
+            float linearPressure = std::min(0.65f, _waveTimer * 0.016f);
             float dynamicInterval = _spawnInterval - waveDifficulty - linearPressure;
-            if (_isBossWave) dynamicInterval += 0.25f;
-            if (dynamicInterval < 0.65f) dynamicInterval = 0.65f;
+            if (_isBossWave) dynamicInterval += 0.2f;
+            // Minimum spawn interval reduced from 0.65 to 0.45
+            if (dynamicInterval < 0.45f) dynamicInterval = 0.45f;
             _spawnTimer = dynamicInterval;
         }
 
@@ -335,7 +496,6 @@ void WaveManager::onWaveCleared()
     if (_waveClearedCallback)
         _waveClearedCallback(_currentWave);
 
-    // Keep pressure continuous between waves.
     _waitingForNextWave = true;
     _waveDelayTimer = 0.8f;
 }
