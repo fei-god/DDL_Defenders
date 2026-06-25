@@ -14,6 +14,7 @@
 #include "2d/CCMenu.h"
 #include "2d/CCMenuItem.h"
 #include "glfw3.h"
+#include <algorithm>
 #include <vector>
 #include <utility>
 #include <cmath>
@@ -220,10 +221,11 @@ void SettingsScene::buildUI()
 
     // UI scale factor — keeps layout proportional across resolutions.
     // Base: 960×640 → s=1.0.  1920×1080 → s≈1.69.  3840×2160 → s≈3.38.
-    float s = winSize.height / 640.0f;
+    float s = std::min(winSize.height / 760.0f, winSize.width / 960.0f);
+    s = std::max(0.72f, s);
 
     float cx = origin.x + visibleSize.width / 2;
-    float topY = origin.y + visibleSize.height - 40.0f * s;
+    float topY = origin.y + visibleSize.height - 30.0f * s;
 
     // Background (covers full design resolution to avoid gaps)
     auto bg = LayerColor::create(Color4B(22, 28, 40, 255), winSize.width, winSize.height);
@@ -231,18 +233,18 @@ void SettingsScene::buildUI()
     this->addChild(bg, -10);
 
     // Title
-    auto title = Label::createWithSystemFont(lm->getString("settings_title"), "Arial", 42.0f * s);
+    auto title = Label::createWithSystemFont(lm->getString("settings_title"), "Arial", 40.0f * s);
     title->setColor(Color3B(220, 220, 240));
     title->setPosition(Vec2(cx, topY));
     this->addChild(title, 1);
-    topY -= 60.0f * s;
+    topY -= 54.0f * s;
 
     // ==================== Resolution ====================
     auto resHeader = Label::createWithSystemFont(lm->getString("resolution"), "Arial", 26.0f * s);
     resHeader->setColor(Color3B(180, 200, 220));
     resHeader->setPosition(Vec2(cx, topY));
     this->addChild(resHeader, 1);
-    topY -= 36.0f * s;
+    topY -= 32.0f * s;
 
     // Resolution label
     int rw = RESOLUTION_PRESETS[_currentResIndex].first;
@@ -269,7 +271,7 @@ void SettingsScene::buildUI()
         resMenu->alignItemsHorizontallyWithPadding(160.0f * s);
         this->addChild(resMenu, 2);
     }
-    topY -= 16.0f * s;
+    topY -= 36.0f * s;
 
     // Apply button (applies resolution immediately without restart)
     auto applyLabel = Label::createWithSystemFont(lm->getString("apply"), "Arial", 22.0f * s);
@@ -282,14 +284,14 @@ void SettingsScene::buildUI()
         applyMenu->setPosition(Vec2(cx, topY));
         this->addChild(applyMenu, 2);
     }
-    topY -= 40.0f * s;
+    topY -= 34.0f * s;
 
     // ==================== Display Mode ====================
     auto dmHeader = Label::createWithSystemFont(lm->getString("display_mode"), "Arial", 26.0f * s);
     dmHeader->setColor(Color3B(180, 200, 220));
     dmHeader->setPosition(Vec2(cx, topY));
     this->addChild(dmHeader, 1);
-    topY -= 36.0f * s;
+    topY -= 32.0f * s;
 
     // Display mode label
     static const char* DM_NAMES[] = { "windowed", "borderless", "fullscreen" };
@@ -315,14 +317,14 @@ void SettingsScene::buildUI()
         dmMenu->alignItemsHorizontallyWithPadding(200.0f * s);
         this->addChild(dmMenu, 2);
     }
-    topY -= 40.0f * s;
+    topY -= 36.0f * s;
 
     // ==================== Key Bindings ====================
     auto keyHeader = Label::createWithSystemFont(lm->getString("key_bindings"), "Arial", 26.0f * s);
     keyHeader->setColor(Color3B(180, 200, 220));
     keyHeader->setPosition(Vec2(cx, topY));
     this->addChild(keyHeader, 1);
-    topY -= 38.0f * s;
+    topY -= 32.0f * s;
 
     auto ud = UserDefault::getInstance();
     int defUp    = static_cast<int>(EventKeyboard::KeyCode::KEY_W);
@@ -382,7 +384,7 @@ void SettingsScene::buildUI()
             this->addChild(rowMenu, 2);
         }
 
-        y -= 32.0f * s;
+        y -= 28.0f * s;
         return keyLbl;
     };
 
@@ -411,7 +413,7 @@ void SettingsScene::buildUI()
         fireVal->setColor(Color3B(160, 160, 180));
         fireVal->setPosition(Vec2(cx, topY));
         this->addChild(fireVal, 1);
-        topY -= 32.0f * s;
+        topY -= 28.0f * s;
 
         auto pauseName = Label::createWithSystemFont(lm->getString("pause_key"), "Arial", 22.0f * s);
         pauseName->setColor(Color3B(200, 200, 220));
@@ -423,7 +425,7 @@ void SettingsScene::buildUI()
         pauseVal->setColor(Color3B(160, 160, 180));
         pauseVal->setPosition(Vec2(cx, topY));
         this->addChild(pauseVal, 1);
-        topY -= 40.0f * s;
+        topY -= 34.0f * s;
     }
 
     // ==================== Language ====================
@@ -431,7 +433,7 @@ void SettingsScene::buildUI()
     langHeader->setColor(Color3B(180, 200, 220));
     langHeader->setPosition(Vec2(cx, topY));
     this->addChild(langHeader, 1);
-    topY -= 36.0f * s;
+    topY -= 32.0f * s;
 
     _languageLabel = Label::createWithSystemFont(lm->getLanguageName(), "Arial", 30.0f * s);
     _languageLabel->setColor(Color3B(240, 240, 200));
@@ -453,7 +455,7 @@ void SettingsScene::buildUI()
         langMenu->alignItemsHorizontallyWithPadding(200.0f * s);
         this->addChild(langMenu, 2);
     }
-    topY -= 50.0f * s;
+    topY -= 38.0f * s;
 
     // ==================== Back button ====================
     auto backLabel = Label::createWithSystemFont(lm->getString("back"), "Arial", 32.0f * s);
@@ -463,7 +465,7 @@ void SettingsScene::buildUI()
     if (backItem)
     {
         auto backMenu = Menu::create(backItem, nullptr);
-        backMenu->setPosition(Vec2(cx, origin.y + 50.0f * s));
+        backMenu->setPosition(Vec2(cx, origin.y + 32.0f * s));
         this->addChild(backMenu, 2);
     }
 }

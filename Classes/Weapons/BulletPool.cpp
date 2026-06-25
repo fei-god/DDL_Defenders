@@ -67,8 +67,9 @@ Bullet* BulletPool::acquire(const std::string& name,
     {
         if (bullet->getParent() == nullptr)
         {
-            _bulletLayer->addChild(bullet);
+            _bulletLayer->addChild(bullet, 30);
         }
+        bullet->setLocalZOrder(30);
         bullet->setVisible(true);
         _active.push_back(bullet);
     }

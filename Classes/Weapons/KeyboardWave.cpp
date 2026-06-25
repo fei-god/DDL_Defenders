@@ -55,8 +55,6 @@ void KeyboardWave::fire()
         Enemy* target = findNearestEnemy();
         baseDir = target ? getDirectionToEnemy(target) : Vec2(1, 0);
     }
-    Vec2 startPos = _owner->getObjectPosition();
-
     int projectileCount = 3 + getProjectileCountBonus();
     float startAngle = -12.0f - getProjectileCountBonus() * 4.0f;
     float endAngle = 12.0f + getProjectileCountBonus() * 4.0f;
@@ -71,7 +69,7 @@ void KeyboardWave::fire()
         Bullet* bullet = spawnBullet(
             "KeyboardWaveBullet",
             _bulletImagePath,
-            startPos,
+            getMuzzlePosition(dir),
             dir,
             _bulletSpeed,
             getModifiedAttackPower(),

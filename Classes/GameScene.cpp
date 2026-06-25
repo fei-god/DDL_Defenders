@@ -331,7 +331,8 @@ bool GameScene::init()
 
     // --- Bullet layer ---
     _bulletLayer = Node::create();
-    _worldLayer->addChild(_bulletLayer, 6);
+    _bulletLayer->setContentSize(_worldSize);
+    _worldLayer->addChild(_bulletLayer, 115);
     _bulletPool.init(_bulletLayer, 32);
 
     // --- Weapon ---

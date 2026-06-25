@@ -423,6 +423,34 @@ Vec2 Weapon::getDirectionToEnemy(Enemy* enemy) const
     return direction.getNormalized();
 }
 
+Vec2 Weapon::getMuzzlePosition(const Vec2& direction) const
+{
+    if (_owner == nullptr)
+    {
+        return getPosition();
+    }
+
+    Vec2 shotDir = direction.lengthSquared() > 0.0001f
+        ? direction.getNormalized()
+        : getAimDirection();
+    if (shotDir.lengthSquared() < 0.0001f)
+    {
+        shotDir = Vec2(1, 0);
+    }
+
+    Vec2 localMuzzle = getPosition() + shotDir * 26.0f;
+    Vec2 worldMuzzle = getParent()
+        ? getParent()->convertToWorldSpace(localMuzzle)
+        : _owner->getObjectPosition() + shotDir * 46.0f;
+
+    if (_bulletLayer)
+    {
+        return _bulletLayer->convertToNodeSpace(worldMuzzle);
+    }
+
+    return worldMuzzle;
+}
+
 Bullet* Weapon::spawnBullet(const std::string& name,
     const std::string& imagePath,
     const Vec2& startPosition,

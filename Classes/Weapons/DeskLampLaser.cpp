@@ -52,7 +52,7 @@ void DeskLampLaser::fire()
             dir.x * std::sin(rad) + dir.y * std::cos(rad));
 
         Bullet* bullet = spawnBullet("DeskLampLaserBullet", _bulletImagePath,
-            _owner->getObjectPosition(), shotDir, _bulletSpeed, damage, 1.25f, true);
+            getMuzzlePosition(shotDir), shotDir, _bulletSpeed, damage, 1.25f, true);
         if (bullet)
         {
             bullet->setScaleX(0.22f);

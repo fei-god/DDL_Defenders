@@ -47,7 +47,6 @@ void CoffeeLaser::fire()
     if (!canFire()) return;
     if (!consumeEnergyForShot()) return;
 
-    Vec2 startPos = _owner->getObjectPosition();
     Vec2 dir = getAimDirection();
     if (dir.lengthSquared() < 0.0001f)
     {
@@ -67,7 +66,7 @@ void CoffeeLaser::fire()
         Bullet* bullet = spawnBullet(
             "CoffeeLaserBullet",
             _bulletImagePath,
-            startPos,
+            getMuzzlePosition(shotDir),
             shotDir,
             _bulletSpeed,
             getModifiedAttackPower(),

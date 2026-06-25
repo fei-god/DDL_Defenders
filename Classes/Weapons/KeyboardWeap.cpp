@@ -53,7 +53,7 @@ void KeyboardWeap::fire()
             dir.x * std::sin(rad) + dir.y * std::cos(rad));
 
         Bullet* bullet = spawnBullet("KeyboardWeapBullet", _bulletImagePath,
-            _owner->getObjectPosition(), shotDir, _bulletSpeed,
+            getMuzzlePosition(shotDir), shotDir, _bulletSpeed,
             getModifiedAttackPower(), 1.0f, true);
         if (bullet)
         {
