@@ -109,27 +109,33 @@ namespace
 // Static save helpers
 // ============================================================================
 
-static std::string saveKey(int idx, const char* field)
+static std::string saveKey(int idx, const char* field, bool endlessMode = false)
 {
     char buf[64];
-    snprintf(buf, sizeof(buf), "story_save_%d_%s", idx, field);
+    snprintf(buf, sizeof(buf), "%s_save_%d_%s",
+        endlessMode ? "endless" : "story", idx, field);
     return buf;
 }
 
-std::vector<StoryModeScene::SaveEntry> StoryModeScene::loadAllSaves()
+static const char* saveCountKey(bool endlessMode)
+{
+    return endlessMode ? "endless_save_count" : "story_save_count";
+}
+
+std::vector<StoryModeScene::SaveEntry> StoryModeScene::loadAllSaves(bool endlessMode)
 {
     std::vector<SaveEntry> result;
     auto ud = UserDefault::getInstance();
-    int count = ud->getIntegerForKey("story_save_count", 0);
+    int count = ud->getIntegerForKey(saveCountKey(endlessMode), 0);
 
     // Read all saves, then sort newest-first (highest index = newest)
     for (int i = 0; i < count; ++i)
     {
         SaveEntry e;
         e.index = i;  // storage index
-        e.type = ud->getIntegerForKey(saveKey(i, "type").c_str(), 0);
-        e.level = ud->getIntegerForKey(saveKey(i, "level").c_str(), 1);
-        e.timestamp = ud->getStringForKey(saveKey(i, "ts").c_str(), "");
+        e.type = ud->getIntegerForKey(saveKey(i, "type", endlessMode).c_str(), 0);
+        e.level = ud->getIntegerForKey(saveKey(i, "level", endlessMode).c_str(), 1);
+        e.timestamp = ud->getStringForKey(saveKey(i, "ts", endlessMode).c_str(), "");
         if (!e.timestamp.empty())
             result.push_back(e);
     }
@@ -201,16 +207,16 @@ void StoryModeScene::addAutoSave(int level)
     ud->flush();
 }
 
-bool StoryModeScene::addManualSave(int level)
+bool StoryModeScene::addManualSave(int level, bool endlessMode)
 {
     auto ud = UserDefault::getInstance();
-    int count = ud->getIntegerForKey("story_save_count", 0);
+    int count = ud->getIntegerForKey(saveCountKey(endlessMode), 0);
 
     // Count existing manual saves
     int manualCount = 0;
     for (int i = 0; i < count; ++i)
     {
-        if (ud->getIntegerForKey(saveKey(i, "type").c_str(), 0) == 1)
+        if (ud->getIntegerForKey(saveKey(i, "type", endlessMode).c_str(), 0) == 1)
             ++manualCount;
     }
 
@@ -230,19 +236,19 @@ bool StoryModeScene::addManualSave(int level)
 
     // Append new manual save at the end
     int idx = count;
-    ud->setIntegerForKey(saveKey(idx, "type").c_str(), 1);  // manual
-    ud->setIntegerForKey(saveKey(idx, "level").c_str(), level);
-    ud->setStringForKey(saveKey(idx, "ts").c_str(), timeBuf);
-    ud->setIntegerForKey("story_save_count", count + 1);
+    ud->setIntegerForKey(saveKey(idx, "type", endlessMode).c_str(), 1);  // manual
+    ud->setIntegerForKey(saveKey(idx, "level", endlessMode).c_str(), level);
+    ud->setStringForKey(saveKey(idx, "ts", endlessMode).c_str(), timeBuf);
+    ud->setIntegerForKey(saveCountKey(endlessMode), count + 1);
     ud->flush();
     return true;
 }
 
-void StoryModeScene::deleteSaveByIndex(int displayIndex)
+void StoryModeScene::deleteSaveByIndex(int displayIndex, bool endlessMode)
 {
     // displayIndex is the position in the newest-first sorted list.
     // We need to map it back to the storage index.
-    auto saves = loadAllSaves();
+    auto saves = loadAllSaves(endlessMode);
     if (displayIndex < 0 || displayIndex >= static_cast<int>(saves.size()))
         return;
 
@@ -251,20 +257,20 @@ void StoryModeScene::deleteSaveByIndex(int displayIndex)
     // Since loadAllSaves sorts newest-first, display index 0 = storage index (count-1),
     // display index 1 = storage index (count-2), etc.
     auto ud = UserDefault::getInstance();
-    int count = ud->getIntegerForKey("story_save_count", 0);
+    int count = ud->getIntegerForKey(saveCountKey(endlessMode), 0);
     int storageIndex = count - 1 - displayIndex;
 
     // Shift all saves after storageIndex down by one
     for (int j = storageIndex; j < count - 1; ++j)
     {
-        ud->setIntegerForKey(saveKey(j, "type").c_str(),
-            ud->getIntegerForKey(saveKey(j + 1, "type").c_str(), 0));
-        ud->setIntegerForKey(saveKey(j, "level").c_str(),
-            ud->getIntegerForKey(saveKey(j + 1, "level").c_str(), 1));
-        ud->setStringForKey(saveKey(j, "ts").c_str(),
-            ud->getStringForKey(saveKey(j + 1, "ts").c_str(), ""));
+        ud->setIntegerForKey(saveKey(j, "type", endlessMode).c_str(),
+            ud->getIntegerForKey(saveKey(j + 1, "type", endlessMode).c_str(), 0));
+        ud->setIntegerForKey(saveKey(j, "level", endlessMode).c_str(),
+            ud->getIntegerForKey(saveKey(j + 1, "level", endlessMode).c_str(), 1));
+        ud->setStringForKey(saveKey(j, "ts", endlessMode).c_str(),
+            ud->getStringForKey(saveKey(j + 1, "ts", endlessMode).c_str(), ""));
     }
-    ud->setIntegerForKey("story_save_count", count - 1);
+    ud->setIntegerForKey(saveCountKey(endlessMode), count - 1);
     ud->flush();
 }
 
@@ -275,6 +281,22 @@ void StoryModeScene::deleteSaveByIndex(int displayIndex)
 Scene* StoryModeScene::createScene()
 {
     return StoryModeScene::create();
+}
+
+Scene* StoryModeScene::createEndlessScene()
+{
+    auto scene = new (std::nothrow) StoryModeScene();
+    if (scene)
+    {
+        scene->_isEndlessMode = true;
+        if (scene->init())
+        {
+            scene->autorelease();
+            return scene;
+        }
+        delete scene;
+    }
+    return nullptr;
 }
 
 bool StoryModeScene::init()
@@ -341,7 +363,11 @@ void StoryModeScene::showMainView(float s)
     _currentView = Node::create();
     this->addChild(_currentView, 1);
 
-    auto title = Label::createWithSystemFont(lm->getString("story_mode"), "Arial", 44.0f * s);
+    const bool english = lm->getLanguage() == LanguageManager::Language::ENGLISH;
+    const std::string modeTitle = _isEndlessMode
+        ? (english ? "Endless Mode" : u8"无尽模式")
+        : lm->getString("story_mode");
+    auto title = Label::createWithSystemFont(modeTitle, "Arial", 44.0f * s);
     title->setColor(Color3B(220, 220, 100));
     title->enableOutline(Color4B(20, 18, 8, 220), std::max(1, static_cast<int>(3.0f * s)));
     title->enableShadow(Color4B(0, 0, 0, 200), Size(3.0f * s, -3.0f * s), 1);
@@ -356,7 +382,7 @@ void StoryModeScene::showMainView(float s)
         Color3B(235, 245, 255), CC_CALLBACK_1(StoryModeScene::onLoadGameClicked, this));
 
     // Check if any saves exist
-    auto saves = loadAllSaves();
+    auto saves = loadAllSaves(_isEndlessMode);
     if (saves.empty())
     {
         loadGameItem->setEnabled(false);
@@ -400,7 +426,7 @@ void StoryModeScene::showLoadView(float s)
     title->setPosition(Vec2(cx, origin.y + visibleSize.height - 58.0f * s));
     _currentView->addChild(title);
 
-    auto saves = loadAllSaves();
+    auto saves = loadAllSaves(_isEndlessMode);
 
     if (saves.empty())
     {
@@ -544,7 +570,7 @@ void StoryModeScene::startNewGame()
 {
     auto ud = UserDefault::getInstance();
     ud->setIntegerForKey("selected_level", 1);
-    ud->setIntegerForKey("selected_game_mode", 0);
+    ud->setIntegerForKey("selected_game_mode", _isEndlessMode ? 1 : 0);
     ud->flush();
 
     AudioManager::getInstance()->playGameStart();
@@ -553,14 +579,14 @@ void StoryModeScene::startNewGame()
 
 void StoryModeScene::loadSaveAndStart(int displayIndex)
 {
-    auto saves = loadAllSaves();
+    auto saves = loadAllSaves(_isEndlessMode);
     if (displayIndex < 0 || displayIndex >= static_cast<int>(saves.size()))
         return;
 
     int level = saves[displayIndex].level;
     auto ud = UserDefault::getInstance();
     ud->setIntegerForKey("selected_level", level);
-    ud->setIntegerForKey("selected_game_mode", 0);
+    ud->setIntegerForKey("selected_game_mode", _isEndlessMode ? 1 : 0);
     ud->flush();
 
     AudioManager::getInstance()->playGameStart();
@@ -625,7 +651,7 @@ void StoryModeScene::onDeleteConfirmYes(Ref*)
 {
     if (_pendingDeleteIndex >= 0)
     {
-        deleteSaveByIndex(_pendingDeleteIndex);
+        deleteSaveByIndex(_pendingDeleteIndex, _isEndlessMode);
     }
     hideDeleteConfirm();
 

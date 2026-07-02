@@ -25,6 +25,9 @@
     <ClCompile Include="D:\DDL_defenders\Classes\SettingsScene.cpp">
       <Filter>Source Files\Classes</Filter>
     </ClCompile>
+    <ClCompile Include="D:\DDL_defenders\Classes\StoryModeScene.cpp">
+      <Filter>Source Files\Classes</Filter>
+    </ClCompile>
     <ClCompile Include="D:\DDL_defenders\Classes\Core\GameObject.cpp">
       <Filter>Source Files\Classes\Core</Filter>
     </ClCompile>
@@ -73,10 +76,16 @@
     <ClCompile Include="D:\DDL_defenders\Classes\Weapons\Weapon.cpp">
       <Filter>Source Files\Classes\Weapons</Filter>
     </ClCompile>
+    <ClCompile Include="D:\DDL_defenders\Classes\Weapons\CoffeeGun.cpp">
+      <Filter>Source Files\Classes\Weapons</Filter>
+    </ClCompile>
     <ClCompile Include="D:\DDL_defenders\Classes\Weapons\KeyboardWave.cpp">
       <Filter>Source Files\Classes\Weapons</Filter>
     </ClCompile>
     <ClCompile Include="D:\DDL_defenders\Classes\Weapons\CoffeeLaser.cpp">
+      <Filter>Source Files\Classes\Weapons</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\DDL_defenders\Classes\Weapons\KeyboardWeap.cpp">
       <Filter>Source Files\Classes\Weapons</Filter>
     </ClCompile>
     <ClCompile Include="D:\DDL_defenders\Classes\Weapons\DeskLampLaser.cpp">
@@ -126,6 +135,12 @@
     <ClInclude Include="D:\DDL_defenders\Classes\SettingsScene.h">
       <Filter>Source Files\Classes</Filter>
     </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Classes\StoryModeScene.h">
+      <Filter>Source Files\Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Classes\Core\AssetPaths.h">
+      <Filter>Source Files\Classes\Core</Filter>
+    </ClInclude>
     <ClInclude Include="D:\DDL_defenders\Classes\Core\GameObject.h">
       <Filter>Source Files\Classes\Core</Filter>
     </ClInclude>
@@ -174,10 +189,16 @@
     <ClInclude Include="D:\DDL_defenders\Classes\Weapons\Weapon.h">
       <Filter>Source Files\Classes\Weapons</Filter>
     </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Classes\Weapons\CoffeeGun.h">
+      <Filter>Source Files\Classes\Weapons</Filter>
+    </ClInclude>
     <ClInclude Include="D:\DDL_defenders\Classes\Weapons\KeyboardWave.h">
       <Filter>Source Files\Classes\Weapons</Filter>
     </ClInclude>
     <ClInclude Include="D:\DDL_defenders\Classes\Weapons\CoffeeLaser.h">
+      <Filter>Source Files\Classes\Weapons</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Classes\Weapons\KeyboardWeap.h">
       <Filter>Source Files\Classes\Weapons</Filter>
     </ClInclude>
     <ClInclude Include="D:\DDL_defenders\Classes\Weapons\DeskLampLaser.h">
@@ -216,10 +237,31 @@
     <ClInclude Include="D:\DDL_defenders\Resources\HelloWorld.png">
       <Filter>Resources</Filter>
     </ClInclude>
-    <ClInclude Include="D:\DDL_defenders\Resources\art\backgrounds\dorm_room.png.png">
+    <ClInclude Include="D:\DDL_defenders\Resources\art\backgrounds\dorm_room.png">
       <Filter>Resources\art\backgrounds</Filter>
     </ClInclude>
-    <ClInclude Include="D:\DDL_defenders\Resources\art\characters\player.png.png">
+    <ClInclude Include="D:\DDL_defenders\Resources\art\characters\player_mood_calm.png">
+      <Filter>Resources\art\characters</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\characters\player_mood_excited.png">
+      <Filter>Resources\art\characters</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\characters\player_mood_exhausted.png">
+      <Filter>Resources\art\characters</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\characters\player_mood_fear.png">
+      <Filter>Resources\art\characters</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\characters\player_mood_focus.png">
+      <Filter>Resources\art\characters</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\characters\player_mood_irritable.png">
+      <Filter>Resources\art\characters</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\characters\player_mood_normal.png">
+      <Filter>Resources\art\characters</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\characters\player_mood_panic.png">
       <Filter>Resources\art\characters</Filter>
     </ClInclude>
     <ClInclude Include="D:\DDL_defenders\Resources\art\monsters\ddl_monster.png">
@@ -234,6 +276,81 @@
     <ClInclude Include="D:\DDL_defenders\Resources\art\monsters\thesis_boss.png">
       <Filter>Resources\art\monsters</Filter>
     </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\rewards\coffee.png">
+      <Filter>Resources\art\rewards</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\rewards\freeze_device.png">
+      <Filter>Resources\art\rewards</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\rewards\pen.png">
+      <Filter>Resources\art\rewards</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\rewards\power.png">
+      <Filter>Resources\art\rewards</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\equipment_panel.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\leaderboard_panel.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\main_menu_background.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\menu_endless.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\menu_exit.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\menu_leaderboard.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\menu_level1.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\menu_level2.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\menu_level3.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\menu_level4.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\menu_level5.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\menu_settings.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\pause_back_to_menu.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\pause_restart.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\pause_resume.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\pause_settings.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\pause_title.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\audio\button_click.mp3">
+      <Filter>Resources\audio</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\audio\game_bgm.mp3">
+      <Filter>Resources\audio</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\audio\monster_hit.mp3">
+      <Filter>Resources\audio</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\audio\start_bgm.mp3">
+      <Filter>Resources\audio</Filter>
+    </ClInclude>
     <ClInclude Include="D:\DDL_defenders\Resources\fonts\Marker Felt.ttf">
       <Filter>Resources\fonts</Filter>
     </ClInclude>
@@ -243,16 +360,52 @@
     <ClInclude Include="D:\DDL_defenders\Resources\res\.gitkeep">
       <Filter>Resources\res</Filter>
     </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\weapon\coffee_blast.png">
+      <Filter>Resources\weapon</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\weapon\coffee_blast_sprite.png">
+      <Filter>Resources\weapon</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\weapon\coffee_bullet_sprite.png">
+      <Filter>Resources\weapon</Filter>
+    </ClInclude>
     <ClInclude Include="D:\DDL_defenders\Resources\weapon\coffee_gun.png">
+      <Filter>Resources\weapon</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\weapon\coffee_gun_sprite.png">
       <Filter>Resources\weapon</Filter>
     </ClInclude>
     <ClInclude Include="D:\DDL_defenders\Resources\weapon\coffee_laser.png">
       <Filter>Resources\weapon</Filter>
     </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\weapon\desk_lamp_laser.png">
+      <Filter>Resources\weapon</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\weapon\desk_lamp_laser_sprite.png">
+      <Filter>Resources\weapon</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\weapon\desk_lamp_weapon_sprite.png">
+      <Filter>Resources\weapon</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\weapon\focus_orb.png">
+      <Filter>Resources\weapon</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\weapon\focus_orb_sprite.png">
+      <Filter>Resources\weapon</Filter>
+    </ClInclude>
     <ClInclude Include="D:\DDL_defenders\Resources\weapon\keyboard_wave.png">
       <Filter>Resources\weapon</Filter>
     </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\weapon\keyboard_wave_sprite.png">
+      <Filter>Resources\weapon</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\weapon\keyboard_weap_bolt_sprite.png">
+      <Filter>Resources\weapon</Filter>
+    </ClInclude>
     <ClInclude Include="D:\DDL_defenders\Resources\weapon\keyboard_weapon.png">
+      <Filter>Resources\weapon</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\weapon\keyboard_weapon_sprite.png">
       <Filter>Resources\weapon</Filter>
     </ClInclude>
   </ItemGroup>
@@ -279,6 +432,15 @@
     </Filter>
     <Filter Include="Resources\art\monsters">
       <UniqueIdentifier>{9A9BF257-385D-3559-89D8-D676DECE668F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources\art\rewards">
+      <UniqueIdentifier>{12D0A63C-5601-3306-898B-BC5D2843C866}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources\art\ui">
+      <UniqueIdentifier>{C62A8028-4D1A-3549-9AE0-D4A47EB11CC0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources\audio">
+      <UniqueIdentifier>{4D60398A-EAC0-3DE6-ACF1-971620E5F36C}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resources\fonts">
       <UniqueIdentifier>{FC54F63A-71B4-39D0-ACBD-934CDEBECFA6}</UniqueIdentifier>

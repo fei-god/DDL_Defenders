@@ -15,6 +15,24 @@ USING_NS_CC;
 
 namespace
 {
+    std::string localizedButtonImagePath(const std::string& imagePath)
+    {
+        if (LanguageManager::getInstance()->getLanguage() !=
+            LanguageManager::Language::ENGLISH)
+        {
+            return imagePath;
+        }
+
+        const std::string::size_type dot = imagePath.find_last_of('.');
+        const std::string englishPath = dot == std::string::npos
+            ? imagePath + "_eng"
+            : imagePath.substr(0, dot) + "_eng" + imagePath.substr(dot);
+
+        // English assets can be added incrementally; retain the base image
+        // until the matching _eng file is available.
+        return AssetPaths::exists(englishPath) ? englishPath : imagePath;
+    }
+
     Node* createBeveledButtonNode(const std::string& text,
         const Size& size,
         float fontSize,
@@ -104,8 +122,28 @@ namespace
                 Size imageSize = sprite->getContentSize();
                 if (imageSize.width > 0.0f && imageSize.height > 0.0f)
                 {
-                    sprite->setScale(std::min(targetSize.width / imageSize.width,
-                        targetSize.height / imageSize.height));
+                    if (imagePath.find("menu_story") != std::string::npos)
+                    {
+                        // Match the new story artwork to the visible dimensions
+                        // of the existing endless-mode image button.
+                        float visualAspect = 4.34f;
+                        std::string referencePath = AssetPaths::resolve("art/ui/menu_endless.png");
+                        auto reference = referencePath.empty() ? nullptr : Sprite::create(referencePath);
+                        if (reference && reference->getContentSize().height > 0.0f)
+                        {
+                            visualAspect = reference->getContentSize().width /
+                                reference->getContentSize().height;
+                        }
+                        const float visualWidth = std::min(targetSize.width,
+                            targetSize.height * visualAspect);
+                        sprite->setScaleX(visualWidth / imageSize.width);
+                        sprite->setScaleY(targetSize.height * 1.15f / imageSize.height);
+                    }
+                    else
+                    {
+                        sprite->setScale(std::min(targetSize.width / imageSize.width,
+                            targetSize.height / imageSize.height));
+                    }
                 }
                 sprite->setPosition(Vec2(targetSize.width * 0.5f, targetSize.height * 0.5f));
                 root->addChild(sprite);
@@ -143,9 +181,10 @@ namespace
         const Color3B& color,
         const ccMenuCallback& callback)
     {
-        auto normal = createMenuImageOrLabel(imagePath, fallbackText, targetSize, fontSize, color);
-        auto selected = createMenuImageOrLabel(imagePath, fallbackText, targetSize, fontSize, color, true, false);
-        auto disabled = createMenuImageOrLabel(imagePath, fallbackText, targetSize, fontSize, Color3B(95, 95, 105), false, true);
+        const std::string localizedPath = localizedButtonImagePath(imagePath);
+        auto normal = createMenuImageOrLabel(localizedPath, fallbackText, targetSize, fontSize, color);
+        auto selected = createMenuImageOrLabel(localizedPath, fallbackText, targetSize, fontSize, color, true, false);
+        auto disabled = createMenuImageOrLabel(localizedPath, fallbackText, targetSize, fontSize, Color3B(95, 95, 105), false, true);
         selected->setScale(0.96f);
         selected->setOpacity(220);
         disabled->setOpacity(125);
@@ -285,14 +324,8 @@ void MainMenuScene::onStoryModeClicked(Ref* sender)
 
 void MainMenuScene::onEndlessClicked(Ref* sender)
 {
-    auto ud = UserDefault::getInstance();
-    ud->setIntegerForKey("selected_game_mode", 1);
-    ud->setIntegerForKey("selected_level", 1);
-    ud->flush();
-
     AudioManager::getInstance()->playButtonClick();
-    AudioManager::getInstance()->playGameStart();
-    Director::getInstance()->replaceScene(GameScene::createScene());
+    Director::getInstance()->replaceScene(StoryModeScene::createEndlessScene());
 }
 
 void MainMenuScene::onSettingsClicked(Ref* sender)

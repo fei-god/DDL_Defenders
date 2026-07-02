@@ -90,10 +90,16 @@ bool EnvironmentZone::initZone(EnvironmentZoneType type, const Rect& bounds)
         addChild(draw);
     }
 
-    auto label = Label::createWithSystemFont(labelText, "Arial", 16);
-    label->setColor(Color3B(230, 235, 240));
-    label->setPosition(Vec2::ZERO);
-    addChild(label);
+    // Bed and desk are represented by their scene art (or fallback outline),
+    // so do not cover those areas with debug-style English labels.
+    if (_zoneType != EnvironmentZoneType::Bed &&
+        _zoneType != EnvironmentZoneType::Desk)
+    {
+        auto label = Label::createWithSystemFont(labelText, "Arial", 16);
+        label->setColor(Color3B(230, 235, 240));
+        label->setPosition(Vec2::ZERO);
+        addChild(label);
+    }
 
     return true;
 }
