@@ -34,10 +34,11 @@ bool CoffeeLaser::initCoffeeLaser(Player* owner)
         return false;
     }
 
-    _bulletSpeed = 900.0f;
+    _bulletSpeed = 1800.0f;
     _bulletImagePath = "weapon/coffee_bullet_sprite.png";
     configureEnergy(100.0f, 34.0f, 14.0f);
-    setObjectScale(0.095f);
+    setObjectScale(0.19f);
+    setAttackRange(760.0f);
 
     return true;
 }
@@ -76,9 +77,7 @@ void CoffeeLaser::fire()
 
         if (bullet != nullptr)
         {
-            // 激光可以稍微拉长，看起来更像一束光。
-            bullet->setScaleX(0.18f);
-            bullet->setScaleY(0.06f);
+            bullet->setScale(0.18f);
         }
     }
 

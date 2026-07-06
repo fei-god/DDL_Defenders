@@ -47,25 +47,6 @@ private:
         std::string imagePath;
     };
 
-    enum class UpgradeType
-    {
-        BulletDamage,
-        EnergyRecovery,
-        ProjectileCount,
-        MaxHp,
-        MoveSpeed,
-        LifeOnKill,
-        WeaponMastery
-    };
-
-    struct UpgradeChoice
-    {
-        UpgradeType type;
-        std::string title;
-        std::string description;
-        bool major;
-    };
-
     // --- Placeholder textures ---
     void createPlaceholderTextures();
     void applySpriteFit(cocos2d::Sprite* sprite, float maxWidth, float maxHeight);
@@ -79,20 +60,15 @@ private:
     void updateMoveDirection();
     void updatePlayerMovement(float dt);
     void updateCamera();
-    void fireBullet();
-    void applyAimWeaponDamage();
     void updateEnemyPlayerContact(float dt);
-    void switchWeapon(int index);
     Weapon* createWeaponById(int weaponId);
     std::vector<WeaponOption> getWeaponOptions() const;
     void rebuildWeaponLoadout();
-    void showEquipmentMenu();
-    void hideEquipmentMenu();
-    void assignWeaponToSlot(int weaponId);
     cocos2d::Node* createEquipmentIcon(const WeaponOption& option, const cocos2d::Size& boxSize, bool selected);
     void updateWeaponEnergyUI();
     void refreshWeaponSlotUI();
-    void initLevelTask();
+    void applyWeaponLoadout();
+    void initSceneConfig();
     void showLevelIntro();
     void hideLevelIntro();
     void initEnvironmentZones();
@@ -101,24 +77,36 @@ private:
     void spawnRewardForEnemy(Enemy* enemy);
     void handleEndlessEnemyKilled(Enemy* enemy);
     int getScoreRewardForEnemy(Enemy* enemy) const;
-    void checkEndlessLevelUps();
-    std::vector<UpgradeChoice> rollUpgradeChoices(bool major) const;
-    void showUpgradeMenu(bool major);
-    void applyUpgradeChoice(const UpgradeChoice& choice);
-    void hideUpgradeMenu();
+    void goToAfterBattle(int wave);
     void applyWeaponMastery(Weapon* weapon);
     void applyWeaponMasteryEffects(Weapon* weapon);
     void applyEndlessGrowthToWeapon(Weapon* weapon, int weaponId);
+
+    // ==================== Hub System ====================
+    void updateHubInteraction();
+    void showDeskPanel();
+    void hideDeskPanel();
+    void showBedPanel();
+    void hideBedPanel();
+    bool isInRect(const cocos2d::Vec2& pos, const cocos2d::Rect& rect) const;
     void spawnReward(RewardType type, const cocos2d::Vec2& position);
     cocos2d::Node* createRewardNode(RewardType type);
     void updateRewards(float dt);
     void applyReward(RewardType type);
     void updateFreezeEffect(float dt);
     void updatePlayerMoodVisual();
+    void updateExpBarUI();
+    void updateWaveTimerUI();
     std::string getMoodPlayerImagePath(MoodType mood) const;
     void goToGameOver();
     void goToVictory();
     int calculateScore() const;
+
+    // ==================== Pause V2 ====================
+    void buildPauseStatsPanel(cocos2d::Node* parent, const cocos2d::Vec2& pos, float s);
+    void buildPauseWeaponPanel(cocos2d::Node* parent, const cocos2d::Vec2& pos, float s);
+    void onPauseEquipWeapon(cocos2d::Ref* sender);
+    void onPauseUnequipWeapon(cocos2d::Ref* sender);
 
     // ==================== UI ====================
     cocos2d::LayerColor* _hpBarBg;
@@ -140,6 +128,14 @@ private:
     cocos2d::Label* _survivalTimeLabel;
     cocos2d::Label* _topHintLabel;
     cocos2d::Label* _endlessStatsLabel;
+    // EXP bar
+    cocos2d::LayerColor* _expBarBg;
+    cocos2d::LayerColor* _expBarFill;
+    float _expBarMaxWidth;
+    cocos2d::Label* _expLevelLabel;
+    cocos2d::Label* _expFractionLabel;
+    // Wave timer
+    cocos2d::Label* _waveTimerLabel;
     std::vector<cocos2d::Node*> _weaponSlotNodes;
     std::vector<int> _lastWeaponSlotIds;
     int _lastWeaponSlotIndex;
@@ -164,14 +160,10 @@ private:
     cocos2d::Vec2 _mousePos;
 
     // ==================== Combat ====================
-    Weapon* _currentWeapon;
     std::vector<Weapon*> _weapons;
-    std::vector<int> _weaponLoadoutIds;
-    int _currentWeaponIndex;
-    int _nextEquipmentSlot;
+    std::vector<int> _weaponLoadoutIds;   // 2 equipped slots
+    std::vector<int> _backpackWeaponIds;  // 4 reserve backpack slots
     cocos2d::Node* _equipmentLayer;
-    cocos2d::Node* _upgradeLayer;
-    std::vector<UpgradeChoice> _currentUpgradeChoices;
     std::vector<Bullet*> _bullets;
     cocos2d::Node* _bulletLayer;
     BulletPool _bulletPool;
@@ -191,6 +183,14 @@ private:
 
     void loadKeyBindings();
 
+    // ==================== Hub panels ====================
+    cocos2d::Node* _deskPanel = nullptr;
+    cocos2d::Node* _bedPanel = nullptr;
+    cocos2d::Node* _hubOverlay = nullptr;  // 50% dark overlay
+    cocos2d::Label* _hubHintLabel = nullptr;  // "[E] Next Level"
+    bool _deskPanelOpen = false;
+    bool _bedPanelOpen = false;
+
     // ==================== Pause ====================
     bool _isPaused;
     cocos2d::Node* _pauseLayer;
@@ -207,18 +207,26 @@ private:
     bool _isGameOver;
     bool _isVictory;
     bool _isEndlessMode;
+    bool _pendingAfterBattle = false;
+    int _pendingWave = -1;
+    int _sceneId = 0;            // 0=hub, 1=library, 2=classroom, 3=office
+    bool _isHubScene = false;
+    bool _isBossScene = false;
     int _levelNumber;
     float _ddlTimeLimit;
     float _ddlTimeRemaining;
     int _completedDdlCount;
-    float _deskStayRequired;
-    float _deskStayProgress;
     bool _levelIntroActive;
     float _levelIntroTimer;
     cocos2d::Node* _levelIntroLayer;
     float _assignmentProgress;
     bool _nearDesk;
     bool _nearPowerSocket;
+    // Thesis Boss
+    float _thesisProgress = 0.0f;
+    // DDL Pressure (endless mode)
+    float _ddlPressure = 0.0f;
+    cocos2d::LayerColor* _vignetteLayer = nullptr;
     int _lastKillCount;
     float _enemyContactDamageCooldown;
     float _lowHpMoodTimer;

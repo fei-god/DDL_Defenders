@@ -1,4 +1,4 @@
-﻿#ifndef __MAIN_MENU_SCENE_H__
+#ifndef __MAIN_MENU_SCENE_H__
 #define __MAIN_MENU_SCENE_H__
 
 #include "cocos2d.h"
@@ -17,6 +17,28 @@ public:
     void onLeaderboardClicked(cocos2d::Ref* sender);
 
     CREATE_FUNC(MainMenuScene);
+
+private:
+    enum class MenuState { MAIN, TRANSITION, MENU };
+
+    void startTransition();
+    void animateButtons();
+
+    MenuState _state = MenuState::MAIN;
+    bool _canClickMenu = false;
+
+    cocos2d::Sprite* _bgNormal = nullptr;
+    cocos2d::Node* _bgBlur = nullptr;
+    cocos2d::Node* _menuRoot = nullptr;
+
+    cocos2d::MenuItemSprite* _btnStory = nullptr;
+    cocos2d::MenuItemSprite* _btnEndless = nullptr;
+    cocos2d::MenuItemSprite* _btnSettings = nullptr;
+    cocos2d::MenuItemSprite* _btnExit = nullptr;
+
+    float _s = 1.0f;
+    cocos2d::Vec2 _btnTargetPos[4];
+    cocos2d::Vec2 _btnStartPos[4];
 };
 
 #endif // __MAIN_MENU_SCENE_H__

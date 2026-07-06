@@ -32,6 +32,7 @@ Weapon::Weapon()
     , _bulletLayer(nullptr)
     , _bulletPool(nullptr)
     , _attackPower(0)
+    , _attackRange(500.0f)
     , _cooldownTime(1.0f)
     , _cooldownTimer(0.0f)
     , _maxEnergy(100.0f)
@@ -336,6 +337,16 @@ float Weapon::getCooldownTime() const
 int Weapon::getProjectileCountBonus() const
 {
     return _projectileCountBonus;
+}
+
+float Weapon::getAttackRange() const
+{
+    return _attackRange;
+}
+
+void Weapon::setAttackRange(float range)
+{
+    _attackRange = range;
 }
 
 void Weapon::addAttackPower(int amount)

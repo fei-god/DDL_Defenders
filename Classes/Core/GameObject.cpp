@@ -71,7 +71,7 @@ bool GameObject::initObject(
     this->shouldDestroy = false;
     this->currentLifeTime = 0.0f;
 
-    // ¸ù¾Ý¶ÔÏóÀàÐÍÉèÖÃÄ¬ÈÏÕóÓª
+    // ï¿½ï¿½ï¿½Ý¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¬ï¿½ï¿½ï¿½ï¿½Óª
     if (type == GameObjectType::Player)
     {
         this->objectCamp = GameObjectCamp::Player;
@@ -136,7 +136,7 @@ void GameObject::updateObject(float dt)
 }
 
 // =========================
-// »ù´¡Éí·ÝÐÅÏ¢
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
 // =========================
 
 int GameObject::getObjectId() const
@@ -201,7 +201,7 @@ bool GameObject::isEnemyCampWith(const GameObject* other) const
 }
 
 // =========================
-// ±êÇ©ÏµÍ³
+// ï¿½ï¿½Ç©ÏµÍ³
 // =========================
 
 void GameObject::addTag(const std::string& tag)
@@ -229,7 +229,7 @@ void GameObject::clearTags()
 }
 
 // =========================
-// Í¼Æ¬ÓëÏÔÊ¾
+// Í¼Æ¬ï¿½ï¿½ï¿½ï¿½Ê¾
 // =========================
 
 bool GameObject::setObjectImage(const std::string& imagePath)
@@ -249,7 +249,7 @@ bool GameObject::setObjectImage(const std::string& imagePath)
     Size textureSize = texture->getContentSize();
     this->setTextureRect(Rect(0, 0, textureSize.width, textureSize.height));
 
-    // Ä¬ÈÏ°ÑÅö×²°ë¾¶ÉèÖÃÎªÍ¼Æ¬½Ï¶Ì±ßµÄÒ»°ë
+    // Ä¬ï¿½Ï°ï¿½ï¿½ï¿½×²ï¿½ë¾¶ï¿½ï¿½ï¿½ï¿½ÎªÍ¼Æ¬ï¿½Ï¶Ì±ßµï¿½Ò»ï¿½ï¿½
     if (textureSize.width > 0 && textureSize.height > 0)
     {
         collisionRadius = std::min(textureSize.width, textureSize.height) * 0.5f;
@@ -285,8 +285,7 @@ void GameObject::setObjectSize(const Size& size)
     float scaleX = size.width / currentSize.width;
     float scaleY = size.height / currentSize.height;
 
-    this->setScaleX(scaleX);
-    this->setScaleY(scaleY);
+    this->setScale(std::min(scaleX, scaleY));
 }
 
 Size GameObject::getObjectSize() const
@@ -295,7 +294,7 @@ Size GameObject::getObjectSize() const
 }
 
 // =========================
-// Î»ÖÃ¡¢·½Ïò¡¢ÒÆ¶¯
+// Î»ï¿½Ã¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½
 // =========================
 
 void GameObject::setObjectPosition(const Vec2& position)
@@ -401,12 +400,12 @@ void GameObject::faceToDirection(const Vec2& direction)
 
     float angle = CC_RADIANS_TO_DEGREES(std::atan2(normalized.y, normalized.x));
 
-    // Cocos2d-x µÄ rotation ÊÇË³Ê±Õë·½Ïò£¬Òò´ËÕâÀïÈ¡¸ºÊý
+    // Cocos2d-x ï¿½ï¿½ rotation ï¿½ï¿½Ë³Ê±ï¿½ë·½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½
     this->setRotation(-angle);
 }
 
 // =========================
-// Åö×²Óë·¶Î§ÅÐ¶Ï
+// ï¿½ï¿½×²ï¿½ë·¶Î§ï¿½Ð¶ï¿½
 // =========================
 
 Rect GameObject::getCollisionBox() const
@@ -421,7 +420,8 @@ void GameObject::setCollisionRadius(float radius)
 
 float GameObject::getCollisionRadius() const
 {
-    return collisionRadius * this->getScale();
+    // Use average scale to support non-uniformly scaled objects (e.g. laser beams)
+    return collisionRadius * (this->getScaleX() + this->getScaleY()) * 0.5f;
 }
 
 void GameObject::setUseCircleCollision(bool useCircle)
@@ -497,7 +497,7 @@ float GameObject::distanceToPoint(const Vec2& point) const
 }
 
 // =========================
-// ÉúÃüÖÜÆÚ
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 // =========================
 
 void GameObject::setLifeTime(float time)
@@ -543,7 +543,7 @@ bool GameObject::isExpired() const
 }
 
 // =========================
-// ¼¤»î¡¢¸üÐÂ¡¢½»»¥¡¢Ïú»Ù
+// ï¿½ï¿½ï¿½î¡¢ï¿½ï¿½ï¿½Â¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 // =========================
 
 void GameObject::setActive(bool active)
@@ -602,7 +602,7 @@ bool GameObject::isMarkedForDestroy() const
 }
 
 // =========================
-// µØÍ¼±ß½ç
+// ï¿½ï¿½Í¼ï¿½ß½ï¿½
 // =========================
 
 bool GameObject::isOutOfBounds(const Rect& bounds) const
@@ -626,7 +626,7 @@ void GameObject::clampPositionInBounds(const Rect& bounds)
 }
 
 // =========================
-// µ÷ÊÔÐÅÏ¢
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
 // =========================
 
 std::string GameObject::getDebugInfo() const

@@ -22,10 +22,11 @@ bool DeskLampLaser::initDeskLampLaser(Player* owner)
     {
         return false;
     }
-    _bulletSpeed = 900.0f;
+    _bulletSpeed = 1800.0f;
     _bulletImagePath = "weapon/desk_lamp_laser_sprite.png";
     configureEnergy(100.0f, 30.0f, 16.0f);
-    setObjectScale(0.095f);
+    setObjectScale(0.19f);
+    setAttackRange(720.0f);
     return true;
 }
 
@@ -55,8 +56,7 @@ void DeskLampLaser::fire()
             getMuzzlePosition(shotDir), shotDir, _bulletSpeed, damage, 1.25f, true);
         if (bullet)
         {
-            bullet->setScaleX(0.22f);
-            bullet->setScaleY(0.09f);
+            bullet->setScale(0.22f);
         }
     }
     resetCooldown();

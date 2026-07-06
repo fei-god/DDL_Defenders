@@ -22,7 +22,8 @@ bool CoffeeBlast::initCoffeeBlast(Player* owner)
     }
     _radius = 150.0f;
     configureEnergy(100.0f, 28.0f, 18.0f);
-    setObjectScale(0.095f);
+    setObjectScale(0.19f);
+    setAttackRange(185.0f);
     return true;
 }
 

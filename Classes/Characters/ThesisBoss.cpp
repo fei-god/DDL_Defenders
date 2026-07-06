@@ -122,12 +122,12 @@ void ThesisBoss::playAttackEffect()
             RemoveSelf::create(), nullptr));
     }
 
-    // Overwhelming pressure: scale distortion
+    // Overwhelming pressure: scale pulse
     float curScale = getScale();
     auto distort = Sequence::create(
-        ScaleTo::create(0.04f, curScale * 1.35f, curScale * 0.8f),
-        ScaleTo::create(0.04f, curScale * 0.8f, curScale * 1.2f),
-        ScaleTo::create(0.06f, curScale * 1.2f, curScale * 0.9f),
+        ScaleTo::create(0.04f, curScale * 1.35f),
+        ScaleTo::create(0.04f, curScale * 0.8f),
+        ScaleTo::create(0.06f, curScale * 1.2f),
         EaseBackIn::create(ScaleTo::create(0.22f, curScale)),
         nullptr);
     this->runAction(distort);

@@ -387,4 +387,77 @@ void LanguageManager::initStrings()
 
     _strings["level_info_fmt"][L::SIMPLIFIED_CHINESE] = u8"第 %d 关";
     _strings["level_info_fmt"][L::ENGLISH] = "Level %d";
+
+    // ---- After Battle / Upgrade System ----
+    _strings["level_label"][L::SIMPLIFIED_CHINESE] = u8"等级";
+    _strings["level_label"][L::ENGLISH] = "Lv.";
+
+    _strings["exp_label"][L::SIMPLIFIED_CHINESE] = u8"经验";
+    _strings["exp_label"][L::ENGLISH] = "EXP";
+
+    _strings["wave_countdown_fmt"][L::SIMPLIFIED_CHINESE] = u8"第 %d 波: %.0fs";
+    _strings["wave_countdown_fmt"][L::ENGLISH] = "Wave %d: %.0fs";
+
+    _strings["after_battle_title"][L::SIMPLIFIED_CHINESE] = u8"战斗结束";
+    _strings["after_battle_title"][L::ENGLISH] = "Battle Complete";
+
+    _strings["next_wave"][L::SIMPLIFIED_CHINESE] = u8"下一波";
+    _strings["next_wave"][L::ENGLISH] = "Next Wave";
+
+    _strings["next_level"][L::SIMPLIFIED_CHINESE] = u8"下一关";
+    _strings["next_level"][L::ENGLISH] = "Next Level";
+
+    _strings["return_to_menu"][L::SIMPLIFIED_CHINESE] = u8"返回菜单";
+    _strings["return_to_menu"][L::ENGLISH] = "Return to Menu";
+
+    _strings["upgrade_points_fmt"][L::SIMPLIFIED_CHINESE] = u8"升级点数: %d";
+    _strings["upgrade_points_fmt"][L::ENGLISH] = "Upgrade Pts: %d";
+
+    _strings["upgrade_atk"][L::SIMPLIFIED_CHINESE] = u8"攻击+2";
+    _strings["upgrade_atk"][L::ENGLISH] = "ATK +2";
+
+    _strings["upgrade_hp"][L::SIMPLIFIED_CHINESE] = u8"生命上限+10";
+    _strings["upgrade_hp"][L::ENGLISH] = "Max HP +10";
+
+    _strings["upgrade_spd"][L::SIMPLIFIED_CHINESE] = u8"速度+10";
+    _strings["upgrade_spd"][L::ENGLISH] = "SPD +10";
+
+    _strings["upgrade_regen"][L::SIMPLIFIED_CHINESE] = u8"能量恢复+10%";
+    _strings["upgrade_regen"][L::ENGLISH] = "Energy Regen +10%";
+
+    _strings["upgrade_projectile"][L::SIMPLIFIED_CHINESE] = u8"弹幕+1";
+    _strings["upgrade_projectile"][L::ENGLISH] = "Projectile +1";
+
+    _strings["backpack"][L::SIMPLIFIED_CHINESE] = u8"背包";
+    _strings["backpack"][L::ENGLISH] = "Backpack";
+
+    _strings["equipped"][L::SIMPLIFIED_CHINESE] = u8"已装备";
+    _strings["equipped"][L::ENGLISH] = "Equipped";
+
+    _strings["empty_slot"][L::SIMPLIFIED_CHINESE] = u8"空";
+    _strings["empty_slot"][L::ENGLISH] = "Empty";
+
+    _strings["player_stats"][L::SIMPLIFIED_CHINESE] = u8"角色属性";
+    _strings["player_stats"][L::ENGLISH] = "Player Stats";
+
+    _strings["stat_hp"][L::SIMPLIFIED_CHINESE] = u8"生命";
+    _strings["stat_hp"][L::ENGLISH] = "HP";
+
+    _strings["stat_atk"][L::SIMPLIFIED_CHINESE] = u8"攻击";
+    _strings["stat_atk"][L::ENGLISH] = "ATK";
+
+    _strings["stat_spd"][L::SIMPLIFIED_CHINESE] = u8"速度";
+    _strings["stat_spd"][L::ENGLISH] = "SPD";
+
+    _strings["wave_cleared"][L::SIMPLIFIED_CHINESE] = u8"波次完成!";
+    _strings["wave_cleared"][L::ENGLISH] = "Wave Cleared!";
+
+    _strings["game_paused"][L::SIMPLIFIED_CHINESE] = u8"游戏暂停";
+    _strings["game_paused"][L::ENGLISH] = "Game Paused";
+
+    _strings["unequip"][L::SIMPLIFIED_CHINESE] = u8"卸下";
+    _strings["unequip"][L::ENGLISH] = "Unequip";
+
+    _strings["equip"][L::SIMPLIFIED_CHINESE] = u8"装备";
+    _strings["equip"][L::ENGLISH] = "Equip";
 }

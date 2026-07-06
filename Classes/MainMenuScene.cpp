@@ -1,4 +1,4 @@
-﻿#include "MainMenuScene.h"
+#include "MainMenuScene.h"
 #include "GameScene.h"
 #include "SettingsScene.h"
 #include "StoryModeScene.h"
@@ -19,46 +19,30 @@ namespace
     {
         if (LanguageManager::getInstance()->getLanguage() !=
             LanguageManager::Language::ENGLISH)
-        {
             return imagePath;
-        }
-
         const std::string::size_type dot = imagePath.find_last_of('.');
         const std::string englishPath = dot == std::string::npos
             ? imagePath + "_eng"
             : imagePath.substr(0, dot) + "_eng" + imagePath.substr(dot);
-
-        // English assets can be added incrementally; retain the base image
-        // until the matching _eng file is available.
         return AssetPaths::exists(englishPath) ? englishPath : imagePath;
     }
 
     Node* createBeveledButtonNode(const std::string& text,
-        const Size& size,
-        float fontSize,
-        const Color3B& textColor,
-        bool selected,
-        bool disabled)
+        const Size& size, float fontSize, const Color3B& textColor,
+        bool selected, bool disabled)
     {
         auto root = Node::create();
         root->setContentSize(size);
-
-        float w = size.width;
-        float h = size.height;
+        float w = size.width, h = size.height;
         float cut = std::min(h * 0.18f, 14.0f);
 
         auto drawChamfer = [](DrawNode* draw, float x, float y, float w, float h,
-            float cut, const Color4F& color)
-        {
+            float cut, const Color4F& color) {
             Vec2 points[8] = {
-                Vec2(x + cut, y),
-                Vec2(x + w - cut, y),
-                Vec2(x + w, y + cut),
-                Vec2(x + w, y + h - cut),
-                Vec2(x + w - cut, y + h),
-                Vec2(x + cut, y + h),
-                Vec2(x, y + h - cut),
-                Vec2(x, y + cut)
+                Vec2(x + cut, y), Vec2(x + w - cut, y),
+                Vec2(x + w, y + cut), Vec2(x + w, y + h - cut),
+                Vec2(x + w - cut, y + h), Vec2(x + cut, y + h),
+                Vec2(x, y + h - cut), Vec2(x, y + cut)
             };
             draw->drawSolidPoly(points, 8, color);
         };
@@ -94,21 +78,17 @@ namespace
                 std::max(2, static_cast<int>(fontSize * 0.11f)));
             label->enableShadow(Color4B(0, 0, 0, 220), Size(2.5f, -2.5f), 1);
             label->setSkewX(-8.0f);
-            label->setScaleX(1.08f);
+            label->setScale(1.08f);
             label->setPosition(Vec2(w * 0.5f, h * 0.54f));
             root->addChild(label);
         }
-
         return root;
     }
 
     Node* createMenuImageOrLabel(const std::string& imagePath,
-        const std::string& fallbackText,
-        const Size& targetSize,
-        float fontSize,
-        const Color3B& color,
-        bool selected = false,
-        bool disabled = false)
+        const std::string& fallbackText, const Size& targetSize,
+        float fontSize, const Color3B& color,
+        bool selected = false, bool disabled = false)
     {
         auto root = Node::create();
         root->setContentSize(targetSize);
@@ -122,28 +102,8 @@ namespace
                 Size imageSize = sprite->getContentSize();
                 if (imageSize.width > 0.0f && imageSize.height > 0.0f)
                 {
-                    if (imagePath.find("menu_story") != std::string::npos)
-                    {
-                        // Match the new story artwork to the visible dimensions
-                        // of the existing endless-mode image button.
-                        float visualAspect = 4.34f;
-                        std::string referencePath = AssetPaths::resolve("art/ui/menu_endless.png");
-                        auto reference = referencePath.empty() ? nullptr : Sprite::create(referencePath);
-                        if (reference && reference->getContentSize().height > 0.0f)
-                        {
-                            visualAspect = reference->getContentSize().width /
-                                reference->getContentSize().height;
-                        }
-                        const float visualWidth = std::min(targetSize.width,
-                            targetSize.height * visualAspect);
-                        sprite->setScaleX(visualWidth / imageSize.width);
-                        sprite->setScaleY(targetSize.height * 1.15f / imageSize.height);
-                    }
-                    else
-                    {
-                        sprite->setScale(std::min(targetSize.width / imageSize.width,
-                            targetSize.height / imageSize.height));
-                    }
+                    sprite->setScale(std::min(targetSize.width / imageSize.width,
+                        targetSize.height / imageSize.height));
                 }
                 sprite->setPosition(Vec2(targetSize.width * 0.5f, targetSize.height * 0.5f));
                 root->addChild(sprite);
@@ -151,35 +111,15 @@ namespace
             }
         }
 
-        Size visualSize = targetSize;
-        std::string referencePath = AssetPaths::resolve("art/ui/menu_endless.png");
-        if (!referencePath.empty())
-        {
-            auto reference = Sprite::create(referencePath);
-            if (reference)
-            {
-                Size refSize = reference->getContentSize();
-                if (refSize.width > 0.0f && refSize.height > 0.0f)
-                {
-                    visualSize.width = targetSize.height * (refSize.width / refSize.height);
-                    visualSize.height = targetSize.height;
-                }
-            }
-        }
-
-        auto fallback = createBeveledButtonNode(fallbackText, visualSize, fontSize, color, selected, disabled);
-        fallback->setPosition(Vec2((targetSize.width - visualSize.width) * 0.5f,
-            (targetSize.height - visualSize.height) * 0.5f));
+        auto fallback = createBeveledButtonNode(fallbackText, targetSize, fontSize, color, selected, disabled);
+        fallback->setPosition(Vec2::ZERO);
         root->addChild(fallback);
         return root;
     }
 
     MenuItemSprite* createMenuImageButton(const std::string& imagePath,
-        const std::string& fallbackText,
-        const Size& targetSize,
-        float fontSize,
-        const Color3B& color,
-        const ccMenuCallback& callback)
+        const std::string& fallbackText, const Size& targetSize,
+        float fontSize, const Color3B& color, const ccMenuCallback& callback)
     {
         const std::string localizedPath = localizedButtonImagePath(imagePath);
         auto normal = createMenuImageOrLabel(localizedPath, fallbackText, targetSize, fontSize, color);
@@ -192,17 +132,17 @@ namespace
     }
 }
 
+// ---------------------------------------------------------------------------
 Scene* MainMenuScene::createScene()
 {
-    // Restore saved language on startup
     auto ud = UserDefault::getInstance();
     int langIdx = ud->getIntegerForKey("language_index", 0);
     LanguageManager::getInstance()->setLanguage(
         LanguageManager::intToLanguage(langIdx));
-
     return MainMenuScene::create();
 }
 
+// ---------------------------------------------------------------------------
 bool MainMenuScene::init()
 {
     if (!Scene::init()) return false;
@@ -210,141 +150,254 @@ bool MainMenuScene::init()
     AudioManager::getInstance()->preloadAll();
     AudioManager::getInstance()->playMenuBGM();
 
-    auto* lm = LanguageManager::getInstance();
     auto visibleSize = Director::getInstance()->getVisibleSize();
     Vec2 origin = Director::getInstance()->getVisibleOrigin();
     auto winSize = Director::getInstance()->getWinSize();
+    float cx = origin.x + visibleSize.width / 2;
+    float cy = origin.y + visibleSize.height / 2;
 
-    // UI scale factor 鈥?keeps layout & font sizes proportional across resolutions.
-    // Base: 960脳640 鈫?s=1.0.  1920脳1080 鈫?s鈮?.69.
-    float s = winSize.height / 640.0f;
+    // Scale factor — base: 1920×1080
+    _s = std::min(winSize.height / 1080.0f, winSize.width / 1920.0f);
+    _s = std::max(0.62f, _s);
 
-    // --- Background (image if provided, color fallback) ---
-    std::string menuBgPath = AssetPaths::resolve("art/ui/main_menu_background.png");
-    if (!menuBgPath.empty())
+    // --- Background Normal ---
+    std::string normalPath = AssetPaths::resolve("art/ui/main_menu_background.png");
+    if (!normalPath.empty())
     {
-        auto bgSprite = Sprite::create(menuBgPath);
-        if (bgSprite)
+        _bgNormal = Sprite::create(normalPath);
+        if (_bgNormal)
         {
-            bgSprite->setPosition(Vec2(origin.x + visibleSize.width * 0.5f,
-                origin.y + visibleSize.height * 0.5f));
-            Size bgSize = bgSprite->getContentSize();
+            _bgNormal->setPosition(Vec2(cx, cy));
+            Size bgSize = _bgNormal->getContentSize();
+            if (bgSize.width > 0.0f && bgSize.height > 0.0f)
+                _bgNormal->setScale(std::max(visibleSize.width / bgSize.width,
+                    visibleSize.height / bgSize.height));
+            _bgNormal->setOpacity(255);
+            this->addChild(_bgNormal, -2);
+        }
+    }
+    if (!_bgNormal)
+    {
+        auto fallback = LayerColor::create(Color4B(25, 30, 45, 255), winSize.width, winSize.height);
+        fallback->setPosition(Vec2::ZERO);
+        this->addChild(fallback, -2);
+    }
+
+    // --- Background Blur ---
+    std::string blurPath = AssetPaths::resolve("art/ui/main_menu_blur.png");
+    if (!blurPath.empty())
+    {
+        _bgBlur = Sprite::create(blurPath);
+        if (_bgBlur)
+        {
+            _bgBlur->setPosition(Vec2(cx, cy));
+            Size bgSize = _bgBlur->getContentSize();
             if (bgSize.width > 0.0f && bgSize.height > 0.0f)
             {
-                bgSprite->setScale(std::max(visibleSize.width / bgSize.width,
-                    visibleSize.height / bgSize.height));
+                float coverScale = std::max(visibleSize.width / bgSize.width,
+                    visibleSize.height / bgSize.height);
+                _bgBlur->setScale(coverScale);
             }
-            this->addChild(bgSprite, -2);
+            _bgBlur->setOpacity(0);
+            this->addChild(_bgBlur, -1);
+        }
+    }
+    if (!_bgBlur)
+    {
+        auto fallback = LayerColor::create(Color4B(5, 8, 18, 220),
+            visibleSize.width, visibleSize.height);
+        fallback->setPosition(origin);
+        fallback->setOpacity(0);
+        this->addChild(fallback, -1);
+        _bgBlur = fallback;
+    }
+
+    // --- Menu Root (initially hidden) ---
+    _menuRoot = Node::create();
+    _menuRoot->setVisible(false);
+    this->addChild(_menuRoot, 10);
+
+    auto* lm = LanguageManager::getInstance();
+
+    // Button positions (3/4 of 4x = 3x original size)
+    float offsetsY[4] = { 300.0f, 100.0f, -100.0f, -300.0f };
+    float scales[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    std::string paths[4] = {
+        "art/ui/menu_story.png",
+        "art/ui/menu_endless.png",
+        "art/ui/menu_settings.png",
+        "art/ui/menu_exit.png"
+    };
+    std::string fallbacks[4] = {
+        lm->getString("story_mode"), "Endless Mode",
+        lm->getString("settings"), lm->getString("exit_game")
+    };
+    Color3B colors[4] = {
+        Color3B(245, 248, 255), Color3B(245, 175, 95),
+        Color3B(160, 180, 220), Color3B(200, 130, 130)
+    };
+    ccMenuCallback callbacks[4] = {
+        CC_CALLBACK_1(MainMenuScene::onStoryModeClicked, this),
+        CC_CALLBACK_1(MainMenuScene::onEndlessClicked, this),
+        CC_CALLBACK_1(MainMenuScene::onSettingsClicked, this),
+        CC_CALLBACK_1(MainMenuScene::onExitGameClicked, this)
+    };
+    MenuItemSprite** btnRefs[4] = { &_btnStory, &_btnEndless, &_btnSettings, &_btnExit };
+
+    for (int i = 0; i < 4; ++i)
+    {
+        float y = cy + offsetsY[i] * _s;
+        Vec2 targetPos(cx, y);
+        Vec2 startPos(cx, y + 90.0f * _s);
+        _btnTargetPos[i] = targetPos;
+        _btnStartPos[i] = startPos;
+
+        Size btnSize(1140.0f * _s, 192.0f * _s);
+        auto btn = createMenuImageButton(paths[i], fallbacks[i], btnSize,
+            54.0f * _s, colors[i], callbacks[i]);
+        if (btn)
+        {
+            btn->setPosition(startPos);
+            btn->setScale(scales[i]);
+            btn->setOpacity(0);
+            btn->setEnabled(false);
+            *btnRefs[i] = btn;
         }
     }
 
-    if (menuBgPath.empty())
-    {
-        auto bg = LayerColor::create(Color4B(25, 30, 45, 255), winSize.width, winSize.height);
-        bg->setPosition(Vec2::ZERO);
-        this->addChild(bg, -1);
-    }
+    // Build a single Menu from all 4 buttons
+    Vector<MenuItem*> allItems;
+    if (_btnStory) allItems.pushBack(_btnStory);
+    if (_btnEndless) allItems.pushBack(_btnEndless);
+    if (_btnSettings) allItems.pushBack(_btnSettings);
+    if (_btnExit) allItems.pushBack(_btnExit);
 
-    auto ud = UserDefault::getInstance();
+    auto menu = Menu::createWithArray(allItems);
+    menu->setPosition(Vec2::ZERO);
+    _menuRoot->addChild(menu);
 
-    // --- Story Mode + Endless (left column) ---
-    Vector<MenuItem*> leftItems;
-    Size buttonSize(300.0f * s, 48.0f * s);
-
-    auto storyItem = createMenuImageButton("art/ui/menu_story.png",
-        lm->getString("story_mode"),
-        Size(400.0f * s, 56.0f * s), 38.0f * s,
-        Color3B(245, 248, 255),
-        CC_CALLBACK_1(MainMenuScene::onStoryModeClicked, this));
-
-    auto endlessItem = createMenuImageButton("art/ui/menu_endless.png", "Endless Mode",
-        Size(400.0f * s, 56.0f * s), 24.0f * s, Color3B(245, 175, 95),
-        CC_CALLBACK_1(MainMenuScene::onEndlessClicked, this));
-
-    leftItems.pushBack(storyItem);
-    leftItems.pushBack(endlessItem);
-
-    // --- Leaderboard + Settings + Exit (right column) ---
-    Vector<MenuItem*> rightItems;
-
-    auto leaderboardItem = createMenuImageButton("art/ui/menu_leaderboard.png", "Leaderboard",
-        buttonSize, 25.0f * s, Color3B(140, 220, 190),
-        CC_CALLBACK_1(MainMenuScene::onLeaderboardClicked, this));
-
-    auto settingsItem = createMenuImageButton("art/ui/menu_settings.png", lm->getString("settings"),
-        buttonSize, 25.0f * s, Color3B(160, 180, 220),
-        CC_CALLBACK_1(MainMenuScene::onSettingsClicked, this));
-
-    auto exitItem = createMenuImageButton("art/ui/menu_exit.png", lm->getString("exit_game"),
-        buttonSize, 25.0f * s, Color3B(200, 130, 130),
-        CC_CALLBACK_1(MainMenuScene::onExitGameClicked, this));
-
-    rightItems.pushBack(leaderboardItem);
-    rightItems.pushBack(settingsItem);
-    rightItems.pushBack(exitItem);
-
-    if (storyItem && endlessItem && leaderboardItem && settingsItem && exitItem)
-    {
-        float centerY = origin.y + visibleSize.height * 0.47f;
-        float columnOffset = 170.0f * s;
-
-        auto leftMenu = Menu::createWithArray(leftItems);
-        leftMenu->setPosition(Vec2(origin.x + visibleSize.width * 0.5f - columnOffset, centerY));
-        leftMenu->alignItemsVerticallyWithPadding(16.0f * s);
-        this->addChild(leftMenu, 2);
-
-        auto rightMenu = Menu::createWithArray(rightItems);
-        rightMenu->setPosition(Vec2(origin.x + visibleSize.width * 0.5f + columnOffset, centerY));
-        rightMenu->alignItemsVerticallyWithPadding(18.0f * s);
-        this->addChild(rightMenu, 2);
-    }
-
-    // --- Subtitle hint ---
-    auto hint = Label::createWithSystemFont(lm->getString("mainmenu_hint"), "Arial", 18.0f * s);
-    if (hint)
-    {
-        hint->setColor(Color3B(150, 150, 170));
-        hint->setPosition(Vec2(
-            origin.x + visibleSize.width / 2,
-            origin.y + 60.0f * s
-        ));
-        this->addChild(hint, 1);
-    }
+    // --- Touch listener: click anywhere to start ---
+    auto touchListener = EventListenerTouchOneByOne::create();
+    touchListener->setSwallowTouches(true);
+    touchListener->onTouchBegan = [this](Touch*, Event*) -> bool {
+        if (_state == MenuState::MAIN)
+        {
+            startTransition();
+        }
+        return true;
+    };
+    _eventDispatcher->addEventListenerWithSceneGraphPriority(touchListener, this);
 
     return true;
 }
 
-void MainMenuScene::onStoryModeClicked(Ref* sender)
+// ---------------------------------------------------------------------------
+void MainMenuScene::startTransition()
 {
-    AudioManager::getInstance()->playButtonClick();
-    CCLOG("Story Mode Clicked!");
-    auto storyScene = StoryModeScene::createScene();
-    Director::getInstance()->replaceScene(storyScene);
+    if (_state != MenuState::MAIN) return;
+    _state = MenuState::TRANSITION;
+
+    // 1) Background animations (parallel, 0.6s)
+    if (_bgNormal)
+        _bgNormal->runAction(FadeOut::create(0.6f));
+
+    if (_bgBlur)
+    {
+        auto fadeIn = FadeIn::create(0.6f);
+        auto scaleUp = ScaleBy::create(0.6f, 1.05f);
+        _bgBlur->runAction(Spawn::create(
+            EaseCubicActionOut::create(fadeIn),
+            EaseCubicActionOut::create(scaleUp),
+            nullptr));
+    }
+
+    // 2) At 0.35s, show menu root + animate buttons
+    auto showMenu = CallFunc::create([this]() {
+        _menuRoot->setVisible(true);
+        animateButtons();
+    });
+    this->runAction(Sequence::create(
+        DelayTime::create(0.35f), showMenu, nullptr));
 }
 
-void MainMenuScene::onEndlessClicked(Ref* sender)
+// ---------------------------------------------------------------------------
+void MainMenuScene::animateButtons()
 {
-    AudioManager::getInstance()->playButtonClick();
-    Director::getInstance()->replaceScene(StoryModeScene::createEndlessScene());
+    std::vector<MenuItemSprite*> buttons = { _btnStory, _btnEndless, _btnSettings, _btnExit };
+    float staggerDelays[4] = { 0.00f, 0.05f, 0.10f, 0.15f };
+    float animDuration = 0.4f;
+
+    for (int i = 0; i < 4; ++i)
+    {
+        auto btn = buttons[i];
+        if (!btn) continue;
+
+        // Move from startPos to targetPos + fade in
+        Vec2 offset = _btnTargetPos[i] - _btnStartPos[i];
+        auto move = MoveBy::create(animDuration, offset);
+        auto fade = FadeIn::create(animDuration);
+        auto spawn = Spawn::create(EaseBackOut::create(move), fade, nullptr);
+
+        btn->runAction(Sequence::create(
+            DelayTime::create(staggerDelays[i]),
+            spawn,
+            nullptr));
+    }
+
+    // After the last button finishes, enable menu interaction
+    float lastFinish = staggerDelays[3] + animDuration;
+    auto enableMenu = CallFunc::create([this]() {
+        _canClickMenu = true;
+        _state = MenuState::MENU;
+        if (_btnStory) _btnStory->setEnabled(true);
+        if (_btnEndless) _btnEndless->setEnabled(true);
+        if (_btnSettings) _btnSettings->setEnabled(true);
+        if (_btnExit) _btnExit->setEnabled(true);
+    });
+    this->runAction(Sequence::create(
+        DelayTime::create(lastFinish), enableMenu, nullptr));
 }
 
-void MainMenuScene::onSettingsClicked(Ref* sender)
+// ---------------------------------------------------------------------------
+void MainMenuScene::onStoryModeClicked(Ref*)
 {
+    if (!_canClickMenu) return;
     AudioManager::getInstance()->playButtonClick();
-    CCLOG("Settings Clicked!");
-    auto settingsScene = SettingsScene::createScene(SettingsScene::Entry::MAIN_MENU);
-    Director::getInstance()->replaceScene(settingsScene);
+    // Go through StoryModeScene for save/load management
+    Director::getInstance()->replaceScene(StoryModeScene::createScene());
 }
 
-void MainMenuScene::onExitGameClicked(Ref* sender)
+void MainMenuScene::onEndlessClicked(Ref*)
 {
+    if (!_canClickMenu) return;
     AudioManager::getInstance()->playButtonClick();
-    CCLOG("Exit Game Clicked!");
+    auto ud = UserDefault::getInstance();
+    ud->setIntegerForKey("selected_game_mode", 1); // endless
+    ud->setIntegerForKey("selected_scene", 0);     // hub
+    ud->setIntegerForKey("selected_level", 1);
+    ud->flush();
+    Director::getInstance()->replaceScene(
+        TransitionFade::create(0.3f, GameScene::createScene(), Color3B::BLACK));
+}
+
+void MainMenuScene::onSettingsClicked(Ref*)
+{
+    if (!_canClickMenu) return;
+    AudioManager::getInstance()->playButtonClick();
+    Director::getInstance()->replaceScene(
+        SettingsScene::createScene(SettingsScene::Entry::MAIN_MENU));
+}
+
+void MainMenuScene::onExitGameClicked(Ref*)
+{
+    if (!_canClickMenu) return;
+    AudioManager::getInstance()->playButtonClick();
     Director::getInstance()->end();
 }
 
 void MainMenuScene::onLeaderboardClicked(Ref*)
 {
+    if (!_canClickMenu) return;
     AudioManager::getInstance()->playButtonClick();
     Director::getInstance()->replaceScene(LeaderboardScene::createScene());
 }

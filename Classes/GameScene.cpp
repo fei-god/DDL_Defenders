@@ -74,8 +74,9 @@ namespace
                         }
                         const float visualWidth = std::min(targetSize.width,
                             targetSize.height * visualAspect);
-                        sprite->setScaleX(visualWidth / imageSize.width);
-                        sprite->setScaleY(targetSize.height * 1.30f / imageSize.height);
+                        float scaleX = visualWidth / imageSize.width;
+                        float scaleY = targetSize.height * 1.30f / imageSize.height;
+                        sprite->setScale(std::min(scaleX, scaleY));
                     }
                     else
                     {
@@ -176,8 +177,8 @@ namespace
     std::string defaultControlHint()
     {
         return textByLanguage(
-            "WASD move  O attack  1/2/3/4 switch weapons  Equipment button can change loadout",
-            u8"WASD移动  O攻击  1/2/3/4切换武器  点击装备按钮更换武器");
+            "WASD move  Auto-attack  Esc pause",
+            u8"WASD移动  自动攻击  Esc暂停");
     }
 }
 
@@ -301,8 +302,25 @@ bool GameScene::init()
     _cameraInitialized = false;
     this->addChild(_worldLayer, 0);
 
-    // --- Background ---
-    const std::string bgPath = AssetPaths::resolve("art/backgrounds/dorm_room.png");
+    // --- Read scene config early (needed for background & hub routing) ---
+    auto* ud = UserDefault::getInstance();
+    _sceneId = ud->getIntegerForKey("selected_scene", 0);
+    _isHubScene = (_sceneId == 0);
+    _isEndlessMode = ud->getIntegerForKey("selected_game_mode", 0) == 1;
+    _isBossScene = (_sceneId == 3);
+    _levelNumber = ud->getIntegerForKey("selected_level", 1);
+    if (_levelNumber < 1) _levelNumber = 1;
+    _ddlTimeLimit = 999.0f;
+    _ddlTimeRemaining = _ddlTimeLimit;
+    _completedDdlCount = 0;
+    _assignmentProgress = 0.0f;
+    _thesisProgress = 0.0f;
+    _ddlPressure = 0.0f;
+
+    // --- Background (scene-based routing) ---
+    const char* bgNames[] = {"art/backgrounds/dorm_room.png", "art/backgrounds/library.png",
+        "art/backgrounds/class_room.png", "art/backgrounds/office_room.png"};
+    std::string bgPath = AssetPaths::resolve(bgNames[_sceneId]);
     if (!bgPath.empty())
     {
         auto bgSprite = Sprite::create(bgPath);
@@ -339,7 +357,7 @@ bool GameScene::init()
     {
         _worldLayer->addChild(m_player, 100);
         m_player->setLocalZOrder(100);
-        applySpriteFit(m_player, 153.0f, 153.0f);
+        applySpriteFit(m_player, 306.0f, 306.0f);
 
         // Triangle visual — points right (+X) in local space, rotates toward mouse
         _playerVisual = DrawNode::create();
@@ -373,35 +391,57 @@ bool GameScene::init()
     _bulletPool.init(_bulletLayer, 32);
 
     // --- Weapon ---
-    _currentWeaponIndex = 0;
-    _currentWeapon = nullptr;
-    _nextEquipmentSlot = 0;
     _equipmentLayer = nullptr;
-    _upgradeLayer = nullptr;
     _endlessStatsLabel = nullptr;
     _endlessScore = 0;
-    _lastHandledPlayerLevel = 1;
     _lifeOnKill = 0;
     _weaponDamageBonus = 0;
     _projectileBonus = 0;
     _energyRecoveryBonusPercent = 0.0f;
     _masteredWeaponIds.clear();
-    auto* ud = UserDefault::getInstance();
+    for (int i = 0; i < 2; ++i)
+    {
+        _weaponLoadoutIds.push_back(ud->getIntegerForKey(("weapon_equipped_" + std::to_string(i)).c_str(), i));
+    }
     for (int i = 0; i < 4; ++i)
     {
-        _weaponLoadoutIds.push_back(ud->getIntegerForKey(("weapon_slot_" + std::to_string(i)).c_str(), i));
+        _backpackWeaponIds.push_back(ud->getIntegerForKey(("weapon_backpack_" + std::to_string(i)).c_str(), i + 2));
     }
-    rebuildWeaponLoadout();
 
     _levelIntroLayer = nullptr;
     _levelIntroActive = false;
     _levelIntroTimer = 0.0f;
-    initLevelTask();
-    if (_isEndlessMode && _levelNumber > 1 && m_player)
+    initSceneConfig();
+
+    // Restore player state carried over from previous scene (Hub ↔ Combat)
+    if (m_player)
+    {
+        int savedLevel = ud->getIntegerForKey("player_level", 1);
+        if (savedLevel > 1) // Has progression carried over
+        {
+            m_player->setLevel(savedLevel);
+            int savedMaxHp = ud->getIntegerForKey("player_max_hp", 100);
+            if (savedMaxHp > 100) m_player->setMaxHp(savedMaxHp);
+            m_player->setHp(m_player->getMaxHp()); // full heal on scene entry
+            float savedSpeed = ud->getFloatForKey("player_speed", 240.0f);
+            if (savedSpeed > 240.0f) m_player->setBaseSpeed(savedSpeed);
+            int savedPts = ud->getIntegerForKey("player_upgrade_points", 0);
+            for (int i = 0; i < savedPts; ++i) m_player->addUpgradePoint(1);
+
+            _endlessScore = ud->getIntegerForKey("continue_score", 0);
+            _weaponDamageBonus = ud->getIntegerForKey("weapon_damage_bonus", 0);
+            _energyRecoveryBonusPercent = ud->getFloatForKey("energy_recovery_bonus", 0.0f);
+            _projectileBonus = ud->getIntegerForKey("projectile_bonus", 0);
+            _lifeOnKill = ud->getIntegerForKey("life_on_kill", 0);
+        }
+    }
+    if (_isEndlessMode && _levelNumber > 1 && m_player && !_isHubScene)
     {
         m_player->setLevel(_levelNumber);
-        _lastHandledPlayerLevel = m_player->getLevel();
     }
+
+    // Build weapons AFTER restoring bonuses so they get applied
+    rebuildWeaponLoadout();
 
     // --- WaveManager ---
     _waveManager = WaveManager::create(m_player, _worldLayer);
@@ -414,7 +454,7 @@ bool GameScene::init()
         }
     }
 
-    if (_currentWeapon && _waveManager)
+    if (_waveManager)
     {
         for (auto* weapon : _weapons)
         {
@@ -436,9 +476,61 @@ bool GameScene::init()
             handleEndlessEnemyKilled(enemy);
             spawnRewardForEnemy(enemy);
         });
-        int startingWave = _isEndlessMode ? 1 : ((_levelNumber + 1) / 2);
-        if (startingWave < 1) startingWave = 1;
-        _waveManager->startWave(startingWave);
+
+        // --- Scene-specific wave config ---
+        if (!_isHubScene)
+        {
+            if (!_isEndlessMode)
+            {
+                // ============ Story Mode ============
+                if (_sceneId == 1) // Library: continuous DDL spawn, survive 90s + kill 10
+                {
+                    _waveManager->setAllowedTypes({1}); // DDLMonster only
+                    _waveManager->setTotalWaves(9999);  // effectively infinite
+                    _waveManager->setWaveTimerExpiredCallback([this](int wave) {
+                        // Restart the same wave to keep continuous spawning
+                        _waveManager->startWave(wave);
+                    });
+                }
+                else if (_sceneId == 2) // Classroom: 6 waves
+                {
+                    _waveManager->setAllowedTypes({0, 1}); // Sleepy + DDL
+                    _waveManager->setTotalWaves(6);
+                    _waveManager->setWaveTimerExpiredCallback([this](int wave) {
+                        if (wave < 6) {
+                            _waveManager->startWave(wave + 1);
+                        } else {
+                            _waveManager->stopSpawn();
+                        }
+                    });
+                    _waveManager->setAllWavesClearedCallback([this]() {
+                        goToVictory();
+                    });
+                }
+                else if (_sceneId == 3) // Office Boss
+                {
+                    _waveManager->setAllowedTypes({2, 3}); // ThesisBoss + PhoneMonster
+                    _waveManager->setTotalWaves(9999);
+                    _waveManager->setWaveTimerExpiredCallback([this](int wave) {
+                        // Restart: boss fight is continuous
+                        _waveManager->startWave(wave);
+                    });
+                }
+            }
+            else
+            {
+                // Endless: time-based spawn, continuous wave cycling
+                _waveManager->setUseTimeBasedSpawn(true);
+                _waveManager->setTotalWaves(9999);
+                _waveManager->setWaveTimerExpiredCallback([this](int wave) {
+                    // Restart wave: spawn difficulty scales with survival time
+                    _waveManager->startWave(wave);
+                });
+            }
+            int startingWave = _isEndlessMode ? 1 : ((_levelNumber + 1) / 2);
+            if (startingWave < 1) startingWave = 1;
+            _waveManager->startWave(startingWave);
+        }
     }
 
     // --- HP bar ---
@@ -544,9 +636,9 @@ bool GameScene::init()
     _lastWeaponSlotIndex = -1;
     Size slotSize(76.0f * s, 76.0f * s);
     float slotGap = 12.0f * s;
-    float slotStartX = origin.x + visibleSize.width * 0.5f - (slotSize.width * 4.0f + slotGap * 3.0f) * 0.5f;
+    float slotStartX = origin.x + visibleSize.width * 0.5f - (slotSize.width * 2.0f + slotGap * 1.0f) * 0.5f;
     float slotY = origin.y + 24.0f * s;
-    for (int i = 0; i < 4; ++i)
+    for (int i = 0; i < 2; ++i)
     {
         auto slot = Node::create();
         slot->setContentSize(slotSize);
@@ -575,6 +667,35 @@ bool GameScene::init()
     _endlessStatsLabel->setVisible(_isEndlessMode);
     this->addChild(_endlessStatsLabel, 10);
 
+    // --- EXP bar ---
+    _expBarMaxWidth = 200.0f * s;
+    float expBarY = origin.y + visibleSize.height - 58.0f * s;
+    _expBarBg = LayerColor::create(Color4B(40, 40, 55, 200), _expBarMaxWidth, 14.0f * s);
+    _expBarBg->setPosition(Vec2(origin.x + visibleSize.width / 2 - _expBarMaxWidth / 2, expBarY));
+    this->addChild(_expBarBg, 10);
+
+    _expBarFill = LayerColor::create(Color4B(80, 200, 120, 255), _expBarMaxWidth * 0.5f, 14.0f * s);
+    _expBarFill->setPosition(Vec2(0, 0));
+    _expBarBg->addChild(_expBarFill);
+
+    _expLevelLabel = Label::createWithSystemFont("Lv.1", "Arial", 16.0f * s);
+    _expLevelLabel->setColor(Color3B(200, 220, 100));
+    _expLevelLabel->setAnchorPoint(Vec2(0, 0.5f));
+    _expLevelLabel->setPosition(Vec2(origin.x + visibleSize.width / 2 + _expBarMaxWidth / 2 + 8.0f * s, expBarY + 7.0f * s));
+    this->addChild(_expLevelLabel, 10);
+
+    _expFractionLabel = Label::createWithSystemFont("0/100 EXP", "Arial", 11.0f * s);
+    _expFractionLabel->setColor(Color3B(180, 180, 200));
+    _expFractionLabel->setPosition(Vec2(origin.x + visibleSize.width / 2, expBarY - 18.0f * s));
+    this->addChild(_expFractionLabel, 10);
+
+    // --- Wave timer ---
+    _waveTimerLabel = Label::createWithSystemFont("", "Arial", 20.0f * s);
+    _waveTimerLabel->setColor(Color3B(255, 200, 100));
+    _waveTimerLabel->setPosition(Vec2(origin.x + visibleSize.width / 2, expBarY - 38.0f * s));
+    _waveTimerLabel->setVisible(false);
+    this->addChild(_waveTimerLabel, 10);
+
     _topHintLabel = Label::createWithSystemFont(
         defaultControlHint(),
         "Arial",
@@ -583,18 +704,6 @@ bool GameScene::init()
     _topHintLabel->setPosition(Vec2(origin.x + visibleSize.width / 2,
         origin.y + 86.0f * s));
     this->addChild(_topHintLabel, 20);
-
-    auto equipLabel = Label::createWithSystemFont(
-        textByLanguage("Equipment", u8"装备"), "Arial", 20.0f * s);
-    equipLabel->setColor(Color3B(120, 225, 255));
-    auto equipItem = MenuItemLabel::create(equipLabel, [this](Ref*) {
-        AudioManager::getInstance()->playButtonClick();
-        showEquipmentMenu();
-    });
-    auto equipMenu = Menu::create(equipItem, nullptr);
-    equipMenu->setPosition(Vec2(origin.x + visibleSize.width - 92.0f * s,
-        origin.y + visibleSize.height - 64.0f * s));
-    this->addChild(equipMenu, 30);
 
     // --- Input ---
     _keyW = _keyA = _keyS = _keyD = false;
@@ -615,9 +724,39 @@ bool GameScene::init()
     _pauseLayer = nullptr;
     loadKeyBindings();
     initEnvironmentZones();
+
+    // --- Hub visual markers (world-space, relative to world center) ---
+    if (_isHubScene)
+    {
+        float hcx = _worldSize.width * 0.5f;
+        float hcy = _worldSize.height * 0.5f;
+        auto makeMarker = [&](float x, float y, float w, float h, const Color4F& c) {
+            auto d = DrawNode::create();
+            Vec2 verts[4] = {Vec2(x, y), Vec2(x+w, y), Vec2(x+w, y+h), Vec2(x, y+h)};
+            d->drawPolygon(verts, 4, Color4F(0,0,0,0), 2.0f, c);
+            _worldLayer->addChild(d, 5);
+        };
+        // Bed: left side of dorm (green)
+        makeMarker(hcx - 650, hcy + 200, 220, 160, Color4F(0.2f, 0.8f, 0.3f, 0.6f));
+        // Desk: right side of dorm (blue)
+        makeMarker(hcx + 700, hcy + 250, 260, 200, Color4F(0.3f, 0.5f, 0.9f, 0.6f));
+        // Door: bottom center of dorm (yellow)
+        makeMarker(hcx - 150, hcy - 450, 300, 180, Color4F(0.9f, 0.8f, 0.2f, 0.6f));
+
+        // "[E]" hint label (screen-space, visible near door)
+        _hubHintLabel = Label::createWithSystemFont("", "Arial", 22.0f);
+        _hubHintLabel->setColor(Color3B(255, 240, 140));
+        _hubHintLabel->setVisible(false);
+        auto vs2 = Director::getInstance()->getVisibleSize();
+        auto o2 = Director::getInstance()->getVisibleOrigin();
+        _hubHintLabel->setPosition(Vec2(o2.x + vs2.width / 2, o2.y + 80.0f));
+        this->addChild(_hubHintLabel, 30);
+    }
+
     initInputListeners();
     updateCamera();
-    showLevelIntro();
+    if (!_isHubScene)
+        showLevelIntro();
 
     this->scheduleUpdate();
     return true;
@@ -652,16 +791,45 @@ void GameScene::update(float dt)
     // --- Death check ---
     if (!_isGameOver && m_player && !m_player->isRoleAlive())
     {
-        goToGameOver();
+        _isGameOver = true;
+        if (_waveManager) _waveManager->stopSpawn();
         return;
     }
 
-    // Don't process any game logic after death (waiting for transition)
-    if (_isGameOver) return;
+    // Process scene transition after death on the next frame
+    if (_isGameOver)
+    {
+        int kills = _waveManager ? _waveManager->getKillCount() : 0;
+        int progress = _isEndlessMode ? _completedDdlCount : static_cast<int>(_assignmentProgress);
+        int score = calculateScore();
+        auto gameOverScene = GameOverScene::createScene(m_survivalTime, kills, progress, score);
+        if (gameOverScene)
+            Director::getInstance()->replaceScene(gameOverScene);
+        else
+            Director::getInstance()->replaceScene(MainMenuScene::createScene());
+        return;
+    }
+
+    // Process wave/level completion → return to Hub
+    if (_pendingAfterBattle)
+    {
+        _pendingAfterBattle = false;
+        auto ud = UserDefault::getInstance();
+        ud->setIntegerForKey("selected_scene", 0); // return to hub
+        ud->flush();
+        auto scene = GameScene::createScene();
+        if (scene)
+            Director::getInstance()->replaceScene(
+                TransitionFade::create(0.3f, scene, Color3B::BLACK));
+        else
+            Director::getInstance()->replaceScene(MainMenuScene::createScene());
+        return;
+    }
 
     // Don't process game logic while paused
     if (_isPaused) return;
 
+    // --- Level Intro (blocks gameplay during countdown; never active in Hub) ---
     if (_levelIntroActive)
     {
         _levelIntroTimer -= dt;
@@ -670,15 +838,18 @@ void GameScene::update(float dt)
             hideLevelIntro();
         }
         updateUI(m_player);
+        updateSurvivalTime(dt); // keep timer running during intro
         return;
     }
 
-    // --- Player ---
+    // ===================================================================
+    // Player movement + camera (always runs: Hub & combat scenes)
+    // ===================================================================
     if (m_player)
     {
         m_player->setLocalZOrder(100);
 
-        // Face the last movement direction. Attacks use this same direction.
+        // Face the last movement direction
         if (_playerVisual)
         {
             float angle = std::atan2(_playerDir.y, _playerDir.x);
@@ -713,18 +884,83 @@ void GameScene::update(float dt)
         updateCamera();
     }
 
+    // ===================================================================
+    // Hub mode: interaction + UI only — no combat / spawn / enemies
+    // ===================================================================
+    if (_isHubScene)
+    {
+        updateHubInteraction();
+        if (m_player)
+        {
+            updatePlayerMoodVisual();
+            updateUI(m_player);
+        }
+        updateSurvivalTime(dt);
+        return;
+    }
+
+    // ===================================================================
+    // Combat mode (non-Hub) — weapons auto-aim, bullets, wave manager, collision
+    // ===================================================================
     for (auto* weapon : _weapons)
     {
         if (weapon)
         {
-            weapon->updateCooldown(dt);
-            weapon->setAimDirection(_playerDir);
+            Vec2 aimDir = _playerDir;
+            bool enemyInRange = false;
+
+            Enemy* nearest = weapon->findNearestEnemy();
+            if (nearest && m_player)
+            {
+                Vec2 enemyPos = nearest->getObjectPosition();
+                Vec2 playerPos = m_player->getObjectPosition();
+                Vec2 playerToEnemy = enemyPos - playerPos;
+                float dist = playerToEnemy.length();
+                if (dist <= weapon->getAttackRange())
+                {
+                    if (playerToEnemy.lengthSquared() > 0.0001f)
+                    {
+                        // Step 1: set rough aim (player→enemy)
+                        aimDir = playerToEnemy.getNormalized();
+                        weapon->setAimDirection(aimDir);
+
+                        // Step 2: position weapon + tick cooldown
+                        weapon->updateCooldown(dt);
+
+                        // Step 3: get REAL muzzle position (handles all
+                        // parent scales: player scale, worldLayer scale)
+                        Vec2 muzzlePos = weapon->getMuzzlePosition(aimDir);
+
+                        // Step 4: precise aim from muzzle to enemy
+                        Vec2 muzzleToEnemy = enemyPos - muzzlePos;
+                        if (muzzleToEnemy.lengthSquared() > 0.0001f)
+                        {
+                            aimDir = muzzleToEnemy.getNormalized();
+                        }
+                    }
+                    else
+                    {
+                        aimDir = Vec2(1.0f, 0.0f);
+                        weapon->setAimDirection(aimDir);
+                        weapon->updateCooldown(dt);
+                    }
+                    weapon->setAimDirection(aimDir);
+                    enemyInRange = true;
+                }
+            }
+
+            if (!enemyInRange)
+            {
+                weapon->setAimDirection(aimDir);
+                weapon->updateCooldown(dt);
+            }
+
+            if (enemyInRange && weapon->isReadyToFire())
+            {
+                weapon->fire();
+            }
         }
     }
-
-    // --- Weapon (kept as reference for future weapon-switching, but NO auto-fire) ---
-    // Auto-fire disabled: player uses mouse clicks instead.
-    // If you re-enable, call: _currentWeapon->updateObject(dt);
 
     // --- Bullets ---
     for (auto* bullet : _bullets)
@@ -739,6 +975,40 @@ void GameScene::update(float dt)
         _waveManager->setElapsedTime(m_survivalTime);
         updateFreezeEffect(dt);
         _waveManager->update(dt);
+
+        // --- Scene-specific victory conditions ---
+        if (!_isEndlessMode && !_isVictory && !_isGameOver)
+        {
+            int kills = _waveManager->getKillCount();
+            if (_sceneId == 1 && m_survivalTime >= 90.0f && kills >= 10)
+                goToVictory(); // Library: survive 90s + kill 10
+            else if (_sceneId == 2 && _waveManager->getCurrentWave() > 6)
+                goToVictory(); // Classroom: 6 waves done
+            else if (_sceneId == 3 && _thesisProgress >= 100.0f)
+                goToVictory(); // Office: boss defeated
+        }
+
+        // Endless: time-based spawn table
+        if (_isEndlessMode && _waveManager)
+        {
+            float t = m_survivalTime;
+            if (t < 120.0f)
+                _waveManager->setAllowedTypes({1}); // DDL only
+            else if (t < 240.0f)
+                _waveManager->setAllowedTypes({0, 1}); // +Sleepy
+            else if (t < 360.0f)
+                _waveManager->setAllowedTypes({0, 1, 3}); // +Phone
+            else
+                _waveManager->setAllowedTypes({0, 1, 2, 3}); // +ThesisBoss
+
+            // DDL Pressure
+            _ddlPressure += dt * (0.08f + t * 0.001f);
+            if (_ddlPressure >= 100.0f)
+            {
+                _ddlPressure = 100.0f;
+                goToGameOver();
+            }
+        }
     }
 
     updateEnemyPlayerContact(dt);
@@ -750,6 +1020,22 @@ void GameScene::update(float dt)
             _bullets,
             _waveManager->getAliveEnemies()
         );
+
+        // Boss scene: track thesisProgress during combat
+        if (_isBossScene && !_isVictory)
+        {
+            bool bossAlive = false;
+            for (auto* enemy : _waveManager->getAliveEnemies())
+            {
+                if (enemy && enemy->getObjectName() == "ThesisBoss")
+                {
+                    bossAlive = true;
+                    break;
+                }
+            }
+            if (bossAlive)
+                _thesisProgress += dt * 3.0f; // passive progress while boss is alive
+        }
     }
 
     // --- Cleanup ---
@@ -871,14 +1157,14 @@ void GameScene::updateUI(Player* player)
             moodNameForUi(player->getCurrentMood()));
     }
 
-    if (_weaponLabel && _currentWeapon)
+    if (_weaponLabel && !_weapons.empty() && _weapons[0])
     {
         _weaponLabel->setString(textByLanguage("Weapon: ", u8"武器: ") +
-            weaponNameForUi(_currentWeapon->getWeaponName()));
+            weaponNameForUi(_weapons[0]->getWeaponName()));
     }
-    if (_weaponIcon && _currentWeapon)
+    if (_weaponIcon && !_weapons.empty() && _weapons[0])
     {
-        auto texture = Director::getInstance()->getTextureCache()->addImage(_currentWeapon->getImagePath());
+        auto texture = Director::getInstance()->getTextureCache()->addImage(_weapons[0]->getImagePath());
         if (texture)
         {
             _weaponIcon->setTexture(texture);
@@ -931,57 +1217,97 @@ void GameScene::updateUI(Player* player)
         if (_isEndlessMode)
         {
             char buf[128];
-            int exp = player->getExp();
-            int expToNext = player->getExpToNextLevel();
             if (isChineseUi())
             {
-                snprintf(buf, sizeof(buf), "等级 %d  经验 %d/%d  分数 %d",
-                    player->getLevel(), exp, expToNext, _endlessScore);
+                snprintf(buf, sizeof(buf), "分数 %d", _endlessScore);
             }
             else
             {
-                snprintf(buf, sizeof(buf), "Lv %d  EXP %d/%d  Score %d",
-                    player->getLevel(), exp, expToNext, _endlessScore);
+                snprintf(buf, sizeof(buf), "Score %d", _endlessScore);
             }
             _endlessStatsLabel->setString(buf);
         }
     }
 
+    updateExpBarUI();
+    updateWaveTimerUI();
+
+    // DDL Pressure (endless)
+    if (_isEndlessMode && _endlessStatsLabel)
+    {
+        char buf[64];
+        snprintf(buf, sizeof(buf), "DDL Pressure: %.0f%%", _ddlPressure);
+        _endlessStatsLabel->setString(buf);
+        _endlessStatsLabel->setVisible(true);
+        _endlessStatsLabel->setColor(_ddlPressure > 70 ? Color3B(255, 80, 60) : Color3B(255, 200, 100));
+    }
+
+    // Thesis progress (boss scene)
+    if (_isBossScene && _progressLabel)
+    {
+        char buf[64];
+        snprintf(buf, sizeof(buf), "Thesis Progress: %.0f%%", _thesisProgress);
+        _progressLabel->setString(buf);
+    }
+
     if (_taskLabel)
     {
         char buf[80];
-        if (_isEndlessMode)
+        if (_isHubScene)
+        {
+            buf[0] = '\0';
+        }
+        else if (_isEndlessMode)
         {
             if (isChineseUi())
-            {
-                snprintf(buf, sizeof(buf), "生存: %.2f秒  书桌: %.2f秒",
-                    m_survivalTime, _deskStayProgress);
-            }
+                snprintf(buf, sizeof(buf), "生存: %.0f秒  DDL: %d", m_survivalTime, _completedDdlCount);
             else
-            {
-                snprintf(buf, sizeof(buf), "Survival: %.2fs  Desk: %.2fs",
-                    m_survivalTime, _deskStayProgress);
-            }
+                snprintf(buf, sizeof(buf), "Survival: %.0fs  DDL: %d", m_survivalTime, _completedDdlCount);
+        }
+        else if (_sceneId == 1) // Library
+        {
+            int kills = _waveManager ? _waveManager->getKillCount() : 0;
+            if (isChineseUi())
+                snprintf(buf, sizeof(buf), "击杀: %d / 10  时间: %.0f / 90秒", kills, m_survivalTime);
+            else
+                snprintf(buf, sizeof(buf), "Kills: %d / 10  Time: %.0f / 90s", kills, m_survivalTime);
+        }
+        else if (_sceneId == 2) // Classroom
+        {
+            int wave = _waveManager ? _waveManager->getCurrentWave() : 0;
+            if (isChineseUi())
+                snprintf(buf, sizeof(buf), "波次: %d / 6", wave);
+            else
+                snprintf(buf, sizeof(buf), "Wave: %d / 6", wave);
+        }
+        else if (_sceneId == 3) // Office Boss
+        {
+            if (isChineseUi())
+                snprintf(buf, sizeof(buf), "论文进度: %.0f%%", _thesisProgress);
+            else
+                snprintf(buf, sizeof(buf), "Thesis: %.0f%%", _thesisProgress);
         }
         else
         {
-            if (isChineseUi())
-            {
-                snprintf(buf, sizeof(buf), "书桌: %.2f / %.2f秒", _deskStayProgress, _deskStayRequired);
-            }
-            else
-            {
-                snprintf(buf, sizeof(buf), "Desk: %.2f / %.2fs", _deskStayProgress, _deskStayRequired);
-            }
+            buf[0] = '\0';
         }
         _taskLabel->setString(buf);
     }
 
     if (_taskBarFill)
     {
-        float ratio = _isEndlessMode
-            ? std::min(1.0f, _deskStayProgress / 30.0f)
-            : (_deskStayRequired > 0.0f ? _deskStayProgress / _deskStayRequired : 0.0f);
+        float ratio = 0.0f;
+        if (!_isHubScene)
+        {
+            if (_isEndlessMode)
+                ratio = std::min(1.0f, _ddlPressure / 100.0f);
+            else if (_sceneId == 1) // Library
+                ratio = std::min(1.0f, m_survivalTime / 90.0f);
+            else if (_sceneId == 2) // Classroom
+                ratio = _waveManager ? std::min(1.0f, _waveManager->getCurrentWave() / 6.0f) : 0.0f;
+            else if (_sceneId == 3) // Office
+                ratio = std::min(1.0f, _thesisProgress / 100.0f);
+        }
         if (ratio < 0.0f) ratio = 0.0f;
         if (ratio > 1.0f) ratio = 1.0f;
         _taskBarFill->setContentSize(Size(_taskBarMaxWidth * ratio,
@@ -991,14 +1317,66 @@ void GameScene::updateUI(Player* player)
     refreshWeaponSlotUI();
 }
 
+void GameScene::updateExpBarUI()
+{
+    if (!_expBarFill || !_expBarBg || !m_player) return;
+
+    int exp = m_player->getExp();
+    int need = m_player->getExpToNextLevel();
+    float pct = (need > 0) ? std::min(1.0f, (float)exp / (float)need) : 1.0f;
+    _expBarFill->setContentSize(Size(_expBarMaxWidth * pct, _expBarFill->getContentSize().height));
+
+    if (pct > 0.6f)
+        _expBarFill->setColor(Color3B(80, 200, 120));
+    else if (pct > 0.3f)
+        _expBarFill->setColor(Color3B(220, 180, 40));
+    else
+        _expBarFill->setColor(Color3B(220, 70, 50));
+
+    if (_expLevelLabel)
+    {
+        char buf[32];
+        snprintf(buf, sizeof(buf), "Lv.%d", m_player->getLevel());
+        _expLevelLabel->setString(buf);
+    }
+    if (_expFractionLabel)
+    {
+        char buf[64];
+        auto* lm = LanguageManager::getInstance();
+        snprintf(buf, sizeof(buf), "%d/%d %s", exp, need, lm->getString("exp_label").c_str());
+        _expFractionLabel->setString(buf);
+    }
+}
+
+void GameScene::updateWaveTimerUI()
+{
+    if (!_waveTimerLabel) return;
+    if (!_isEndlessMode || !_waveManager)
+    {
+        _waveTimerLabel->setVisible(false);
+        return;
+    }
+
+    _waveTimerLabel->setVisible(true);
+    float remaining = _waveManager->getWaveTimerRemaining();
+    int wave = _waveManager->getCurrentWave();
+
+    char buf[64];
+    auto* lm = LanguageManager::getInstance();
+    snprintf(buf, sizeof(buf), lm->getString("wave_countdown_fmt").c_str(), wave, remaining);
+    _waveTimerLabel->setString(buf);
+
+    _waveTimerLabel->setColor(remaining < 5.0f ? Color3B(255, 80, 60) : Color3B(255, 200, 100));
+}
+
 void GameScene::updateWeaponEnergyUI()
 {
-    if (!_weaponEnergyFill || !_currentWeapon)
+    if (!_weaponEnergyFill || _weapons.empty() || !_weapons[0])
     {
         return;
     }
 
-    float ratio = _currentWeapon->getEnergyRatio();
+    float ratio = _weapons[0]->getEnergyRatio();
     _weaponEnergyFill->setContentSize(Size(_weaponEnergyBarMaxWidth * ratio,
         _weaponEnergyFill->getContentSize().height));
 
@@ -1023,8 +1401,7 @@ void GameScene::refreshWeaponSlotUI()
         return;
     }
 
-    bool slotDataChanged = _lastWeaponSlotIndex != _currentWeaponIndex ||
-        _lastWeaponSlotIds.size() != _weaponLoadoutIds.size();
+    bool slotDataChanged = _lastWeaponSlotIds.size() != _weaponLoadoutIds.size();
     if (!slotDataChanged)
     {
         for (int i = 0; i < static_cast<int>(_weaponLoadoutIds.size()); ++i)
@@ -1055,9 +1432,8 @@ void GameScene::refreshWeaponSlotUI()
         slot->removeAllChildren();
 
         Size slotSize = slot->getContentSize();
-        bool selected = i == _currentWeaponIndex;
         auto bg = LayerColor::create(
-            selected ? Color4B(64, 96, 118, 232) : Color4B(18, 22, 30, 220),
+            Color4B(18, 22, 30, 220),
             slotSize.width,
             slotSize.height);
         bg->setPosition(Vec2::ZERO);
@@ -1074,8 +1450,8 @@ void GameScene::refreshWeaponSlotUI()
             verts,
             4,
             Color4F(0, 0, 0, 0),
-            selected ? 2.5f : 1.2f,
-            selected ? Color4F(0.42f, 0.92f, 1.0f, 1.0f) : Color4F(0.52f, 0.58f, 0.67f, 0.8f));
+            1.2f,
+            Color4F(0.52f, 0.58f, 0.67f, 0.8f));
         slot->addChild(border, 3);
 
         int weaponId = (i < static_cast<int>(_weaponLoadoutIds.size())) ? _weaponLoadoutIds[i] : i;
@@ -1110,35 +1486,30 @@ void GameScene::refreshWeaponSlotUI()
         slot->addChild(numBg, 4);
 
         auto num = Label::createWithSystemFont(std::to_string(i + 1), "Arial", 12.0f * s);
-        num->setColor(selected ? Color3B(135, 235, 255) : Color3B(222, 226, 232));
+        num->setColor(Color3B(222, 226, 232));
         num->setPosition(numBg->getPosition() + Vec2(8.0f * s, 8.0f * s));
         slot->addChild(num, 5);
     }
 
-    _lastWeaponSlotIndex = _currentWeaponIndex;
     _lastWeaponSlotIds = _weaponLoadoutIds;
 }
 
-void GameScene::initLevelTask()
+void GameScene::initSceneConfig()
 {
     auto ud = UserDefault::getInstance();
     _isEndlessMode = ud->getIntegerForKey("selected_game_mode", 0) == 1;
+    _sceneId = ud->getIntegerForKey("selected_scene", 0);
+    _isHubScene = (_sceneId == 0);
+    _isBossScene = (_sceneId == 3);
     _levelNumber = ud->getIntegerForKey("selected_level", 1);
     if (_levelNumber < 1) _levelNumber = 1;
-    if (_levelNumber > 99) _levelNumber = 99;
 
-    float randomPart = CCRANDOM_0_1() * (0.8f + _levelNumber * 0.25f);
-    _deskStayRequired = 4.0f + _levelNumber * 1.25f + randomPart;
-    _ddlTimeLimit = 45.0f + _levelNumber * 8.0f;
-    if (_isEndlessMode)
-    {
-        _deskStayRequired = 0.0f;
-        _ddlTimeLimit = 28.0f;
-    }
+    _ddlTimeLimit = 999.0f;
     _ddlTimeRemaining = _ddlTimeLimit;
     _completedDdlCount = 0;
-    _deskStayProgress = 0.0f;
     _assignmentProgress = 0.0f;
+    _thesisProgress = 0.0f;
+    _ddlPressure = 0.0f;
 }
 
 void GameScene::showLevelIntro()
@@ -1189,30 +1560,37 @@ void GameScene::showLevelIntro()
     if (_isEndlessMode)
     {
         if (isChineseUi())
-        {
-            snprintf(mission, sizeof(mission),
-                "无尽模式\n每个DDL都有自己的倒计时。\n存活到倒计时结束即可完成一个DDL。\n最终成绩为完成的DDL数量。");
-        }
+            snprintf(mission, sizeof(mission), "无尽模式\n生存尽可能久！\n击杀敌人获取经验升级。\nDDL压力会不断增长。");
         else
-        {
-            snprintf(mission, sizeof(mission),
-                "Endless Mode\nEach DDL has its own countdown.\nSurvive until countdown ends to complete one DDL.\nFinal result is completed DDL count.");
-        }
+            snprintf(mission, sizeof(mission), "Endless Mode\nSurvive as long as possible!\nKill enemies to gain EXP and level up.\nDDL Pressure will keep rising.");
+    }
+    else if (_sceneId == 1)
+    {
+        if (isChineseUi())
+            snprintf(mission, sizeof(mission), "图书馆\n存活90秒并击杀10只DDL怪物。");
+        else
+            snprintf(mission, sizeof(mission), "Library\nSurvive 90 seconds and kill 10 DDL monsters.");
+    }
+    else if (_sceneId == 2)
+    {
+        if (isChineseUi())
+            snprintf(mission, sizeof(mission), "教室\n撑过6波敌人的进攻！");
+        else
+            snprintf(mission, sizeof(mission), "Classroom\nSurvive 6 waves of enemies!");
+    }
+    else if (_sceneId == 3)
+    {
+        if (isChineseUi())
+            snprintf(mission, sizeof(mission), "办公室\n击败论文Boss！\n攻击Boss积累进度，注意躲避 Phone 怪物。");
+        else
+            snprintf(mission, sizeof(mission), "Office\nDefeat the Thesis Boss!\nAttack the boss to build progress.\nWatch out for Phone monsters.");
     }
     else
     {
         if (isChineseUi())
-        {
-            snprintf(mission, sizeof(mission),
-                "第%d关\n在书桌附近停留 %.2f 秒。\nDDL倒计时: %.2f 秒。\n保持生命值大于0。",
-                _levelNumber, _deskStayRequired, _ddlTimeLimit);
-        }
+            snprintf(mission, sizeof(mission), "第%d关\n准备战斗！", _levelNumber);
         else
-        {
-            snprintf(mission, sizeof(mission),
-                "Level %d\nStay near the Desk for %.2f seconds.\nDDL timer: %.2f seconds.\nKeep HP above 0.",
-                _levelNumber, _deskStayRequired, _ddlTimeLimit);
-        }
+            snprintf(mission, sizeof(mission), "Level %d\nPrepare for battle!", _levelNumber);
     }
     auto detail = Label::createWithSystemFont(mission, "Arial", 22.0f * s);
     detail->setColor(Color3B(225, 235, 245));
@@ -1270,11 +1648,6 @@ void GameScene::initInputListeners()
         // ESC toggles pause (only if game is still active)
         if (code == EventKeyboard::KeyCode::KEY_ESCAPE)
         {
-            if (_equipmentLayer)
-            {
-                hideEquipmentMenu();
-                return;
-            }
             if (!_isGameOver)
             {
                 if (_isPaused) hidePauseMenu();
@@ -1283,23 +1656,58 @@ void GameScene::initInputListeners()
             return;
         }
 
-        if (code == EventKeyboard::KeyCode::KEY_1) { switchWeapon(0); return; }
-        if (code == EventKeyboard::KeyCode::KEY_2) { switchWeapon(1); return; }
-        if (code == EventKeyboard::KeyCode::KEY_3) { switchWeapon(2); return; }
-        if (code == EventKeyboard::KeyCode::KEY_4) { switchWeapon(3); return; }
-
-        // Ignore movement keys while paused
-        if (_isPaused) return;
-
-        if (code == EventKeyboard::KeyCode::KEY_O ||
-            code == EventKeyboard::KeyCode::KEY_CAPITAL_O)
+        // E key: door interaction in hub
+        if ((code == EventKeyboard::KeyCode::KEY_E ||
+             code == EventKeyboard::KeyCode::KEY_CAPITAL_E) && _isHubScene && m_player)
         {
-            if (!_isGameOver && m_player && m_player->isRoleAlive())
+            Vec2 pos = m_player->getPosition();
+            float hcx = _worldSize.width * 0.5f;
+            float hcy = _worldSize.height * 0.5f;
+            Rect doorRect(hcx - 150.0f, hcy - 450.0f, 300.0f, 180.0f);
+            if (isInRect(pos, doorRect))
             {
-                fireBullet();
+                AudioManager::getInstance()->playButtonClick();
+                // Save player state before leaving Hub
+                auto ud = UserDefault::getInstance();
+                ud->setIntegerForKey("player_upgrade_points", m_player->getUpgradePoints());
+                ud->setIntegerForKey("player_level", m_player->getLevel());
+                ud->setIntegerForKey("player_max_hp", static_cast<int>(m_player->getMaxHp()));
+                ud->setFloatForKey("player_speed", m_player->getBaseSpeed());
+                ud->setIntegerForKey("continue_score", _endlessScore);
+                ud->setIntegerForKey("weapon_damage_bonus", _weaponDamageBonus);
+                ud->setFloatForKey("energy_recovery_bonus", _energyRecoveryBonusPercent);
+                ud->setIntegerForKey("projectile_bonus", _projectileBonus);
+                ud->setIntegerForKey("life_on_kill", _lifeOnKill);
+                // Determine next scene
+                if (!_isEndlessMode)
+                {
+                    // Story mode: _levelNumber maps to scene
+                    // Level 1→Library(1), 2→Classroom(2), 3→Office(3), 4+→Office(3)
+                    int nextScene = _levelNumber;
+                    if (nextScene < 1) nextScene = 1;
+                    if (nextScene > 3) nextScene = 3;
+                    ud->setIntegerForKey("selected_scene", nextScene);
+                    ud->setIntegerForKey("selected_level", _levelNumber + 1);
+                    StoryModeScene::addAutoSave(_levelNumber + 1);
+                }
+                else
+                {
+                    // Endless: random scene
+                    int scenes[] = {1, 2, 3};
+                    int nextScene = scenes[rand() % 3];
+                    ud->setIntegerForKey("selected_scene", nextScene);
+                }
+                ud->setIntegerForKey("continue_score", _endlessScore);
+                ud->flush();
+                auto scene = GameScene::createScene();
+                Director::getInstance()->replaceScene(
+                    TransitionFade::create(0.3f, scene, Color3B::BLACK));
             }
             return;
         }
+
+        // Ignore movement keys while paused
+        if (_isPaused) return;
 
         if (code == _keyMoveUp || code == EventKeyboard::KeyCode::KEY_W ||
             code == EventKeyboard::KeyCode::KEY_CAPITAL_W ||
@@ -1576,181 +1984,6 @@ void GameScene::updateEnemyPlayerContact(float dt)
     }
 }
 
-void GameScene::fireBullet()
-{
-    if (!_currentWeapon) return;
-
-    if (!_currentWeapon->hasEnoughEnergy())
-    {
-        if (_topHintLabel)
-        {
-            _topHintLabel->setString(textByLanguage(
-                "Weapon power empty: wait for recovery",
-                u8"武器能量为空: 等待恢复"));
-        }
-        return;
-    }
-
-    if (!_currentWeapon->isReadyToFire())
-    {
-        return;
-    }
-
-    _currentWeapon->setAimDirection(_playerDir);
-    _currentWeapon->fire();
-    applyAimWeaponDamage();
-
-    if (_topHintLabel)
-    {
-        _topHintLabel->setString(textByLanguage(
-            "Weapon power is recovering while you move",
-            u8"武器能量会随时间恢复"));
-    }
-
-    if (_currentWeapon->getWeaponName() == "CoffeeLaser" ||
-        _currentWeapon->getWeaponName() == "KeyboardWeap")
-    {
-        AudioManager::getInstance()->playLaserAttack();
-    }
-    else if (_currentWeapon->getWeaponName() == "CoffeeGun")
-    {
-        AudioManager::getInstance()->playCoffeeAttack();
-    }
-    else
-    {
-        AudioManager::getInstance()->playKeyboardAttack();
-    }
-}
-
-void GameScene::applyAimWeaponDamage()
-{
-    if (!_currentWeapon || !_waveManager || !m_player)
-    {
-        return;
-    }
-
-    Vec2 origin = m_player->getObjectPosition();
-    Vec2 dir = _playerDir.lengthSquared() > 0.0001f ? _playerDir.getNormalized() : Vec2(1, 0);
-    std::string weaponName = _currentWeapon->getWeaponName();
-
-    float range = 520.0f;
-    float width = 42.0f;
-    bool piercing = false;
-    int damage = _currentWeapon->getModifiedAttackPower();
-
-    if (weaponName == "CoffeeGun")
-    {
-        range = 560.0f;
-        width = 34.0f;
-    }
-    else if (weaponName == "CoffeeLaser")
-    {
-        range = _nearPowerSocket ? 920.0f : 760.0f;
-        width = _nearPowerSocket ? 54.0f : 42.0f;
-        damage = static_cast<int>(damage * (_nearPowerSocket ? 1.35f : 1.0f));
-        piercing = true;
-    }
-    else if (weaponName == "DeskLampLaser")
-    {
-        range = _nearPowerSocket ? 900.0f : 720.0f;
-        width = _nearPowerSocket ? 48.0f : 38.0f;
-        piercing = true;
-    }
-    else if (weaponName == "CoffeeBlast")
-    {
-        range = 185.0f;
-        width = 185.0f;
-        piercing = true;
-        dir = Vec2::ZERO;
-    }
-    else if (weaponName == "KeyboardWave")
-    {
-        range = 520.0f;
-        width = 68.0f;
-    }
-    else if (weaponName == "KeyboardWeap")
-    {
-        range = 640.0f;
-        width = 54.0f;
-        piercing = true;
-    }
-
-    Enemy* bestEnemy = nullptr;
-    float bestProjection = range + 1.0f;
-
-    for (auto* enemy : _waveManager->getAliveEnemies())
-    {
-        if (!enemy || !enemy->isObjectActive() || !enemy->isRoleAlive())
-        {
-            continue;
-        }
-
-        Vec2 toEnemy = enemy->getObjectPosition() - origin;
-        float projection = dir == Vec2::ZERO ? toEnemy.length() : toEnemy.dot(dir);
-        if (projection < 0.0f || projection > range)
-        {
-            continue;
-        }
-
-        Vec2 closest = dir == Vec2::ZERO ? origin : origin + dir * projection;
-        float perpendicular = dir == Vec2::ZERO ? toEnemy.length() : enemy->getObjectPosition().distance(closest);
-        float enemyRadius = std::max(enemy->getContentSize().width, enemy->getContentSize().height) *
-            enemy->getScale() * 0.5f;
-
-        if (perpendicular <= width + enemyRadius)
-        {
-            if (piercing)
-            {
-                bool wasAlive = enemy->isRoleAlive();
-                enemy->takeDamage(damage);
-                if (wasAlive)
-                {
-                    if (enemy->isDead()) AudioManager::getInstance()->playEnemyDie();
-                    else AudioManager::getInstance()->playEnemyHit();
-                }
-                enemy->flashWhenHit();
-                auto label = Label::createWithSystemFont("-" + std::to_string(damage), "Arial", 18);
-                label->setColor(Color3B(255, 80, 60));
-                label->setPosition(enemy->getPosition() + Vec2(0, 38));
-                (_worldLayer ? _worldLayer : this)->addChild(label, 50);
-                label->runAction(Sequence::create(MoveBy::create(0.35f, Vec2(0, 26)),
-                    FadeOut::create(0.25f), RemoveSelf::create(), nullptr));
-                if (enemy->isDead())
-                {
-                    enemy->setActive(false);
-                }
-            }
-            else if (projection < bestProjection)
-            {
-                bestProjection = projection;
-                bestEnemy = enemy;
-            }
-        }
-    }
-
-    if (!piercing && bestEnemy)
-    {
-        bool wasAlive = bestEnemy->isRoleAlive();
-        bestEnemy->takeDamage(damage);
-        if (wasAlive)
-        {
-            if (bestEnemy->isDead()) AudioManager::getInstance()->playEnemyDie();
-            else AudioManager::getInstance()->playEnemyHit();
-        }
-        bestEnemy->flashWhenHit();
-        auto label = Label::createWithSystemFont("-" + std::to_string(damage), "Arial", 18);
-        label->setColor(Color3B(255, 80, 60));
-        label->setPosition(bestEnemy->getPosition() + Vec2(0, 38));
-        (_worldLayer ? _worldLayer : this)->addChild(label, 50);
-        label->runAction(Sequence::create(MoveBy::create(0.35f, Vec2(0, 26)),
-            FadeOut::create(0.25f), RemoveSelf::create(), nullptr));
-        if (bestEnemy->isDead())
-        {
-            bestEnemy->setActive(false);
-        }
-    }
-}
-
 // ---------------------------------------------------------------------------
 // Key bindings (loaded from UserDefault — see SettingsScene for rebinding)
 // ---------------------------------------------------------------------------
@@ -1765,42 +1998,6 @@ void GameScene::loadKeyBindings()
         ud->getIntegerForKey("key_move_left",  static_cast<int>(EventKeyboard::KeyCode::KEY_A)));
     _keyMoveRight = static_cast<EventKeyboard::KeyCode>(
         ud->getIntegerForKey("key_move_right", static_cast<int>(EventKeyboard::KeyCode::KEY_D)));
-}
-
-void GameScene::switchWeapon(int index)
-{
-    if (index < 0 || index >= static_cast<int>(_weapons.size()))
-    {
-        return;
-    }
-
-    AudioManager::getInstance()->playButtonClick();
-
-    _currentWeaponIndex = index;
-    _currentWeapon = _weapons[index];
-    for (int i = 0; i < static_cast<int>(_weapons.size()); ++i)
-    {
-        if (_weapons[i])
-        {
-            _weapons[i]->setVisible(i == _currentWeaponIndex);
-        }
-    }
-    if (_currentWeapon)
-    {
-        _currentWeapon->readyNow();
-        if (_environmentLabel)
-        {
-            _environmentLabel->setString(textByLanguage("Switched: ", u8"已切换: ") +
-                weaponNameForUi(_currentWeapon->getWeaponName()));
-        }
-        if (_topHintLabel)
-        {
-            _topHintLabel->setString(textByLanguage(
-                "1 CoffeeGun  2 CoffeeLaser  3 KeyboardWave  4 KeyboardWeap",
-                u8"1 咖啡枪  2 咖啡激光  3 键盘冲击波  4 键盘武器"));
-        }
-    }
-    updateUI(m_player);
 }
 
 Weapon* GameScene::createWeaponById(int weaponId)
@@ -1863,14 +2060,14 @@ void GameScene::rebuildWeaponLoadout()
 
     if (_weaponLoadoutIds.empty())
     {
-        _weaponLoadoutIds = { 0, 1, 2, 3 };
+        _weaponLoadoutIds = { 0, 1 };
     }
-    while (_weaponLoadoutIds.size() < 4)
+    while (_weaponLoadoutIds.size() < 2)
     {
         _weaponLoadoutIds.push_back(static_cast<int>(_weaponLoadoutIds.size()));
     }
 
-    for (int i = 0; i < 4; ++i)
+    for (int i = 0; i < 2; ++i)
     {
         Weapon* weapon = createWeaponById(_weaponLoadoutIds[i]);
         if (weapon)
@@ -1894,21 +2091,17 @@ void GameScene::rebuildWeaponLoadout()
                 weapon->bindBattleData(&_waveManager->getAliveEnemies(), &_bullets, _bulletLayer);
                 weapon->bindBulletPool(&_bulletPool);
             }
-            weapon->setVisible(i == _currentWeaponIndex);
+            weapon->setVisible(true);
             _weapons.push_back(weapon);
         }
     }
 
-    if (_currentWeaponIndex < 0 || _currentWeaponIndex >= static_cast<int>(_weapons.size()))
-    {
-        _currentWeaponIndex = 0;
-    }
-    _currentWeapon = _weapons.empty() ? nullptr : _weapons[_currentWeaponIndex];
+    // Both weapons always visible — auto-attack
     for (int i = 0; i < static_cast<int>(_weapons.size()); ++i)
     {
         if (_weapons[i])
         {
-            _weapons[i]->setVisible(i == _currentWeaponIndex);
+            _weapons[i]->setVisible(true);
         }
     }
     updateUI(m_player);
@@ -1963,159 +2156,6 @@ Node* GameScene::createEquipmentIcon(const WeaponOption& option, const Size& box
     }
 
     return root;
-}
-
-void GameScene::showEquipmentMenu()
-{
-    if (_equipmentLayer)
-    {
-        return;
-    }
-
-    AudioManager::getInstance()->playMenuBGM();
-
-    _keyW = _keyA = _keyS = _keyD = false;
-    updateMoveDirection();
-    _isPaused = true;
-
-    auto visibleSize = Director::getInstance()->getVisibleSize();
-    Vec2 origin = Director::getInstance()->getVisibleOrigin();
-    float s = Director::getInstance()->getWinSize().height / 640.0f;
-
-    _equipmentLayer = Node::create();
-    this->addChild(_equipmentLayer, 300);
-
-    auto shade = LayerColor::create(Color4B(5, 8, 14, 190), visibleSize.width, visibleSize.height);
-    shade->setPosition(origin);
-    _equipmentLayer->addChild(shade, -2);
-
-    Size panelSize(visibleSize.width * 0.82f, visibleSize.height * 0.66f);
-    Vec2 panelCenter(origin.x + visibleSize.width * 0.5f, origin.y + visibleSize.height * 0.50f);
-    std::string panelImage = AssetPaths::resolve("art/ui/equipment_panel.png");
-    if (!panelImage.empty())
-    {
-        auto panel = Sprite::create(panelImage);
-        if (panel)
-        {
-            Size imageSize = panel->getContentSize();
-            if (imageSize.width > 0.0f && imageSize.height > 0.0f)
-            {
-                panel->setScale(std::min(panelSize.width / imageSize.width,
-                    panelSize.height / imageSize.height));
-            }
-            panel->setPosition(panelCenter);
-            _equipmentLayer->addChild(panel, -1);
-        }
-    }
-    else
-    {
-        auto panel = LayerColor::create(Color4B(25, 31, 43, 245), panelSize.width, panelSize.height);
-        panel->setIgnoreAnchorPointForPosition(false);
-        panel->setAnchorPoint(Vec2(0.5f, 0.5f));
-        panel->setPosition(panelCenter);
-        _equipmentLayer->addChild(panel, -1);
-    }
-
-    auto title = Label::createWithSystemFont(
-        textByLanguage("Available Equipment", u8"可选装备"), "Arial", 28.0f * s);
-    title->setColor(Color3B(235, 242, 255));
-    title->setPosition(panelCenter + Vec2(0, panelSize.height * 0.29f));
-    _equipmentLayer->addChild(title, 2);
-
-    auto hint = Label::createWithSystemFont(
-        textByLanguage("Click an item above to place it into slots 1-4",
-            u8"点击上方装备，将其放入1-4号槽位"),
-        "Arial", 14.0f * s);
-    hint->setColor(Color3B(170, 220, 230));
-    hint->setPosition(panelCenter + Vec2(0, panelSize.height * 0.22f));
-    _equipmentLayer->addChild(hint, 2);
-
-    auto options = getWeaponOptions();
-    Size iconSize(70.0f * s, 70.0f * s);
-    float gap = 11.0f * s;
-    float totalWidth = options.size() * iconSize.width + (options.size() - 1) * gap;
-    float startX = panelCenter.x - totalWidth * 0.5f + iconSize.width * 0.5f;
-    float topY = panelCenter.y + panelSize.height * 0.055f;
-    Vector<MenuItem*> items;
-
-    for (int i = 0; i < static_cast<int>(options.size()); ++i)
-    {
-        bool selected = std::find(_weaponLoadoutIds.begin(), _weaponLoadoutIds.end(), options[i].id) != _weaponLoadoutIds.end();
-        auto normal = createEquipmentIcon(options[i], iconSize, selected);
-        auto selectedNode = createEquipmentIcon(options[i], iconSize, true);
-        int weaponId = options[i].id;
-        auto item = MenuItemSprite::create(normal, selectedNode, [this, weaponId](Ref*) {
-            AudioManager::getInstance()->playButtonClick();
-            assignWeaponToSlot(weaponId);
-        });
-        item->setPosition(Vec2(startX + i * (iconSize.width + gap), topY));
-        items.pushBack(item);
-    }
-
-    auto chooseMenu = Menu::createWithArray(items);
-    chooseMenu->setPosition(Vec2::ZERO);
-    _equipmentLayer->addChild(chooseMenu, 3);
-
-    float slotY = panelCenter.y - panelSize.height * 0.205f;
-    auto slotOptions = getWeaponOptions();
-    for (int i = 0; i < 4; ++i)
-    {
-        auto number = Label::createWithSystemFont(std::to_string(i + 1), "Arial", 24.0f * s);
-        number->setColor(Color3B(255, 230, 130));
-        float slotCenterX = panelCenter.x - 198.0f * s + i * 132.0f * s;
-        number->setPosition(Vec2(slotCenterX, slotY - 50.0f * s));
-        _equipmentLayer->addChild(number, 2);
-
-        WeaponOption option = slotOptions[std::max(0, std::min(6, _weaponLoadoutIds[i]))];
-        Size slotIconSize(78.0f * s, 78.0f * s);
-        auto slotIcon = createEquipmentIcon(option, slotIconSize, i == _nextEquipmentSlot);
-        slotIcon->setPosition(Vec2(slotCenterX - slotIconSize.width * 0.5f, slotY - slotIconSize.height * 0.36f));
-        _equipmentLayer->addChild(slotIcon, 2);
-    }
-
-    auto closeLabel = Label::createWithSystemFont(
-        textByLanguage("Done", u8"完成"), "Arial", 24.0f * s);
-    closeLabel->setColor(Color3B(140, 230, 170));
-    auto closeItem = MenuItemLabel::create(closeLabel, [this](Ref*) {
-        AudioManager::getInstance()->playButtonClick();
-        hideEquipmentMenu();
-    });
-    auto closeMenu = Menu::create(closeItem, nullptr);
-    closeMenu->setPosition(panelCenter + Vec2(0, -panelSize.height * 0.35f));
-    _equipmentLayer->addChild(closeMenu, 4);
-}
-
-void GameScene::hideEquipmentMenu()
-{
-    if (_equipmentLayer)
-    {
-        _equipmentLayer->removeFromParentAndCleanup(true);
-        _equipmentLayer = nullptr;
-    }
-    AudioManager::getInstance()->playGameBGM();
-    _isPaused = false;
-}
-
-void GameScene::assignWeaponToSlot(int weaponId)
-{
-    if (_weaponLoadoutIds.size() < 4)
-    {
-        _weaponLoadoutIds = { 0, 1, 2, 3 };
-    }
-
-    int slot = std::max(0, std::min(3, _nextEquipmentSlot));
-    _weaponLoadoutIds[slot] = weaponId;
-    UserDefault::getInstance()->setIntegerForKey(("weapon_slot_" + std::to_string(slot)).c_str(), weaponId);
-    UserDefault::getInstance()->flush();
-    _nextEquipmentSlot = (_nextEquipmentSlot + 1) % 4;
-    rebuildWeaponLoadout();
-
-    if (_equipmentLayer)
-    {
-        _equipmentLayer->removeFromParentAndCleanup(true);
-        _equipmentLayer = nullptr;
-        showEquipmentMenu();
-    }
 }
 
 void GameScene::initEnvironmentZones()
@@ -2216,16 +2256,17 @@ void GameScene::updateEnvironmentEffects(float dt)
 
 void GameScene::updateAssignmentProgress(float dt)
 {
-    if (_isVictory || _isGameOver)
+    if (_isVictory || _isGameOver || _isHubScene)
     {
         return;
     }
 
     if (_isEndlessMode)
     {
+        // Near desk gives a small progress bonus in endless mode
         if (_nearDesk)
         {
-            _deskStayProgress += dt;
+            _assignmentProgress += dt * 5.0f;
         }
         if (_freezeTimer <= 0.0f)
         {
@@ -2248,48 +2289,12 @@ void GameScene::updateAssignmentProgress(float dt)
         return;
     }
 
-    if (_freezeTimer <= 0.0f)
+    // Story mode: no desk-stay or DDL-countdown mechanics.
+    // Victory conditions per scene are checked in update().
+    // Track kill count as progress for scoring.
+    if (_waveManager)
     {
-        _ddlTimeRemaining -= dt;
-        if (_ddlTimeRemaining < 0.0f)
-        {
-            _ddlTimeRemaining = 0.0f;
-        }
-    }
-
-    if (_ddlTimeRemaining <= 0.0f && _deskStayProgress < _deskStayRequired)
-    {
-        if (_topHintLabel)
-        {
-            _topHintLabel->setString(textByLanguage(
-                "DDL time is over. Mission failed.",
-                u8"DDL时间结束，任务失败。"));
-        }
-        goToGameOver();
-        return;
-    }
-
-    if (_nearDesk)
-    {
-        _deskStayProgress += dt;
-        if (_deskStayProgress > _deskStayRequired)
-        {
-            _deskStayProgress = _deskStayRequired;
-        }
-    }
-
-    _assignmentProgress = _deskStayRequired > 0.0f
-        ? (_deskStayProgress / _deskStayRequired) * 100.0f
-        : 0.0f;
-    if (_assignmentProgress > 100.0f)
-    {
-        _assignmentProgress = 100.0f;
-    }
-
-    if (_deskStayProgress >= _deskStayRequired)
-    {
-        _assignmentProgress = 100.0f;
-        goToVictory();
+        _assignmentProgress = static_cast<float>(_waveManager->getKillCount());
     }
 }
 
@@ -2318,7 +2323,11 @@ void GameScene::handleEndlessEnemyKilled(Enemy* enemy)
         _topHintLabel->setString(hint);
     }
 
-    checkEndlessLevelUps();
+    // Award EXP in endless mode so player can earn upgrade points
+    if (enemy)
+    {
+        m_player->addExp(enemy->getExpReward());
+    }
 }
 
 int GameScene::getScoreRewardForEnemy(Enemy* enemy) const
@@ -2350,234 +2359,6 @@ int GameScene::getScoreRewardForEnemy(Enemy* enemy) const
     return std::max(50, enemy->getExpReward() * 2);
 }
 
-void GameScene::checkEndlessLevelUps()
-{
-    if (!_isEndlessMode || !m_player || _upgradeLayer)
-    {
-        return;
-    }
-
-    if (m_player->getLevel() <= _lastHandledPlayerLevel)
-    {
-        return;
-    }
-
-    int nextLevel = _lastHandledPlayerLevel + 1;
-    showUpgradeMenu(nextLevel % 5 == 0);
-}
-
-std::vector<GameScene::UpgradeChoice> GameScene::rollUpgradeChoices(bool major) const
-{
-    std::vector<UpgradeChoice> pool;
-    if (major)
-    {
-        pool = {
-            { UpgradeType::LifeOnKill,
-                textByLanguage("Sustain Notes", u8"续航笔记"),
-                textByLanguage("Every kill restores +2 HP.", u8"每次击杀恢复2点生命。"),
-                true },
-            { UpgradeType::WeaponMastery,
-                textByLanguage("Weapon Mastery", u8"武器专精"),
-                textByLanguage("Current weapon gains a special stronger bonus.", u8"当前武器获得专属强力提升。"),
-                true }
-        };
-        return pool;
-    }
-
-    pool = {
-        { UpgradeType::BulletDamage,
-            textByLanguage("Sharper Bullets", u8"子弹强化"),
-            textByLanguage("All weapons gain +4 bullet damage.", u8"所有武器子弹伤害+4。"),
-            false },
-        { UpgradeType::EnergyRecovery,
-            textByLanguage("Fast Recharge", u8"快速回能"),
-            textByLanguage("Weapon energy recovers 18% faster.", u8"攻击能量条恢复速度+18%。"),
-            false },
-        { UpgradeType::ProjectileCount,
-            textByLanguage("Extra Shot", u8"弹幕增加"),
-            textByLanguage("All projectile weapons fire one extra bullet.", u8"所有弹道武器额外发射1颗子弹。"),
-            false },
-        { UpgradeType::MaxHp,
-            textByLanguage("Late-night Endurance", u8"熬夜耐力"),
-            textByLanguage("Maximum HP +12 and heal 12 HP.", u8"生命值上限+12，并恢复12点生命。"),
-            false },
-        { UpgradeType::MoveSpeed,
-            textByLanguage("Quick Steps", u8"灵活走位"),
-            textByLanguage("Movement speed +18.", u8"移动速度+18。"),
-            false }
-    };
-
-    std::vector<UpgradeChoice> choices;
-    while (!pool.empty() && choices.size() < 2)
-    {
-        int index = static_cast<int>(CCRANDOM_0_1() * pool.size());
-        if (index < 0) index = 0;
-        if (index >= static_cast<int>(pool.size())) index = static_cast<int>(pool.size()) - 1;
-        choices.push_back(pool[index]);
-        pool.erase(pool.begin() + index);
-    }
-    return choices;
-}
-
-void GameScene::showUpgradeMenu(bool major)
-{
-    if (_upgradeLayer || !m_player)
-    {
-        return;
-    }
-
-    _isPaused = true;
-    _keyW = _keyA = _keyS = _keyD = false;
-    updateMoveDirection();
-    _currentUpgradeChoices = rollUpgradeChoices(major);
-
-    auto visibleSize = Director::getInstance()->getVisibleSize();
-    Vec2 origin = Director::getInstance()->getVisibleOrigin();
-    float s = Director::getInstance()->getWinSize().height / 640.0f;
-    Vec2 center(origin.x + visibleSize.width * 0.5f, origin.y + visibleSize.height * 0.5f);
-
-    _upgradeLayer = Node::create();
-    this->addChild(_upgradeLayer, 360);
-
-    auto shade = LayerColor::create(Color4B(5, 8, 16, 205), visibleSize.width, visibleSize.height);
-    shade->setPosition(origin);
-    _upgradeLayer->addChild(shade, -1);
-
-    auto title = Label::createWithSystemFont(
-        major ? textByLanguage("Major Upgrade", u8"强力升级") : textByLanguage("Level Up", u8"升级"),
-        "Arial", major ? 42.0f * s : 38.0f * s);
-    title->setColor(major ? Color3B(255, 220, 110) : Color3B(160, 232, 255));
-    title->setPosition(center + Vec2(0, 130.0f * s));
-    _upgradeLayer->addChild(title, 2);
-
-    char levelBuf[64];
-    if (isChineseUi())
-    {
-        snprintf(levelBuf, sizeof(levelBuf), "等级 %d，选择一项强化", _lastHandledPlayerLevel + 1);
-    }
-    else
-    {
-        snprintf(levelBuf, sizeof(levelBuf), "Level %d: choose one upgrade", _lastHandledPlayerLevel + 1);
-    }
-    auto subtitle = Label::createWithSystemFont(levelBuf, "Arial", 18.0f * s);
-    subtitle->setColor(Color3B(230, 235, 245));
-    subtitle->setPosition(center + Vec2(0, 92.0f * s));
-    _upgradeLayer->addChild(subtitle, 2);
-
-    Vector<MenuItem*> items;
-    for (int i = 0; i < static_cast<int>(_currentUpgradeChoices.size()); ++i)
-    {
-        const auto& choice = _currentUpgradeChoices[i];
-        auto createChoiceCard = [choice, s]() {
-            auto root = Node::create();
-            Size boxSize(310.0f * s, 126.0f * s);
-            root->setContentSize(boxSize);
-
-            auto bg = LayerColor::create(choice.major ? Color4B(88, 67, 24, 235) : Color4B(30, 45, 64, 235),
-                boxSize.width, boxSize.height);
-            bg->setIgnoreAnchorPointForPosition(false);
-            bg->setAnchorPoint(Vec2(0.5f, 0.5f));
-            bg->setPosition(Vec2(boxSize.width * 0.5f, boxSize.height * 0.5f));
-            root->addChild(bg);
-
-            auto name = Label::createWithSystemFont(choice.title, "Arial", 22.0f * s);
-            name->setColor(choice.major ? Color3B(255, 227, 130) : Color3B(165, 235, 255));
-            name->setPosition(Vec2(boxSize.width * 0.5f, boxSize.height - 34.0f * s));
-            root->addChild(name, 2);
-
-            auto desc = Label::createWithSystemFont(choice.description, "Arial", 15.0f * s);
-            desc->setColor(Color3B(232, 236, 242));
-            desc->setDimensions(boxSize.width - 34.0f * s, 56.0f * s);
-            desc->setAlignment(TextHAlignment::CENTER, TextVAlignment::CENTER);
-            desc->setPosition(Vec2(boxSize.width * 0.5f, 45.0f * s));
-            root->addChild(desc, 2);
-            return root;
-        };
-
-        auto root = createChoiceCard();
-        auto selected = createChoiceCard();
-        selected->setScale(0.97f);
-        selected->setOpacity(230);
-        auto item = MenuItemSprite::create(root, selected, [this, i](Ref*) {
-            if (i >= 0 && i < static_cast<int>(_currentUpgradeChoices.size()))
-            {
-                applyUpgradeChoice(_currentUpgradeChoices[i]);
-            }
-        });
-        items.pushBack(item);
-    }
-
-    auto menu = Menu::createWithArray(items);
-    menu->setPosition(center + Vec2(0, -25.0f * s));
-    menu->alignItemsHorizontallyWithPadding(34.0f * s);
-    _upgradeLayer->addChild(menu, 4);
-}
-
-void GameScene::applyUpgradeChoice(const UpgradeChoice& choice)
-{
-    if (!m_player)
-    {
-        hideUpgradeMenu();
-        return;
-    }
-
-    AudioManager::getInstance()->playUpgradeSelected();
-
-    switch (choice.type)
-    {
-    case UpgradeType::BulletDamage:
-        _weaponDamageBonus += 4;
-        for (auto* weapon : _weapons)
-        {
-            if (weapon) weapon->addAttackPower(4);
-        }
-        break;
-    case UpgradeType::EnergyRecovery:
-        _energyRecoveryBonusPercent += 0.18f;
-        for (auto* weapon : _weapons)
-        {
-            if (weapon) weapon->addEnergyRecoverPercent(0.18f);
-        }
-        break;
-    case UpgradeType::ProjectileCount:
-        ++_projectileBonus;
-        for (auto* weapon : _weapons)
-        {
-            if (weapon) weapon->addProjectileCountBonus(1);
-        }
-        break;
-    case UpgradeType::MaxHp:
-        m_player->addMaxHp(12);
-        m_player->heal(12);
-        break;
-    case UpgradeType::MoveSpeed:
-        m_player->setBaseSpeed(m_player->getBaseSpeed() + 18.0f);
-        break;
-    case UpgradeType::LifeOnKill:
-        _lifeOnKill += 2;
-        break;
-    case UpgradeType::WeaponMastery:
-        applyWeaponMastery(_currentWeapon);
-        break;
-    }
-
-    m_player->spendUpgradePoint();
-    ++_lastHandledPlayerLevel;
-    hideUpgradeMenu();
-    checkEndlessLevelUps();
-}
-
-void GameScene::hideUpgradeMenu()
-{
-    if (_upgradeLayer)
-    {
-        _upgradeLayer->removeFromParentAndCleanup(true);
-        _upgradeLayer = nullptr;
-    }
-    _currentUpgradeChoices.clear();
-    _isPaused = false;
-}
-
 void GameScene::applyWeaponMastery(Weapon* weapon)
 {
     if (!weapon)
@@ -2585,10 +2366,17 @@ void GameScene::applyWeaponMastery(Weapon* weapon)
         return;
     }
 
-    if (_currentWeaponIndex >= 0 && _currentWeaponIndex < static_cast<int>(_weaponLoadoutIds.size()))
+    // Find weapon ID from loaded options and mark as mastered
     {
-        int weaponId = _weaponLoadoutIds[_currentWeaponIndex];
-        _masteredWeaponIds.push_back(weaponId);
+        auto options = getWeaponOptions();
+        for (const auto& opt : options)
+        {
+            if (opt.name == weapon->getWeaponName())
+            {
+                _masteredWeaponIds.push_back(opt.id);
+                break;
+            }
+        }
     }
 
     applyWeaponMasteryEffects(weapon);
@@ -2965,7 +2753,7 @@ void GameScene::updatePlayerMoodVisual()
     if (texture)
     {
         m_player->setTexture(texture);
-        applySpriteFit(m_player, 153.0f, 153.0f);
+        applySpriteFit(m_player, 306.0f, 306.0f);
         _currentPlayerMoodImage = path;
     }
 }
@@ -2985,22 +2773,251 @@ int GameScene::calculateScore() const
         + kills * 100;
 }
 
+// ==================== Hub Interaction ====================
+bool GameScene::isInRect(const Vec2& pos, const Rect& rect) const
+{
+    return pos.x >= rect.getMinX() && pos.x <= rect.getMaxX()
+        && pos.y >= rect.getMinY() && pos.y <= rect.getMaxY();
+}
+
+void GameScene::updateHubInteraction()
+{
+    if (!m_player || !_isHubScene) return;
+    Vec2 pos = m_player->getPosition();
+
+    // Hub collision rects (world coordinates, relative to world center)
+    float hcx = _worldSize.width * 0.5f;
+    float hcy = _worldSize.height * 0.5f;
+    Rect bedRect(hcx - 650.0f, hcy + 200.0f, 220.0f, 160.0f);
+    Rect deskRect(hcx + 700.0f, hcy + 250.0f, 260.0f, 200.0f);
+    Rect doorRect(hcx - 150.0f, hcy - 450.0f, 300.0f, 180.0f);
+
+    bool nearBed = isInRect(pos, bedRect);
+    bool nearDesk = isInRect(pos, deskRect);
+    bool nearDoor = isInRect(pos, doorRect);
+
+    // Bed: auto popup when entering
+    if (nearBed && !_bedPanelOpen)
+        showBedPanel();
+    else if (!nearBed && _bedPanelOpen)
+        hideBedPanel();
+
+    // Desk: auto popup when entering
+    if (nearDesk && !_deskPanelOpen)
+        showDeskPanel();
+    else if (!nearDesk && _deskPanelOpen)
+        hideDeskPanel();
+
+    // Door: E-key hint
+    if (_hubHintLabel)
+    {
+        _hubHintLabel->setVisible(nearDoor);
+        if (nearDoor)
+        {
+            if (_isEndlessMode)
+            {
+                _hubHintLabel->setString("[E] Random Scene / 随机关卡");
+            }
+            else
+            {
+                // Story mode: show which scene is next
+                int nextScene = _levelNumber;
+                if (nextScene < 1) nextScene = 1;
+                if (nextScene > 3) nextScene = 3;
+                const char* sceneNames[] = {"", "Library / 图书馆", "Classroom / 教室", "Office / 办公室"};
+                _hubHintLabel->setString(std::string("[E] ") + sceneNames[nextScene]);
+            }
+        }
+    }
+}
+
+void GameScene::showBedPanel()
+{
+    if (_bedPanelOpen || _bedPanel) return;
+    _bedPanelOpen = true;
+
+    auto visibleSize = Director::getInstance()->getVisibleSize();
+    Vec2 origin = Director::getInstance()->getVisibleOrigin();
+    auto winSize = Director::getInstance()->getWinSize();
+
+    // Dark overlay
+    _hubOverlay = LayerColor::create(Color4B(0, 0, 0, 128), winSize.width, winSize.height);
+    _hubOverlay->setPosition(Vec2::ZERO);
+    _hubOverlay->setOpacity(0);
+    this->addChild(_hubOverlay, 50);
+    _hubOverlay->runAction(FadeTo::create(0.25f, 128));
+
+    // Bed panel
+    _bedPanel = Node::create();
+    _bedPanel->setPosition(Vec2(origin.x + visibleSize.width / 2, origin.y + visibleSize.height * 0.6f));
+    this->addChild(_bedPanel, 55);
+
+    auto* lm = LanguageManager::getInstance();
+    float s = Director::getInstance()->getWinSize().height / 640.0f;
+
+    auto bg = LayerColor::create(Color4B(15, 25, 15, 230), 300.0f * s, 120.0f * s);
+    bg->setPosition(Vec2(-150.0f * s, -60.0f * s));
+    _bedPanel->addChild(bg);
+
+    auto label = Label::createWithSystemFont("Rest / 休息", "Arial", 28.0f * s);
+    label->setColor(Color3B(120, 255, 120));
+    label->setPosition(Vec2(0, 20.0f * s));
+    _bedPanel->addChild(label);
+
+    auto sub = Label::createWithSystemFont("HP restored!", "Arial", 18.0f * s);
+    sub->setColor(Color3B(180, 220, 180));
+    sub->setPosition(Vec2(0, -20.0f * s));
+    _bedPanel->addChild(sub);
+
+    // Pop-in animation
+    _bedPanel->setScale(0.0f);
+    _bedPanel->runAction(EaseBackOut::create(ScaleTo::create(0.3f, 1.0f)));
+
+    // Heal
+    if (m_player)
+    {
+        m_player->heal(9999);
+        _ddlPressure = 0.0f;
+    }
+}
+
+void GameScene::hideBedPanel()
+{
+    if (!_bedPanelOpen) return;
+    _bedPanelOpen = false;
+
+    if (_hubOverlay)
+    {
+        _hubOverlay->runAction(Sequence::create(
+            FadeTo::create(0.2f, 0),
+            RemoveSelf::create(),
+            nullptr));
+        _hubOverlay = nullptr;
+    }
+    if (_bedPanel)
+    {
+        _bedPanel->runAction(Sequence::create(
+            EaseBackIn::create(ScaleTo::create(0.2f, 0.0f)),
+            RemoveSelf::create(),
+            nullptr));
+        _bedPanel = nullptr;
+    }
+}
+
+void GameScene::showDeskPanel()
+{
+    if (_deskPanelOpen || _deskPanel) return;
+    _deskPanelOpen = true;
+
+    auto visibleSize = Director::getInstance()->getVisibleSize();
+    Vec2 origin = Director::getInstance()->getVisibleOrigin();
+    auto winSize = Director::getInstance()->getWinSize();
+    float s = winSize.height / 640.0f;
+
+    // Dark overlay
+    _hubOverlay = LayerColor::create(Color4B(0, 0, 0, 128), winSize.width, winSize.height);
+    _hubOverlay->setPosition(Vec2::ZERO);
+    _hubOverlay->setOpacity(0);
+    this->addChild(_hubOverlay, 50);
+    _hubOverlay->runAction(FadeTo::create(0.25f, 128));
+
+    // Desk panel
+    _deskPanel = Node::create();
+    _deskPanel->setPosition(Vec2(origin.x + visibleSize.width / 2, origin.y + visibleSize.height / 2));
+    this->addChild(_deskPanel, 55);
+
+    auto* lm = LanguageManager::getInstance();
+    float panelW = 500.0f * s, panelH = 400.0f * s;
+
+    auto bg = LayerColor::create(Color4B(20, 25, 40, 240), panelW, panelH);
+    bg->setPosition(Vec2(-panelW * 0.5f, -panelH * 0.5f));
+    _deskPanel->addChild(bg);
+
+    // Title
+    auto title = Label::createWithSystemFont(
+        lm->getString("player_stats"), "Arial", 24.0f * s);
+    title->setColor(Color3B(255, 220, 100));
+    title->setPosition(Vec2(0, panelH * 0.5f - 30.0f * s));
+    _deskPanel->addChild(title);
+
+    // Upgrade points
+    char buf[128];
+    int pts = m_player ? m_player->getUpgradePoints() : 0;
+    snprintf(buf, sizeof(buf), "%s: %d", lm->getString("upgrade_points_fmt").c_str(), pts);
+    auto ptsLabel = Label::createWithSystemFont(buf, "Arial", 20.0f * s);
+    ptsLabel->setColor(Color3B(120, 230, 120));
+    ptsLabel->setPosition(Vec2(0, panelH * 0.5f - 60.0f * s));
+    _deskPanel->addChild(ptsLabel);
+
+    // Upgrade buttons
+    struct Upg { std::string key; int type; };
+    std::vector<Upg> upgrades = {
+        {"upgrade_atk", 0}, {"upgrade_hp", 1}, {"upgrade_spd", 2},
+        {"upgrade_regen", 3}, {"upgrade_projectile", 4}
+    };
+    float btnY = panelH * 0.5f - 100.0f * s;
+    for (const auto& u : upgrades)
+    {
+        auto btnLabel = Label::createWithSystemFont(
+            lm->getString(u.key) + " (1pt)", "Arial", 18.0f * s);
+        btnLabel->setColor(Color3B(180, 210, 180));
+        auto item = MenuItemLabel::create(btnLabel, [this, type = u.type](Ref*) {
+            if (!m_player || m_player->getUpgradePoints() <= 0) return;
+            m_player->spendUpgradePoint(1);
+            auto ud = UserDefault::getInstance();
+            switch (type)
+            {
+            case 0: _weaponDamageBonus += 2; ud->setIntegerForKey("weapon_damage_bonus", _weaponDamageBonus); break;
+            case 1: m_player->addMaxHp(10); m_player->heal(10); break;
+            case 2: m_player->setBaseSpeed(m_player->getBaseSpeed() + 10.0f); break;
+            case 3: _energyRecoveryBonusPercent += 0.1f; break;
+            case 4: ++_projectileBonus; ud->setIntegerForKey("projectile_bonus", _projectileBonus); break;
+            }
+            ud->setIntegerForKey("player_upgrade_points", m_player->getUpgradePoints());
+            ud->flush();
+            // Refresh panel
+            hideDeskPanel();
+            showDeskPanel();
+        });
+        auto menu = Menu::createWithItem(item);
+        menu->setPosition(Vec2(0, btnY));
+        _deskPanel->addChild(menu);
+        btnY -= 30.0f * s;
+    }
+
+    // Slide-up animation
+    _deskPanel->setPositionY(_deskPanel->getPositionY() - 200.0f * s);
+    auto targetPos = Vec2(origin.x + visibleSize.width / 2, origin.y + visibleSize.height / 2);
+    _deskPanel->runAction(EaseBackOut::create(MoveTo::create(0.35f, targetPos)));
+}
+
+void GameScene::hideDeskPanel()
+{
+    if (!_deskPanelOpen) return;
+    _deskPanelOpen = false;
+
+    if (_hubOverlay)
+    {
+        _hubOverlay->runAction(Sequence::create(
+            FadeTo::create(0.2f, 0), RemoveSelf::create(), nullptr));
+        _hubOverlay = nullptr;
+    }
+    if (_deskPanel)
+    {
+        auto moveOut = MoveBy::create(0.2f, Vec2(0, -200.0f));
+        _deskPanel->runAction(Sequence::create(
+            EaseBackIn::create(moveOut), RemoveSelf::create(), nullptr));
+        _deskPanel = nullptr;
+    }
+}
+
 void GameScene::goToGameOver()
 {
+    // Just set the flag; the actual scene transition happens in update()
+    // on the next frame to avoid calling replaceScene mid-update.
     if (_isGameOver) return;
     _isGameOver = true;
     if (_waveManager) _waveManager->stopSpawn();
-
-    int kills = _waveManager ? _waveManager->getKillCount() : 0;
-    int progress = _isEndlessMode ? _completedDdlCount : static_cast<int>(_assignmentProgress);
-    int score = calculateScore();
-
-    auto delay = DelayTime::create(0.5f);
-    auto call = CallFunc::create([this, kills, progress, score]() {
-        auto gameOverScene = GameOverScene::createScene(m_survivalTime, kills, progress, score);
-        Director::getInstance()->replaceScene(gameOverScene);
-    });
-    this->runAction(Sequence::create(delay, call, nullptr));
 }
 
 void GameScene::goToVictory()
@@ -3010,24 +3027,39 @@ void GameScene::goToVictory()
     if (_waveManager) _waveManager->stopSpawn();
 
     auto ud = UserDefault::getInstance();
-    int unlocked = ud->getIntegerForKey("unlocked_level", 1);
-    if (_levelNumber >= unlocked)
-    {
-        ud->setIntegerForKey("unlocked_level", _levelNumber + 1);
-        ud->flush();
-    }
-
-    // --- Story mode auto-save: advance to next level ---
     if (!_isEndlessMode)
     {
-        StoryModeScene::addAutoSave(_levelNumber + 1);
+        int nextLevel = _levelNumber + 1;
+        ud->setIntegerForKey("unlocked_level", nextLevel);
+        StoryModeScene::addAutoSave(nextLevel);
     }
 
-    int kills = _waveManager ? _waveManager->getKillCount() : 0;
-    int score = calculateScore();
-    AudioManager::getInstance()->playProgressComplete();
-    Director::getInstance()->replaceScene(
-        VictoryScene::createScene(m_survivalTime, kills, 100, score));
+    // Persist player state for hub return
+    ud->setIntegerForKey("continue_score", _endlessScore);
+    ud->setIntegerForKey("weapon_damage_bonus", _weaponDamageBonus);
+    ud->setFloatForKey("energy_recovery_bonus", _energyRecoveryBonusPercent);
+    ud->setIntegerForKey("projectile_bonus", _projectileBonus);
+    ud->setIntegerForKey("life_on_kill", _lifeOnKill);
+    if (m_player)
+    {
+        ud->setIntegerForKey("player_upgrade_points", m_player->getUpgradePoints());
+        ud->setIntegerForKey("player_level", m_player->getLevel());
+        ud->setIntegerForKey("player_exp", m_player->getExp());
+        ud->setIntegerForKey("player_exp_to_next", m_player->getExpToNextLevel());
+        ud->setIntegerForKey("player_hp", static_cast<int>(m_player->getHp()));
+        ud->setIntegerForKey("player_max_hp", static_cast<int>(m_player->getMaxHp()));
+        ud->setFloatForKey("player_speed", m_player->getBaseSpeed());
+    }
+    ud->flush();
+
+    // Defer return to Hub
+    _pendingAfterBattle = true;
+    _pendingWave = 0;
+}
+
+void GameScene::goToAfterBattle(int wave)
+{
+    goToVictory(); // Route through victory to hub
 }
 
 // ---------------------------------------------------------------------------
@@ -3042,59 +3074,234 @@ void GameScene::showPauseMenu()
     auto visibleSize = Director::getInstance()->getVisibleSize();
     Vec2 origin = Director::getInstance()->getVisibleOrigin();
     auto winSize = Director::getInstance()->getWinSize();
-    float s = winSize.height / 640.0f;
     float cx = origin.x + visibleSize.width / 2;
-    float cy = origin.y + visibleSize.height / 2;
+    // Unified scale factor (same as SettingsScene)
+    float s = std::min(winSize.height / 760.0f, winSize.width / 960.0f);
+    s = std::max(0.72f, s);
 
-    // Semi-transparent overlay (covers full design resolution to avoid gaps)
-    _pauseLayer = LayerColor::create(Color4B(0, 0, 0, 160), winSize.width, winSize.height);
+    // Semi-transparent overlay
+    _pauseLayer = LayerColor::create(Color4B(0, 0, 0, 180), winSize.width, winSize.height);
     _pauseLayer->setPosition(Vec2::ZERO);
     this->addChild(_pauseLayer, 100);
 
-    Size titleSize(360.0f * s, 72.0f * s);
-    Size buttonSize(330.0f * s, 58.0f * s);
-    auto title = createUiImageOrLabel("art/ui/pause_title.png", lm->getString("pause_title"),
-        titleSize, 42.0f * s, Color3B(220, 220, 240));
-    title->setPosition(Vec2(cx - titleSize.width * 0.5f, cy + 135.0f * s));
-    _pauseLayer->addChild(title);
+    // Title
+    float titleY = origin.y + visibleSize.height - 36.0f * s;
+    auto titleLabel = Label::createWithSystemFont(
+        lm->getString("game_paused"), "Arial", 36.0f * s);
+    titleLabel->setColor(Color3B(220, 220, 240));
+    titleLabel->setPosition(Vec2(cx, titleY));
+    _pauseLayer->addChild(titleLabel);
 
+    // --- Left panel: Player stats ---
+    float panelTopY = titleY - 48.0f * s;
+    buildPauseStatsPanel(_pauseLayer,
+        Vec2(origin.x + visibleSize.width * 0.06f, panelTopY), s);
+
+    // --- Right panel: Weapons + Backpack ---
+    buildPauseWeaponPanel(_pauseLayer,
+        Vec2(origin.x + visibleSize.width * 0.52f, panelTopY), s);
+
+    // --- Bottom buttons ---
+    Size buttonSize(180.0f * s, 44.0f * s);
     auto resumeItem = createUiImageButton("art/ui/pause_resume.png", lm->getString("resume"),
-        buttonSize, 30.0f * s, Color3B(100, 220, 100),
+        buttonSize, 22.0f * s, Color3B(100, 220, 100),
         CC_CALLBACK_1(GameScene::onPauseResumeClicked, this));
-
     auto restartItem = createUiImageButton("art/ui/pause_restart.png", lm->getString("restart"),
-        buttonSize, 30.0f * s, Color3B(220, 200, 100),
+        buttonSize, 22.0f * s, Color3B(220, 200, 100),
         CC_CALLBACK_1(GameScene::onPauseRestartClicked, this));
-
     auto titleItem = createUiImageButton("art/ui/pause_back_to_menu.png", lm->getString("back_to_title"),
-        buttonSize, 30.0f * s, Color3B(200, 140, 120),
+        buttonSize, 22.0f * s, Color3B(200, 140, 120),
         CC_CALLBACK_1(GameScene::onPauseTitleClicked, this));
-
     auto settingsItem = createUiImageButton("art/ui/pause_settings.png", lm->getString("settings"),
-        buttonSize, 30.0f * s, Color3B(160, 180, 220),
+        buttonSize, 22.0f * s, Color3B(160, 180, 220),
         CC_CALLBACK_1(GameScene::onPauseSettingsClicked, this));
 
-    if (resumeItem && restartItem && settingsItem && titleItem)
+    Vector<MenuItem*> pauseItems;
+    pauseItems.pushBack(resumeItem);
+    pauseItems.pushBack(restartItem);
+    if (!_isEndlessMode)
     {
-        Vector<MenuItem*> pauseItems;
-        pauseItems.pushBack(resumeItem);
-        pauseItems.pushBack(restartItem);
-
         auto saveItem = createUiImageButton("art/ui/pause_save.png",
-            lm->getString("save_game"),
-            buttonSize, 30.0f * s, Color3B(100, 180, 240),
+            lm->getString("save_game"), buttonSize, 22.0f * s, Color3B(100, 180, 240),
             CC_CALLBACK_1(GameScene::onPauseSaveClicked, this));
-        if (saveItem)
-            pauseItems.pushBack(saveItem);
-
-        pauseItems.pushBack(titleItem);
-        pauseItems.pushBack(settingsItem);
-
-        auto menu = Menu::createWithArray(pauseItems);
-        menu->setPosition(Vec2(cx, cy - 45.0f * s));
-        menu->alignItemsVerticallyWithPadding(12.0f * s);
-        _pauseLayer->addChild(menu);
+        if (saveItem) pauseItems.pushBack(saveItem);
     }
+    pauseItems.pushBack(settingsItem);
+    pauseItems.pushBack(titleItem);
+
+    auto menu = Menu::createWithArray(pauseItems);
+    menu->setPosition(Vec2(cx, origin.y + 55.0f * s));
+    menu->alignItemsHorizontallyWithPadding(8.0f * s);
+    _pauseLayer->addChild(menu);
+}
+
+void GameScene::buildPauseStatsPanel(Node* parent, const Vec2& pos, float s)
+{
+    auto* lm = LanguageManager::getInstance();
+    float y = pos.y;
+
+    auto header = Label::createWithSystemFont(
+        lm->getString("player_stats"), "Arial", 22.0f * s);
+    header->setColor(Color3B(255, 220, 100));
+    header->setAnchorPoint(Vec2(0, 0.5f));
+    header->setPosition(Vec2(pos.x, y));
+    parent->addChild(header);
+    y -= 34.0f * s;
+
+    if (m_player)
+    {
+        char buf[64];
+        auto addLine = [&](const std::string& text) {
+            auto line = Label::createWithSystemFont(text, "Arial", 18.0f * s);
+            line->setColor(Color3B(200, 210, 230));
+            line->setAnchorPoint(Vec2(0, 0.5f));
+            line->setPosition(Vec2(pos.x + 4.0f * s, y));
+            parent->addChild(line);
+            y -= 26.0f * s;
+        };
+
+        snprintf(buf, sizeof(buf), "%s: %d", lm->getString("stat_level").c_str(), m_player->getLevel());
+        addLine(buf);
+
+        snprintf(buf, sizeof(buf), "%s: %d / %d", lm->getString("stat_hp").c_str(),
+            (int)m_player->getHp(), (int)m_player->getMaxHp());
+        addLine(buf);
+
+        snprintf(buf, sizeof(buf), "%s: %d", lm->getString("stat_atk").c_str(),
+            (!_weapons.empty() && _weapons[0]) ? _weapons[0]->getModifiedAttackPower() : 0);
+        addLine(buf);
+
+        snprintf(buf, sizeof(buf), "%s: %d", lm->getString("stat_spd").c_str(),
+            (int)m_player->getMoveSpeed());
+        addLine(buf);
+
+        snprintf(buf, sizeof(buf), "%s: %d", lm->getString("upgrade_points_fmt").c_str(),
+            m_player->getUpgradePoints());
+        addLine(buf);
+    }
+}
+
+void GameScene::buildPauseWeaponPanel(Node* parent, const Vec2& pos, float s)
+{
+    auto* lm = LanguageManager::getInstance();
+    auto options = getWeaponOptions();
+    float cardW = 240.0f * s;
+    float cardH = 34.0f * s;
+    float iconSz = 28.0f * s;
+    float y = pos.y;
+
+    auto makeIcon = [&](const std::string& imgPath) -> Sprite* {
+        if (imgPath.empty()) return nullptr;
+        auto sp = Sprite::create(imgPath);
+        if (!sp) return nullptr;
+        Size sz = sp->getContentSize();
+        if (sz.width <= 0 || sz.height <= 0) return nullptr;
+        sp->setScale(std::min(iconSz / sz.width, iconSz / sz.height));
+        return sp;
+    };
+
+    auto eqHeader = Label::createWithSystemFont(
+        lm->getString("equipped"), "Arial", 20.0f * s);
+    eqHeader->setColor(Color3B(160, 220, 255));
+    eqHeader->setAnchorPoint(Vec2(0, 0.5f));
+    eqHeader->setPosition(Vec2(pos.x, y));
+    parent->addChild(eqHeader);
+    y -= 30.0f * s;
+
+    for (int i = 0; i < 2; ++i)
+    {
+        int weaponId = (i < (int)_weaponLoadoutIds.size()) ? _weaponLoadoutIds[i] : -1;
+        std::string name = "--";
+        std::string imgPath;
+        for (const auto& opt : options) { if (opt.id == weaponId) { name = opt.name; imgPath = opt.imagePath; break; } }
+
+        auto bg = LayerColor::create(Color4B(20, 30, 50, 200), cardW, cardH);
+        bg->setPosition(Vec2(pos.x, y - cardH * 0.5f));
+        parent->addChild(bg, 0);
+
+        // Weapon icon
+        auto sprite = makeIcon(imgPath);
+        if (sprite)
+        {
+            sprite->setPosition(Vec2(pos.x + iconSz * 0.5f, y));
+            parent->addChild(sprite, 2);
+        }
+
+        char buf[64];
+        snprintf(buf, sizeof(buf), "[%d] %s", i + 1, name.c_str());
+        auto label = Label::createWithSystemFont(buf, "Arial", 15.0f * s);
+        label->setColor(Color3B(210, 220, 240));
+        label->setAnchorPoint(Vec2(0, 0.5f));
+        label->setPosition(Vec2(pos.x + iconSz + 6.0f * s, y));
+        parent->addChild(label);
+
+        y -= cardH + 5.0f * s;
+    }
+
+    y -= 6.0f * s;
+    auto bpHeader = Label::createWithSystemFont(
+        lm->getString("backpack"), "Arial", 18.0f * s);
+    bpHeader->setColor(Color3B(160, 220, 160));
+    bpHeader->setAnchorPoint(Vec2(0, 0.5f));
+    bpHeader->setPosition(Vec2(pos.x, y));
+    parent->addChild(bpHeader);
+    y -= 28.0f * s;
+
+    for (int i = 0; i < 4; ++i)
+    {
+        int weaponId = (i < (int)_backpackWeaponIds.size()) ? _backpackWeaponIds[i] : -1;
+        std::string name = "--";
+        std::string imgPath;
+        for (const auto& opt : options) { if (opt.id == weaponId) { name = opt.name; imgPath = opt.imagePath; break; } }
+
+        auto bg = LayerColor::create(Color4B(30, 40, 30, 180), cardW, cardH);
+        bg->setPosition(Vec2(pos.x, y - cardH * 0.5f));
+        parent->addChild(bg, 0);
+
+        // Weapon icon
+        auto sprite = makeIcon(imgPath);
+        if (sprite)
+        {
+            sprite->setPosition(Vec2(pos.x + iconSz * 0.5f, y));
+            parent->addChild(sprite, 2);
+        }
+
+        auto label = Label::createWithSystemFont(name, "Arial", 14.0f * s);
+        label->setColor(Color3B(180, 200, 180));
+        label->setAnchorPoint(Vec2(0, 0.5f));
+        label->setPosition(Vec2(pos.x + iconSz + 6.0f * s, y));
+        parent->addChild(label);
+
+        y -= cardH + 5.0f * s;
+    }
+}
+
+void GameScene::onPauseUnequipWeapon(Ref*)
+{
+    return;
+}
+
+void GameScene::onPauseEquipWeapon(Ref*)
+{
+    return;
+}
+
+void GameScene::applyWeaponLoadout()
+{
+    auto ud = UserDefault::getInstance();
+    for (int i = 0; i < 2; ++i)
+    {
+        int id = (i < (int)_weaponLoadoutIds.size()) ? _weaponLoadoutIds[i] : i;
+        ud->setIntegerForKey(("weapon_equipped_" + std::to_string(i)).c_str(), id);
+    }
+    for (int i = 0; i < 4; ++i)
+    {
+        int id = (i < (int)_backpackWeaponIds.size()) ? _backpackWeaponIds[i] : (i + 2);
+        ud->setIntegerForKey(("weapon_backpack_" + std::to_string(i)).c_str(), id);
+    }
+    ud->flush();
+    rebuildWeaponLoadout();
+    refreshWeaponSlotUI();
 }
 
 void GameScene::hidePauseMenu()

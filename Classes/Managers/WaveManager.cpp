@@ -170,11 +170,42 @@ void WaveManager::spawnEnemy()
         visibleSize = _parentLayer->getContentSize();
     }
     Vec2 playerPos = _player->getPosition();
-    float angle = CCRANDOM_0_1() * 2.0f * static_cast<float>(M_PI);
-    float distance = 230.0f + CCRANDOM_0_1() * 200.0f;
-    Vec2 spawnPos = playerPos + Vec2(std::cos(angle), std::sin(angle)) * distance;
-    spawnPos.x = std::max(45.0f, std::min(visibleSize.width - 45.0f, spawnPos.x));
-    spawnPos.y = std::max(45.0f, std::min(visibleSize.height - 45.0f, spawnPos.y));
+
+    // Spawn from map edges (outside visible area), moving inward toward player
+    Vec2 spawnPos;
+    float margin = 60.0f; // spawn just outside visible bounds
+    int edge = rand() % 4; // 0=left, 1=right, 2=bottom, 3=top
+    switch (edge)
+    {
+    case 0: // Left edge
+        spawnPos.x = margin;
+        spawnPos.y = margin + CCRANDOM_0_1() * (visibleSize.height - margin * 2.0f);
+        break;
+    case 1: // Right edge
+        spawnPos.x = visibleSize.width - margin;
+        spawnPos.y = margin + CCRANDOM_0_1() * (visibleSize.height - margin * 2.0f);
+        break;
+    case 2: // Bottom edge
+        spawnPos.x = margin + CCRANDOM_0_1() * (visibleSize.width - margin * 2.0f);
+        spawnPos.y = margin;
+        break;
+    case 3: // Top edge
+    default:
+        spawnPos.x = margin + CCRANDOM_0_1() * (visibleSize.width - margin * 2.0f);
+        spawnPos.y = visibleSize.height - margin;
+        break;
+    }
+
+    // Ensure spawn is at least 400px away from player (so they don't spawn on top of player)
+    float distToPlayer = spawnPos.distance(playerPos);
+    if (distToPlayer < 400.0f && distToPlayer > 0.001f)
+    {
+        Vec2 awayDir = (spawnPos - playerPos).getNormalized();
+        spawnPos = playerPos + awayDir * 400.0f;
+        // Clamp to valid bounds
+        spawnPos.x = std::max(margin, std::min(visibleSize.width - margin, spawnPos.x));
+        spawnPos.y = std::max(margin, std::min(visibleSize.height - margin, spawnPos.y));
+    }
 
     Enemy* enemy = nullptr;
     _enemiesSpawnedCount++;
@@ -190,13 +221,21 @@ void WaveManager::spawnEnemy()
     }
     else
     {
-        int randVal = rand() % 100;
-        int ddlChance = std::min(34, 12 + _currentWave * 4);
-        int phoneChance = std::min(30, 14 + _currentWave * 3);
-        if (randVal < 48 - std::min(16, _currentWave * 2)) type = 0;
-        else if (randVal < 48 - std::min(16, _currentWave * 2) + phoneChance) type = 3;
-        else if (randVal < 92) type = 1;
-        else type = 0;
+        // If allowed types are restricted, pick randomly from them
+        if (!_allowedTypes.empty())
+        {
+            type = _allowedTypes[rand() % _allowedTypes.size()];
+        }
+        else
+        {
+            int randVal = rand() % 100;
+            int ddlChance = std::min(34, 12 + _currentWave * 4);
+            int phoneChance = std::min(30, 14 + _currentWave * 3);
+            if (randVal < 48 - std::min(16, _currentWave * 2)) type = 0;
+            else if (randVal < 48 - std::min(16, _currentWave * 2) + phoneChance) type = 3;
+            else if (randVal < 92) type = 1;
+            else type = 0;
+        }
     }
     enemy = createEnemyByType(type, spawnPos, _currentWave);
 
@@ -217,7 +256,7 @@ void WaveManager::spawnEnemy()
             enemy->getObjectName() == "BossMonster";
 
         // Smaller monster sizes: 60px for regular, 120px for boss
-        float targetSize = isBossEnemy ? 120.0f : 60.0f;
+        float targetSize = isBossEnemy ? 360.0f : 180.0f;
         Size enemySize = enemy->getContentSize();
         float targetScale = 1.0f;
         if (enemySize.width > 0.0f && enemySize.height > 0.0f)
@@ -482,8 +521,18 @@ void WaveManager::update(float dt)
 
         if (_waveTimer >= _waveDuration)
         {
-            onWaveCleared();
-            startWave(_currentWave + 1);
+            _isSpawning = false;
+            CCLOG("=== Wave %d TIMER EXPIRED! (Total kills: %d) ===", _currentWave, _killCount);
+            if (_waveTimerExpiredCallback)
+            {
+                _waveTimerExpiredCallback(_currentWave);
+            }
+            else
+            {
+                // Fallback: auto-start next wave
+                onWaveCleared();
+                startWave(_currentWave + 1);
+            }
         }
     }
 }
@@ -518,6 +567,11 @@ void WaveManager::setBossWaveCallback(std::function<void(int)> callback)
 void WaveManager::setEnemyKilledCallback(std::function<void(Enemy*)> callback)
 {
     _enemyKilledCallback = callback;
+}
+
+void WaveManager::setWaveTimerExpiredCallback(std::function<void(int)> callback)
+{
+    _waveTimerExpiredCallback = callback;
 }
 
 void WaveManager::setFrozen(bool frozen)

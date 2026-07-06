@@ -36,6 +36,17 @@ public:
     void setAllWavesClearedCallback(std::function<void()> callback);
     void setBossWaveCallback(std::function<void(int)> callback);
     void setEnemyKilledCallback(std::function<void(Enemy*)> callback);
+    void setWaveTimerExpiredCallback(std::function<void(int)> callback);
+
+    float getWaveTimerRemaining() const { return std::max(0.0f, _waveDuration - _waveTimer); }
+    float getWaveDuration() const { return _waveDuration; }
+
+    // Restrict which enemy types can spawn (empty = all allowed)
+    void setAllowedTypes(const std::vector<int>& types) { _allowedTypes = types; }
+    const std::vector<int>& getAllowedTypes() const { return _allowedTypes; }
+
+    // Time-based spawn table (endless mode)
+    void setUseTimeBasedSpawn(bool use) { _useTimeBasedSpawn = use; }
 
 private:
     void spawnEnemy();
@@ -76,8 +87,12 @@ private:
 
     std::function<void(int)> _waveClearedCallback;
     std::function<void()> _allWavesClearedCallback;
+    std::function<void(int)> _waveTimerExpiredCallback;
     std::function<void(int)> _bossWaveCallback;
     std::function<void(Enemy*)> _enemyKilledCallback;
+
+    std::vector<int> _allowedTypes;   // empty = all allowed
+    bool _useTimeBasedSpawn = false;
 };
 
 #endif

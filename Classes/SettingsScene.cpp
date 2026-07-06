@@ -662,7 +662,8 @@ void SettingsScene::applyDisplayMode(int mode, int oldMode)
         break;
 
     case 1: // Borderless — keep current resolution, just rebuild UI
-        glview->setBorderless();
+        glfwSetWindowAttrib(window, GLFW_DECORATED, GLFW_FALSE);
+        glfwMaximizeWindow(window);
         Director::getInstance()->setViewport();
         this->removeAllChildren();
         buildUI();

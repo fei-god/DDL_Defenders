@@ -27,6 +27,7 @@
 #include "base/CCUserDefault.h"
 #if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32) || (CC_TARGET_PLATFORM == CC_PLATFORM_LINUX)
 #include "platform/desktop/CCGLViewImpl-desktop.h"
+#include "glfw3.h"
 #else
 #include "platform/mac/CCGLViewImpl-mac.h"
 #endif
@@ -111,7 +112,12 @@ bool AppDelegate::applicationDidFinishLaunching() {
     {
         if (savedMode == 1) // Borderless
         {
-            glviewImpl->setBorderless();
+            auto* win = glviewImpl->getWindow();
+            if (win)
+            {
+                glfwSetWindowAttrib(win, GLFW_DECORATED, GLFW_FALSE);
+                glfwMaximizeWindow(win);
+            }
         }
         else if (savedMode == 2) // Fullscreen
         {

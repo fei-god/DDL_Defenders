@@ -24,10 +24,11 @@ bool CoffeeGun::initCoffeeGun(Player* owner)
         return false;
     }
 
-    _bulletSpeed = 680.0f;
+    _bulletSpeed = 1360.0f;
     _bulletImagePath = "weapon/coffee_bullet_sprite.png";
     configureEnergy(100.0f, 12.0f, 28.0f);
-    setObjectScale(0.095f);
+    setObjectScale(0.19f);
+    setAttackRange(560.0f);
     return true;
 }
 

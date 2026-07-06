@@ -58,6 +58,7 @@ public:
     virtual void die() override;
     virtual void takeDamage(int damage) override;
     virtual void takeDamage(int damage, DamageType damageType, Role* attacker = nullptr) override;
+    virtual cocos2d::Rect getCollisionBox() const override;
 
     void updateEnemy(float dt);
 

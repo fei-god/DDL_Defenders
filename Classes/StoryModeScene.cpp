@@ -91,7 +91,7 @@ namespace
                 std::max(2, static_cast<int>(fontSize * 0.11f)));
             label->enableShadow(Color4B(0, 0, 0, 220), Size(2.5f, -2.5f), 1);
             label->setSkewX(-8.0f);
-            label->setScaleX(1.08f);
+            label->setScale(1.08f);
             label->setPosition(Vec2(size.width * 0.5f, size.height * 0.54f));
             root->addChild(label);
             return root;
@@ -569,8 +569,20 @@ void StoryModeScene::onLoadBackClicked(Ref*)
 void StoryModeScene::startNewGame()
 {
     auto ud = UserDefault::getInstance();
+    // Clear persisted player state for a fresh game start
+    ud->setIntegerForKey("player_upgrade_points", 0);
+    ud->setIntegerForKey("player_level", 1);
+    ud->setIntegerForKey("player_max_hp", 100);
+    ud->setFloatForKey("player_speed", 240.0f);
+    ud->setIntegerForKey("continue_score", 0);
+    ud->setIntegerForKey("weapon_damage_bonus", 0);
+    ud->setFloatForKey("energy_recovery_bonus", 0.0f);
+    ud->setIntegerForKey("projectile_bonus", 0);
+    ud->setIntegerForKey("life_on_kill", 0);
+
     ud->setIntegerForKey("selected_level", 1);
     ud->setIntegerForKey("selected_game_mode", _isEndlessMode ? 1 : 0);
+    ud->setIntegerForKey("selected_scene", 0); // start from hub
     ud->flush();
 
     AudioManager::getInstance()->playGameStart();
@@ -587,6 +599,7 @@ void StoryModeScene::loadSaveAndStart(int displayIndex)
     auto ud = UserDefault::getInstance();
     ud->setIntegerForKey("selected_level", level);
     ud->setIntegerForKey("selected_game_mode", _isEndlessMode ? 1 : 0);
+    ud->setIntegerForKey("selected_scene", 0); // return to hub
     ud->flush();
 
     AudioManager::getInstance()->playGameStart();

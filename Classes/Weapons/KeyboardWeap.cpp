@@ -24,10 +24,11 @@ bool KeyboardWeap::initKeyboardWeap(Player* owner)
         return false;
     }
 
-    _bulletSpeed = 580.0f;
+    _bulletSpeed = 1160.0f;
     _bulletImagePath = "weapon/keyboard_weap_bolt_sprite.png";
     configureEnergy(100.0f, 32.0f, 15.0f);
-    setObjectScale(0.095f);
+    setObjectScale(0.19f);
+    setAttackRange(640.0f);
     return true;
 }
 

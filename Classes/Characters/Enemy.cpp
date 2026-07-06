@@ -117,6 +117,18 @@ int Enemy::getHitsToDieForPlayer(Player* player) const
     }
 }
 
+cocos2d::Rect Enemy::getCollisionBox() const
+{
+    cocos2d::Rect box = GameObject::getCollisionBox();
+    // 模型已放大3倍 → getBoundingBox是原来的3倍
+    // 碰撞箱缩小到原来的1/4 → factor = 1/12
+    float factor = 1.0f / 12.0f;
+    cocos2d::Size newSize(box.size.width * factor, box.size.height * factor);
+    float dx = (box.size.width - newSize.width) * 0.5f;
+    float dy = (box.size.height - newSize.height) * 0.5f;
+    return cocos2d::Rect(box.origin.x + dx, box.origin.y + dy, newSize.width, newSize.height);
+}
+
 void Enemy::takeDamage(int damage)
 {
     takeDamage(damage, DamageType::Normal, nullptr);
@@ -292,10 +304,10 @@ void Enemy::playAttackTelegraph()
     auto flashSeq = Sequence::create(tintRed, tintWhite, tintRed2, tintNormal, nullptr);
     this->runAction(flashSeq);
 
-    // Scale pulse as warning (squash and stretch)
+    // Scale pulse as warning
     float curScale = getScale();
-    auto squash = ScaleTo::create(0.07f, curScale * 0.9f, curScale * 1.1f);
-    auto stretch = ScaleTo::create(0.07f, curScale * 1.15f, curScale * 0.9f);
+    auto squash = ScaleTo::create(0.07f, curScale * 0.9f);
+    auto stretch = ScaleTo::create(0.07f, curScale * 1.15f);
     auto restore = ScaleTo::create(0.14f, curScale);
     auto pulseSeq = Sequence::create(squash, stretch, restore, nullptr);
     this->runAction(pulseSeq);
@@ -395,8 +407,8 @@ void Enemy::playHitEffect()
 
     // Knockback squash
     float curScale = getScale();
-    auto squash = ScaleTo::create(0.04f, curScale * 0.85f, curScale * 1.1f);
-    auto bounce = ScaleTo::create(0.08f, curScale * 1.05f, curScale * 0.95f);
+    auto squash = ScaleTo::create(0.04f, curScale * 0.85f);
+    auto bounce = ScaleTo::create(0.08f, curScale * 1.05f);
     auto settle = ScaleTo::create(0.1f, curScale);
     this->runAction(Sequence::create(squash, bounce, settle, nullptr));
 }

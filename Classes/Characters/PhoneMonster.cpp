@@ -152,9 +152,9 @@ void PhoneMonster::playAttackEffect()
     // Quick electric jitter
     float curScale = getScale();
     auto zap = Sequence::create(
-        ScaleTo::create(0.03f, curScale * 1.08f, curScale * 0.92f),
-        ScaleTo::create(0.03f, curScale * 0.94f, curScale * 1.06f),
-        ScaleTo::create(0.03f, curScale * 1.05f, curScale * 0.95f),
+        ScaleTo::create(0.03f, curScale * 1.08f),
+        ScaleTo::create(0.03f, curScale * 0.94f),
+        ScaleTo::create(0.03f, curScale * 1.05f),
         ScaleTo::create(0.15f, curScale),
         nullptr);
     this->runAction(zap);

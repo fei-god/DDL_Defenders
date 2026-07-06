@@ -33,9 +33,10 @@ bool KeyboardWave::initKeyboardWave(Player* owner)
         return false;
     }
 
-    _bulletSpeed = 520.0f;
+    _bulletSpeed = 1040.0f;
     configureEnergy(100.0f, 18.0f, 24.0f);
-    setObjectScale(0.095f);
+    setObjectScale(0.19f);
+    setAttackRange(520.0f);
 
     // 你需要把图片放到 Resources/weapon/keyboard_wave.png
     // 如果图片不存在，Bullet 里面有兜底逻辑，但建议还是放图片。
