@@ -52,6 +52,10 @@ bool LeaderboardScene::init()
 
     Size panelSize(visibleSize.width * 0.82f, visibleSize.height * 0.72f);
     Vec2 panelCenter = origin + Vec2(visibleSize.width * 0.5f, visibleSize.height * 0.52f);
+    // Move leaderboard typography up by two table rows and left by roughly
+    // three characters, without moving the panel artwork itself.
+    const Vec2 textOffset(-45.0f * s, 56.0f * s);
+    const Vec2 textCenter = panelCenter + textOffset;
     std::string panelPath = AssetPaths::resolve("art/ui/leaderboard_panel.png");
     if (!panelPath.empty())
     {
@@ -61,8 +65,9 @@ bool LeaderboardScene::init()
             Size panelImageSize = panel->getContentSize();
             if (panelImageSize.width > 0.0f && panelImageSize.height > 0.0f)
             {
-                panel->setScale(std::min(panelSize.width / panelImageSize.width,
-                    panelSize.height / panelImageSize.height));
+                const float panelScale = std::min(panelSize.width / panelImageSize.width,
+                    panelSize.height / panelImageSize.height);
+                panel->setScale(panelScale * 1.3f);
             }
             panel->setPosition(panelCenter);
             addChild(panel, -1);
@@ -79,24 +84,19 @@ bool LeaderboardScene::init()
 
     auto title = Label::createWithSystemFont("Leaderboard", "Arial", 34.0f * s);
     title->setColor(Color3B(245, 239, 210));
-    title->setPosition(panelCenter + Vec2(0, panelSize.height * 0.34f));
+    title->setPosition(textCenter + Vec2(0, panelSize.height * 0.27f));
     addChild(title);
 
-    auto subtitle = Label::createWithSystemFont("Best DDL Defender Records", "Arial", 18.0f * s);
-    subtitle->setColor(Color3B(170, 225, 235));
-    subtitle->setPosition(panelCenter + Vec2(0, panelSize.height * 0.27f));
-    addChild(subtitle);
-
     auto records = SaveManager::getInstance()->loadLeaderboardByHighScore(10);
-    float y = panelCenter.y + panelSize.height * 0.17f;
+    float y = textCenter.y + panelSize.height * 0.17f;
     float columns[] = {
-        panelCenter.x - panelSize.width * 0.30f,
-        panelCenter.x - panelSize.width * 0.20f,
-        panelCenter.x - panelSize.width * 0.06f,
-        panelCenter.x + panelSize.width * 0.06f,
-        panelCenter.x + panelSize.width * 0.19f,
-        panelCenter.x + panelSize.width * 0.30f,
-        panelCenter.x + panelSize.width * 0.39f
+        textCenter.x - panelSize.width * 0.30f,
+        textCenter.x - panelSize.width * 0.20f,
+        textCenter.x - panelSize.width * 0.06f,
+        textCenter.x + panelSize.width * 0.06f,
+        textCenter.x + panelSize.width * 0.19f,
+        textCenter.x + panelSize.width * 0.30f,
+        textCenter.x + panelSize.width * 0.39f
     };
     const char* headers[] = { "Rank", "Player", "Score", "Time", "Progress", "Kills", "Games" };
     for (int i = 0; i < 7; ++i)
@@ -144,7 +144,7 @@ bool LeaderboardScene::init()
     {
         auto empty = Label::createWithSystemFont("No records yet. Finish a game to create one.", "Arial", 26.0f * s);
         empty->setColor(Color3B(180, 185, 200));
-        empty->setPosition(panelCenter);
+        empty->setPosition(textCenter);
         addChild(empty);
     }
 

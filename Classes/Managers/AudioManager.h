@@ -63,6 +63,7 @@ public:
     // ------------------------------------------------------------
     void playPlayerMove();
     void playPlayerHurt();
+    void playPlayerMonsterCollision();
     void playPlayerDie();
     void playPlayerLevelUp();
     void playPlayerRankUp();
@@ -74,6 +75,8 @@ public:
     void playLaserAttack();
     void playCoffeeAttack();
     void playWeaponUpgrade();
+    void playRewardPickup();
+    void playUpgradeSelected();
 
     // ------------------------------------------------------------
     // Enemy sound effects

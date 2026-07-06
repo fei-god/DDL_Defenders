@@ -40,6 +40,7 @@ namespace
     // Player
     const char* SFX_PLAYER_MOVE     = "audio/sfx_player_move.wav";
     const char* SFX_PLAYER_HURT     = "audio/sfx_player_hurt.wav";
+    const char* SFX_PLAYER_MONSTER_COLLISION = "audio/sfx_player_monster_collision.mp3";
     const char* SFX_PLAYER_DIE      = "audio/sfx_player_die.wav";
     const char* SFX_LEVEL_UP        = "audio/sfx_level_up.wav";
     const char* SFX_RANK_UP         = "audio/sfx_rank_up.wav";
@@ -49,6 +50,8 @@ namespace
     const char* SFX_LASER_ATTACK    = "audio/sfx_laser_attack.wav";
     const char* SFX_COFFEE_ATTACK   = "audio/sfx_coffee_attack.wav";
     const char* SFX_WEAPON_UPGRADE  = "audio/sfx_weapon_upgrade.wav";
+    const char* SFX_REWARD_PICKUP = "audio/sfx_reward_pickup.mp3";
+    const char* SFX_UPGRADE_SELECTED = "audio/sfx_upgrade_selected.mp3";
 
     // Enemies
     const char* SFX_ENEMY_SPAWN = "audio/sfx_enemy_spawn.wav";
@@ -124,6 +127,7 @@ void AudioManager::preloadAll()
 
         SFX_PLAYER_MOVE,
         SFX_PLAYER_HURT,
+        SFX_PLAYER_MONSTER_COLLISION,
         SFX_PLAYER_DIE,
         SFX_LEVEL_UP,
         SFX_RANK_UP,
@@ -132,6 +136,8 @@ void AudioManager::preloadAll()
         SFX_LASER_ATTACK,
         SFX_COFFEE_ATTACK,
         SFX_WEAPON_UPGRADE,
+        SFX_REWARD_PICKUP,
+        SFX_UPGRADE_SELECTED,
 
         SFX_ENEMY_SPAWN,
         SFX_ENEMY_HIT,
@@ -262,6 +268,11 @@ void AudioManager::playPlayerHurt()
     playEffectWithCooldown(SFX_PLAYER_HURT, 120);
 }
 
+void AudioManager::playPlayerMonsterCollision()
+{
+    playEffectWithCooldown(SFX_PLAYER_MONSTER_COLLISION, 350);
+}
+
 void AudioManager::playPlayerDie()
 {
     playEffect(SFX_PLAYER_DIE);
@@ -296,6 +307,9 @@ void AudioManager::playWeaponUpgrade()
 {
     playEffect(SFX_WEAPON_UPGRADE);
 }
+
+void AudioManager::playRewardPickup() { playEffect(SFX_REWARD_PICKUP); }
+void AudioManager::playUpgradeSelected() { playEffect(SFX_UPGRADE_SELECTED); }
 
 void AudioManager::playEnemySpawn()
 {

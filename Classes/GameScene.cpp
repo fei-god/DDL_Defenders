@@ -26,6 +26,22 @@ USING_NS_CC;
 
 namespace
 {
+    std::string localizedButtonImagePath(const std::string& imagePath)
+    {
+        if (LanguageManager::getInstance()->getLanguage() !=
+            LanguageManager::Language::ENGLISH)
+        {
+            return imagePath;
+        }
+
+        const std::string::size_type dot = imagePath.find_last_of('.');
+        const std::string englishPath = dot == std::string::npos
+            ? imagePath + "_eng"
+            : imagePath.substr(0, dot) + "_eng" + imagePath.substr(dot);
+
+        return AssetPaths::exists(englishPath) ? englishPath : imagePath;
+    }
+
     Node* createUiImageOrLabel(const std::string& imagePath,
         const std::string& fallbackText,
         const Size& targetSize,
@@ -44,8 +60,28 @@ namespace
                 Size imageSize = sprite->getContentSize();
                 if (imageSize.width > 0.0f && imageSize.height > 0.0f)
                 {
-                    sprite->setScale(std::min(targetSize.width / imageSize.width,
-                        targetSize.height / imageSize.height));
+                    if (imagePath.find("pause_save") != std::string::npos)
+                    {
+                        // Normalize the newly added save artwork to the visible
+                        // size of the other pause-menu image buttons.
+                        float visualAspect = 3.0f;
+                        std::string referencePath = AssetPaths::resolve("art/ui/pause_resume.png");
+                        auto reference = referencePath.empty() ? nullptr : Sprite::create(referencePath);
+                        if (reference && reference->getContentSize().height > 0.0f)
+                        {
+                            visualAspect = reference->getContentSize().width /
+                                reference->getContentSize().height;
+                        }
+                        const float visualWidth = std::min(targetSize.width,
+                            targetSize.height * visualAspect);
+                        sprite->setScaleX(visualWidth / imageSize.width);
+                        sprite->setScaleY(targetSize.height * 1.30f / imageSize.height);
+                    }
+                    else
+                    {
+                        sprite->setScale(std::min(targetSize.width / imageSize.width,
+                            targetSize.height / imageSize.height));
+                    }
                 }
                 sprite->setPosition(Vec2(targetSize.width * 0.5f, targetSize.height * 0.5f));
                 root->addChild(sprite);
@@ -70,8 +106,9 @@ namespace
         const Color3B& color,
         const ccMenuCallback& callback)
     {
-        auto normal = createUiImageOrLabel(imagePath, fallbackText, targetSize, fontSize, color);
-        auto selected = createUiImageOrLabel(imagePath, fallbackText, targetSize, fontSize, color);
+        const std::string localizedPath = localizedButtonImagePath(imagePath);
+        auto normal = createUiImageOrLabel(localizedPath, fallbackText, targetSize, fontSize, color);
+        auto selected = createUiImageOrLabel(localizedPath, fallbackText, targetSize, fontSize, color);
         selected->setScale(0.96f);
         selected->setOpacity(220);
         return MenuItemSprite::create(normal, selected, callback);
@@ -331,7 +368,8 @@ bool GameScene::init()
 
     // --- Bullet layer ---
     _bulletLayer = Node::create();
-    _worldLayer->addChild(_bulletLayer, 6);
+    _bulletLayer->setContentSize(_worldSize);
+    _worldLayer->addChild(_bulletLayer, 115);
     _bulletPool.init(_bulletLayer, 32);
 
     // --- Weapon ---
@@ -359,6 +397,11 @@ bool GameScene::init()
     _levelIntroActive = false;
     _levelIntroTimer = 0.0f;
     initLevelTask();
+    if (_isEndlessMode && _levelNumber > 1 && m_player)
+    {
+        m_player->setLevel(_levelNumber);
+        _lastHandledPlayerLevel = m_player->getLevel();
+    }
 
     // --- WaveManager ---
     _waveManager = WaveManager::create(m_player, _worldLayer);
@@ -592,6 +635,17 @@ void GameScene::update(float dt)
         if (_topHintLabel)
         {
             _topHintLabel->setString(defaultControlHint());
+        }
+
+        // Settings is pushed over the pause screen. Rebuild the existing
+        // pause menu when returning so localized button artwork changes
+        // immediately with the selected language.
+        if (_pauseLayer)
+        {
+            _pauseLayer->removeFromParentAndCleanup(true);
+            _pauseLayer = nullptr;
+            _isPaused = false;
+            showPauseMenu();
         }
     }
 
@@ -1318,6 +1372,12 @@ void GameScene::updateMoveDirection()
     if (_moveDirection != Vec2::ZERO)
     {
         _playerDir = _moveDirection.getNormalized();
+        if (m_player && _moveDirection.x != 0.0f)
+        {
+            // Character artwork faces right by default. Mirror only while the
+            // latest horizontal movement is toward the left.
+            m_player->setFlippedX(_moveDirection.x < 0.0f);
+        }
         if (_playerVisual)
         {
             float angle = std::atan2(_playerDir.y, _playerDir.x);
@@ -1457,6 +1517,7 @@ void GameScene::updateEnemyPlayerContact(float dt)
                 }
 
                 AudioManager::getInstance()->playPlayerHurt();
+                AudioManager::getInstance()->playPlayerMonsterCollision();
 
                 auto label = Label::createWithSystemFont("-" + std::to_string(hpLost), "Arial", 22);
                 if (label)
@@ -1712,6 +1773,8 @@ void GameScene::switchWeapon(int index)
     {
         return;
     }
+
+    AudioManager::getInstance()->playButtonClick();
 
     _currentWeaponIndex = index;
     _currentWeapon = _weapons[index];
@@ -2458,6 +2521,8 @@ void GameScene::applyUpgradeChoice(const UpgradeChoice& choice)
         return;
     }
 
+    AudioManager::getInstance()->playUpgradeSelected();
+
     switch (choice.type)
     {
     case UpgradeType::BulletDamage:
@@ -2775,6 +2840,8 @@ void GameScene::applyReward(RewardType type)
         return;
     }
 
+    AudioManager::getInstance()->playRewardPickup();
+
     std::string hint;
     if (type == RewardType::FreezeDevice)
     {
@@ -3013,16 +3080,12 @@ void GameScene::showPauseMenu()
         pauseItems.pushBack(resumeItem);
         pauseItems.pushBack(restartItem);
 
-        // Save button only in story mode (not endless)
-        if (!_isEndlessMode)
-        {
-            auto saveItem = createUiImageButton("art/ui/pause_save.png",
-                lm->getString("save_game"),
-                buttonSize, 30.0f * s, Color3B(100, 180, 240),
-                CC_CALLBACK_1(GameScene::onPauseSaveClicked, this));
-            if (saveItem)
-                pauseItems.pushBack(saveItem);
-        }
+        auto saveItem = createUiImageButton("art/ui/pause_save.png",
+            lm->getString("save_game"),
+            buttonSize, 30.0f * s, Color3B(100, 180, 240),
+            CC_CALLBACK_1(GameScene::onPauseSaveClicked, this));
+        if (saveItem)
+            pauseItems.pushBack(saveItem);
 
         pauseItems.pushBack(titleItem);
         pauseItems.pushBack(settingsItem);
@@ -3069,7 +3132,8 @@ void GameScene::onPauseTitleClicked(Ref*)
 
 void GameScene::onPauseSaveClicked(Ref*)
 {
-    if (!StoryModeScene::addManualSave(_levelNumber))
+    const int saveLevel = (_isEndlessMode && m_player) ? m_player->getLevel() : _levelNumber;
+    if (!StoryModeScene::addManualSave(saveLevel, _isEndlessMode))
     {
         // Save slots full — show a brief hint
         auto* lm = LanguageManager::getInstance();

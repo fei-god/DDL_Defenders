@@ -70,6 +70,7 @@ protected:
 
     Enemy* findNearestEnemy() const;
     cocos2d::Vec2 getDirectionToEnemy(Enemy* enemy) const;
+    cocos2d::Vec2 getMuzzlePosition(const cocos2d::Vec2& direction) const;
     Bullet* spawnBullet(const std::string& name,
         const std::string& imagePath,
         const cocos2d::Vec2& startPosition,

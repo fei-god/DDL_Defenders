@@ -149,6 +149,8 @@ void Bullet::resetBullet(
     _hitObjects.clear();
 
     setRotation(-CC_RADIANS_TO_DEGREES(_direction.getAngle()));
+    setLocalZOrder(30);
+    setOpacity(255);
     setActive(true);
     setVisible(true);
 }
@@ -172,12 +174,17 @@ void Bullet::updateObject(float dt)
         setActive(false);
     }
 
-    Size visibleSize = Director::getInstance()->getVisibleSize();
+    Size boundsSize = Director::getInstance()->getVisibleSize();
+    if (getParent() && getParent()->getContentSize().width > 0.0f &&
+        getParent()->getContentSize().height > 0.0f)
+    {
+        boundsSize = getParent()->getContentSize();
+    }
 
     if (newPosition.x < -100 ||
         newPosition.y < -100 ||
-        newPosition.x > visibleSize.width + 100 ||
-        newPosition.y > visibleSize.height + 100)
+        newPosition.x > boundsSize.width + 100 ||
+        newPosition.y > boundsSize.height + 100)
     {
         _expired = true;
         setActive(false);

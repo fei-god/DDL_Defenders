@@ -7,6 +7,7 @@
 #include "Managers/LanguageManager.h"
 #include "Core/AssetPaths.h"
 #include "base/CCUserDefault.h"
+#include "2d/CCDrawNode.h"
 #include <algorithm>
 #include <string>
 
@@ -14,11 +15,100 @@ USING_NS_CC;
 
 namespace
 {
+    std::string localizedButtonImagePath(const std::string& imagePath)
+    {
+        if (LanguageManager::getInstance()->getLanguage() !=
+            LanguageManager::Language::ENGLISH)
+        {
+            return imagePath;
+        }
+
+        const std::string::size_type dot = imagePath.find_last_of('.');
+        const std::string englishPath = dot == std::string::npos
+            ? imagePath + "_eng"
+            : imagePath.substr(0, dot) + "_eng" + imagePath.substr(dot);
+
+        // English assets can be added incrementally; retain the base image
+        // until the matching _eng file is available.
+        return AssetPaths::exists(englishPath) ? englishPath : imagePath;
+    }
+
+    Node* createBeveledButtonNode(const std::string& text,
+        const Size& size,
+        float fontSize,
+        const Color3B& textColor,
+        bool selected,
+        bool disabled)
+    {
+        auto root = Node::create();
+        root->setContentSize(size);
+
+        float w = size.width;
+        float h = size.height;
+        float cut = std::min(h * 0.18f, 14.0f);
+
+        auto drawChamfer = [](DrawNode* draw, float x, float y, float w, float h,
+            float cut, const Color4F& color)
+        {
+            Vec2 points[8] = {
+                Vec2(x + cut, y),
+                Vec2(x + w - cut, y),
+                Vec2(x + w, y + cut),
+                Vec2(x + w, y + h - cut),
+                Vec2(x + w - cut, y + h),
+                Vec2(x + cut, y + h),
+                Vec2(x, y + h - cut),
+                Vec2(x, y + cut)
+            };
+            draw->drawSolidPoly(points, 8, color);
+        };
+
+        auto body = DrawNode::create();
+        Color4F shadow = disabled ? Color4F(0.03f, 0.04f, 0.06f, 0.72f) : Color4F(0.01f, 0.04f, 0.09f, 0.88f);
+        Color4F shell = disabled ? Color4F(0.20f, 0.23f, 0.30f, 0.95f) : Color4F(0.02f, 0.20f, 0.40f, 1.0f);
+        Color4F rim = disabled ? Color4F(0.43f, 0.46f, 0.54f, 0.82f) : Color4F(0.15f, 0.58f, 0.98f, 1.0f);
+        Color4F innerShell = disabled ? Color4F(0.08f, 0.10f, 0.14f, 0.96f) : Color4F(0.01f, 0.08f, 0.18f, 1.0f);
+        Color4F fillTop = disabled ? Color4F(0.13f, 0.15f, 0.19f, 0.78f)
+            : (selected ? Color4F(0.10f, 0.36f, 0.58f, 0.98f) : Color4F(0.07f, 0.27f, 0.48f, 0.96f));
+        Color4F fillBottom = disabled ? Color4F(0.08f, 0.09f, 0.12f, 0.82f)
+            : (selected ? Color4F(0.02f, 0.14f, 0.28f, 0.98f) : Color4F(0.01f, 0.10f, 0.22f, 0.98f));
+
+        drawChamfer(body, 0.0f, -3.0f, w, h, cut, shadow);
+        drawChamfer(body, 0.0f, 0.0f, w, h, cut, shell);
+        drawChamfer(body, 3.0f, 3.0f, w - 6.0f, h - 6.0f, std::max(2.0f, cut - 3.0f), rim);
+        drawChamfer(body, 6.0f, 6.0f, w - 12.0f, h - 12.0f, std::max(2.0f, cut - 6.0f), innerShell);
+        drawChamfer(body, 8.0f, 8.0f, w - 16.0f, h - 16.0f, std::max(2.0f, cut - 8.0f), fillBottom);
+        drawChamfer(body, 10.0f, h * 0.52f, w - 20.0f, h * 0.27f, std::max(2.0f, cut - 10.0f),
+            Color4F(fillTop.r + 0.03f, fillTop.g + 0.05f, fillTop.b + 0.06f, fillTop.a));
+        drawChamfer(body, 11.0f, h - 12.0f, w - 22.0f, 2.0f, 1.0f,
+            disabled ? Color4F(0.55f, 0.56f, 0.60f, 0.20f) : Color4F(0.78f, 0.93f, 1.0f, 0.35f));
+        root->addChild(body);
+
+        auto label = Label::createWithSystemFont(text, "Arial", fontSize);
+        if (label)
+        {
+            label->setColor(disabled ? Color3B(115, 118, 128) : textColor);
+            label->enableBold();
+            label->enableItalics();
+            label->enableOutline(disabled ? Color4B(20, 22, 28, 180) : Color4B(5, 18, 36, 230),
+                std::max(2, static_cast<int>(fontSize * 0.11f)));
+            label->enableShadow(Color4B(0, 0, 0, 220), Size(2.5f, -2.5f), 1);
+            label->setSkewX(-8.0f);
+            label->setScaleX(1.08f);
+            label->setPosition(Vec2(w * 0.5f, h * 0.54f));
+            root->addChild(label);
+        }
+
+        return root;
+    }
+
     Node* createMenuImageOrLabel(const std::string& imagePath,
         const std::string& fallbackText,
         const Size& targetSize,
         float fontSize,
-        const Color3B& color)
+        const Color3B& color,
+        bool selected = false,
+        bool disabled = false)
     {
         auto root = Node::create();
         root->setContentSize(targetSize);
@@ -32,8 +122,28 @@ namespace
                 Size imageSize = sprite->getContentSize();
                 if (imageSize.width > 0.0f && imageSize.height > 0.0f)
                 {
-                    sprite->setScale(std::min(targetSize.width / imageSize.width,
-                        targetSize.height / imageSize.height));
+                    if (imagePath.find("menu_story") != std::string::npos)
+                    {
+                        // Match the new story artwork to the visible dimensions
+                        // of the existing endless-mode image button.
+                        float visualAspect = 4.34f;
+                        std::string referencePath = AssetPaths::resolve("art/ui/menu_endless.png");
+                        auto reference = referencePath.empty() ? nullptr : Sprite::create(referencePath);
+                        if (reference && reference->getContentSize().height > 0.0f)
+                        {
+                            visualAspect = reference->getContentSize().width /
+                                reference->getContentSize().height;
+                        }
+                        const float visualWidth = std::min(targetSize.width,
+                            targetSize.height * visualAspect);
+                        sprite->setScaleX(visualWidth / imageSize.width);
+                        sprite->setScaleY(targetSize.height * 1.15f / imageSize.height);
+                    }
+                    else
+                    {
+                        sprite->setScale(std::min(targetSize.width / imageSize.width,
+                            targetSize.height / imageSize.height));
+                    }
                 }
                 sprite->setPosition(Vec2(targetSize.width * 0.5f, targetSize.height * 0.5f));
                 root->addChild(sprite);
@@ -41,13 +151,26 @@ namespace
             }
         }
 
-        auto label = Label::createWithSystemFont(fallbackText, "Arial", fontSize);
-        if (label)
+        Size visualSize = targetSize;
+        std::string referencePath = AssetPaths::resolve("art/ui/menu_endless.png");
+        if (!referencePath.empty())
         {
-            label->setColor(color);
-            label->setPosition(Vec2(targetSize.width * 0.5f, targetSize.height * 0.5f));
-            root->addChild(label);
+            auto reference = Sprite::create(referencePath);
+            if (reference)
+            {
+                Size refSize = reference->getContentSize();
+                if (refSize.width > 0.0f && refSize.height > 0.0f)
+                {
+                    visualSize.width = targetSize.height * (refSize.width / refSize.height);
+                    visualSize.height = targetSize.height;
+                }
+            }
         }
+
+        auto fallback = createBeveledButtonNode(fallbackText, visualSize, fontSize, color, selected, disabled);
+        fallback->setPosition(Vec2((targetSize.width - visualSize.width) * 0.5f,
+            (targetSize.height - visualSize.height) * 0.5f));
+        root->addChild(fallback);
         return root;
     }
 
@@ -58,9 +181,10 @@ namespace
         const Color3B& color,
         const ccMenuCallback& callback)
     {
-        auto normal = createMenuImageOrLabel(imagePath, fallbackText, targetSize, fontSize, color);
-        auto selected = createMenuImageOrLabel(imagePath, fallbackText, targetSize, fontSize, color);
-        auto disabled = createMenuImageOrLabel(imagePath, fallbackText, targetSize, fontSize, Color3B(95, 95, 105));
+        const std::string localizedPath = localizedButtonImagePath(imagePath);
+        auto normal = createMenuImageOrLabel(localizedPath, fallbackText, targetSize, fontSize, color);
+        auto selected = createMenuImageOrLabel(localizedPath, fallbackText, targetSize, fontSize, color, true, false);
+        auto disabled = createMenuImageOrLabel(localizedPath, fallbackText, targetSize, fontSize, Color3B(95, 95, 105), false, true);
         selected->setScale(0.96f);
         selected->setOpacity(220);
         disabled->setOpacity(125);
@@ -129,8 +253,8 @@ bool MainMenuScene::init()
 
     auto storyItem = createMenuImageButton("art/ui/menu_story.png",
         lm->getString("story_mode"),
-        Size(400.0f * s, 56.0f * s), 30.0f * s,
-        Color3B(220, 220, 100),
+        Size(400.0f * s, 56.0f * s), 38.0f * s,
+        Color3B(245, 248, 255),
         CC_CALLBACK_1(MainMenuScene::onStoryModeClicked, this));
 
     auto endlessItem = createMenuImageButton("art/ui/menu_endless.png", "Endless Mode",
@@ -200,14 +324,8 @@ void MainMenuScene::onStoryModeClicked(Ref* sender)
 
 void MainMenuScene::onEndlessClicked(Ref* sender)
 {
-    auto ud = UserDefault::getInstance();
-    ud->setIntegerForKey("selected_game_mode", 1);
-    ud->setIntegerForKey("selected_level", 1);
-    ud->flush();
-
     AudioManager::getInstance()->playButtonClick();
-    AudioManager::getInstance()->playGameStart();
-    Director::getInstance()->replaceScene(GameScene::createScene());
+    Director::getInstance()->replaceScene(StoryModeScene::createEndlessScene());
 }
 
 void MainMenuScene::onSettingsClicked(Ref* sender)

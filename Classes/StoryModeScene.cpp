@@ -3,38 +3,139 @@
 #include "MainMenuScene.h"
 #include "Managers/LanguageManager.h"
 #include "Managers/AudioManager.h"
+#include "Core/AssetPaths.h"
 #include "base/CCUserDefault.h"
+#include "2d/CCDrawNode.h"
 #include <algorithm>
 #include <cstdio>
 #include <ctime>
 
 USING_NS_CC;
 
+namespace
+{
+    Node* createUiPanel(const Size& size, const Color4B& fill)
+    {
+        auto root = Node::create();
+        root->setContentSize(size);
+
+        auto bg = LayerColor::create(fill, size.width, size.height);
+        root->addChild(bg);
+
+        auto border = DrawNode::create();
+        border->drawRect(Vec2::ZERO, Vec2(size.width, size.height),
+            Color4F(0.20f, 0.56f, 0.95f, 0.95f));
+        border->drawRect(Vec2(5.0f, 5.0f), Vec2(size.width - 5.0f, size.height - 5.0f),
+            Color4F(0.62f, 0.86f, 1.0f, 0.55f));
+        root->addChild(border);
+
+        return root;
+    }
+
+    MenuItemSprite* createStoryButton(const std::string& text,
+        const Size& size,
+        float fontSize,
+        const Color3B& textColor,
+        const ccMenuCallback& callback)
+    {
+        auto buildState = [&](bool selected, bool disabled) {
+            auto root = Node::create();
+            root->setContentSize(size);
+
+            float w = size.width;
+            float h = size.height;
+            float cut = std::min(h * 0.18f, 14.0f);
+
+            auto drawChamfer = [](DrawNode* draw, float x, float y, float w, float h,
+                float cut, const Color4F& color)
+            {
+                Vec2 points[8] = {
+                    Vec2(x + cut, y),
+                    Vec2(x + w - cut, y),
+                    Vec2(x + w, y + cut),
+                    Vec2(x + w, y + h - cut),
+                    Vec2(x + w - cut, y + h),
+                    Vec2(x + cut, y + h),
+                    Vec2(x, y + h - cut),
+                    Vec2(x, y + cut)
+                };
+                draw->drawSolidPoly(points, 8, color);
+            };
+
+            auto body = DrawNode::create();
+            Color4F shadow = disabled ? Color4F(0.03f, 0.04f, 0.06f, 0.72f) : Color4F(0.01f, 0.04f, 0.09f, 0.88f);
+            Color4F shell = disabled ? Color4F(0.20f, 0.23f, 0.30f, 0.95f) : Color4F(0.02f, 0.20f, 0.40f, 1.0f);
+            Color4F rim = disabled ? Color4F(0.43f, 0.46f, 0.54f, 0.82f) : Color4F(0.15f, 0.58f, 0.98f, 1.0f);
+            Color4F innerShell = disabled ? Color4F(0.08f, 0.10f, 0.14f, 0.96f) : Color4F(0.01f, 0.08f, 0.18f, 1.0f);
+            Color4F fillTop = disabled ? Color4F(0.13f, 0.15f, 0.19f, 0.78f)
+                : (selected ? Color4F(0.10f, 0.36f, 0.58f, 0.98f) : Color4F(0.07f, 0.27f, 0.48f, 0.96f));
+            Color4F fillBottom = disabled ? Color4F(0.08f, 0.09f, 0.12f, 0.82f)
+                : (selected ? Color4F(0.02f, 0.14f, 0.28f, 0.98f) : Color4F(0.01f, 0.10f, 0.22f, 0.98f));
+
+            drawChamfer(body, 0.0f, -3.0f, w, h, cut, shadow);
+            drawChamfer(body, 0.0f, 0.0f, w, h, cut, shell);
+            drawChamfer(body, 3.0f, 3.0f, w - 6.0f, h - 6.0f, std::max(2.0f, cut - 3.0f), rim);
+            drawChamfer(body, 6.0f, 6.0f, w - 12.0f, h - 12.0f, std::max(2.0f, cut - 6.0f), innerShell);
+            drawChamfer(body, 8.0f, 8.0f, w - 16.0f, h - 16.0f, std::max(2.0f, cut - 8.0f), fillBottom);
+            drawChamfer(body, 10.0f, h * 0.52f, w - 20.0f, h * 0.27f, std::max(2.0f, cut - 10.0f),
+                Color4F(fillTop.r + 0.03f, fillTop.g + 0.05f, fillTop.b + 0.06f, fillTop.a));
+            drawChamfer(body, 11.0f, h - 12.0f, w - 22.0f, 2.0f, 1.0f,
+                disabled ? Color4F(0.55f, 0.56f, 0.60f, 0.20f) : Color4F(0.78f, 0.93f, 1.0f, 0.35f));
+            root->addChild(body);
+
+            auto label = Label::createWithSystemFont(text, "Arial", fontSize);
+            label->setColor(disabled ? Color3B(95, 95, 105) : textColor);
+            label->enableBold();
+            label->enableItalics();
+            label->enableOutline(disabled ? Color4B(20, 22, 28, 180) : Color4B(5, 18, 36, 230),
+                std::max(2, static_cast<int>(fontSize * 0.11f)));
+            label->enableShadow(Color4B(0, 0, 0, 220), Size(2.5f, -2.5f), 1);
+            label->setSkewX(-8.0f);
+            label->setScaleX(1.08f);
+            label->setPosition(Vec2(size.width * 0.5f, size.height * 0.54f));
+            root->addChild(label);
+            return root;
+        };
+
+        auto normal = buildState(false, false);
+        auto selected = buildState(true, false);
+        auto disabled = buildState(false, true);
+        selected->setScale(0.97f);
+        return MenuItemSprite::create(normal, selected, disabled, callback);
+    }
+}
+
 // ============================================================================
 // Static save helpers
 // ============================================================================
 
-static std::string saveKey(int idx, const char* field)
+static std::string saveKey(int idx, const char* field, bool endlessMode = false)
 {
     char buf[64];
-    snprintf(buf, sizeof(buf), "story_save_%d_%s", idx, field);
+    snprintf(buf, sizeof(buf), "%s_save_%d_%s",
+        endlessMode ? "endless" : "story", idx, field);
     return buf;
 }
 
-std::vector<StoryModeScene::SaveEntry> StoryModeScene::loadAllSaves()
+static const char* saveCountKey(bool endlessMode)
+{
+    return endlessMode ? "endless_save_count" : "story_save_count";
+}
+
+std::vector<StoryModeScene::SaveEntry> StoryModeScene::loadAllSaves(bool endlessMode)
 {
     std::vector<SaveEntry> result;
     auto ud = UserDefault::getInstance();
-    int count = ud->getIntegerForKey("story_save_count", 0);
+    int count = ud->getIntegerForKey(saveCountKey(endlessMode), 0);
 
     // Read all saves, then sort newest-first (highest index = newest)
     for (int i = 0; i < count; ++i)
     {
         SaveEntry e;
         e.index = i;  // storage index
-        e.type = ud->getIntegerForKey(saveKey(i, "type").c_str(), 0);
-        e.level = ud->getIntegerForKey(saveKey(i, "level").c_str(), 1);
-        e.timestamp = ud->getStringForKey(saveKey(i, "ts").c_str(), "");
+        e.type = ud->getIntegerForKey(saveKey(i, "type", endlessMode).c_str(), 0);
+        e.level = ud->getIntegerForKey(saveKey(i, "level", endlessMode).c_str(), 1);
+        e.timestamp = ud->getStringForKey(saveKey(i, "ts", endlessMode).c_str(), "");
         if (!e.timestamp.empty())
             result.push_back(e);
     }
@@ -106,16 +207,16 @@ void StoryModeScene::addAutoSave(int level)
     ud->flush();
 }
 
-bool StoryModeScene::addManualSave(int level)
+bool StoryModeScene::addManualSave(int level, bool endlessMode)
 {
     auto ud = UserDefault::getInstance();
-    int count = ud->getIntegerForKey("story_save_count", 0);
+    int count = ud->getIntegerForKey(saveCountKey(endlessMode), 0);
 
     // Count existing manual saves
     int manualCount = 0;
     for (int i = 0; i < count; ++i)
     {
-        if (ud->getIntegerForKey(saveKey(i, "type").c_str(), 0) == 1)
+        if (ud->getIntegerForKey(saveKey(i, "type", endlessMode).c_str(), 0) == 1)
             ++manualCount;
     }
 
@@ -135,19 +236,19 @@ bool StoryModeScene::addManualSave(int level)
 
     // Append new manual save at the end
     int idx = count;
-    ud->setIntegerForKey(saveKey(idx, "type").c_str(), 1);  // manual
-    ud->setIntegerForKey(saveKey(idx, "level").c_str(), level);
-    ud->setStringForKey(saveKey(idx, "ts").c_str(), timeBuf);
-    ud->setIntegerForKey("story_save_count", count + 1);
+    ud->setIntegerForKey(saveKey(idx, "type", endlessMode).c_str(), 1);  // manual
+    ud->setIntegerForKey(saveKey(idx, "level", endlessMode).c_str(), level);
+    ud->setStringForKey(saveKey(idx, "ts", endlessMode).c_str(), timeBuf);
+    ud->setIntegerForKey(saveCountKey(endlessMode), count + 1);
     ud->flush();
     return true;
 }
 
-void StoryModeScene::deleteSaveByIndex(int displayIndex)
+void StoryModeScene::deleteSaveByIndex(int displayIndex, bool endlessMode)
 {
     // displayIndex is the position in the newest-first sorted list.
     // We need to map it back to the storage index.
-    auto saves = loadAllSaves();
+    auto saves = loadAllSaves(endlessMode);
     if (displayIndex < 0 || displayIndex >= static_cast<int>(saves.size()))
         return;
 
@@ -156,20 +257,20 @@ void StoryModeScene::deleteSaveByIndex(int displayIndex)
     // Since loadAllSaves sorts newest-first, display index 0 = storage index (count-1),
     // display index 1 = storage index (count-2), etc.
     auto ud = UserDefault::getInstance();
-    int count = ud->getIntegerForKey("story_save_count", 0);
+    int count = ud->getIntegerForKey(saveCountKey(endlessMode), 0);
     int storageIndex = count - 1 - displayIndex;
 
     // Shift all saves after storageIndex down by one
     for (int j = storageIndex; j < count - 1; ++j)
     {
-        ud->setIntegerForKey(saveKey(j, "type").c_str(),
-            ud->getIntegerForKey(saveKey(j + 1, "type").c_str(), 0));
-        ud->setIntegerForKey(saveKey(j, "level").c_str(),
-            ud->getIntegerForKey(saveKey(j + 1, "level").c_str(), 1));
-        ud->setStringForKey(saveKey(j, "ts").c_str(),
-            ud->getStringForKey(saveKey(j + 1, "ts").c_str(), ""));
+        ud->setIntegerForKey(saveKey(j, "type", endlessMode).c_str(),
+            ud->getIntegerForKey(saveKey(j + 1, "type", endlessMode).c_str(), 0));
+        ud->setIntegerForKey(saveKey(j, "level", endlessMode).c_str(),
+            ud->getIntegerForKey(saveKey(j + 1, "level", endlessMode).c_str(), 1));
+        ud->setStringForKey(saveKey(j, "ts", endlessMode).c_str(),
+            ud->getStringForKey(saveKey(j + 1, "ts", endlessMode).c_str(), ""));
     }
-    ud->setIntegerForKey("story_save_count", count - 1);
+    ud->setIntegerForKey(saveCountKey(endlessMode), count - 1);
     ud->flush();
 }
 
@@ -182,6 +283,22 @@ Scene* StoryModeScene::createScene()
     return StoryModeScene::create();
 }
 
+Scene* StoryModeScene::createEndlessScene()
+{
+    auto scene = new (std::nothrow) StoryModeScene();
+    if (scene)
+    {
+        scene->_isEndlessMode = true;
+        if (scene->init())
+        {
+            scene->autorelease();
+            return scene;
+        }
+        delete scene;
+    }
+    return nullptr;
+}
+
 bool StoryModeScene::init()
 {
     if (!Scene::init()) return false;
@@ -191,10 +308,30 @@ bool StoryModeScene::init()
     auto winSize = Director::getInstance()->getWinSize();
     float s = winSize.height / 640.0f;
 
-    // Background
-    auto bg = LayerColor::create(Color4B(25, 30, 45, 255), winSize.width, winSize.height);
-    bg->setPosition(Vec2::ZERO);
-    this->addChild(bg, -1);
+    auto visibleSize = Director::getInstance()->getVisibleSize();
+    Vec2 origin = Director::getInstance()->getVisibleOrigin();
+
+    std::string menuBgPath = AssetPaths::resolve("art/ui/main_menu_background.png");
+    if (!menuBgPath.empty())
+    {
+        auto bgSprite = Sprite::create(menuBgPath);
+        if (bgSprite)
+        {
+            bgSprite->setPosition(Vec2(origin.x + visibleSize.width * 0.5f,
+                origin.y + visibleSize.height * 0.5f));
+            Size bgSize = bgSprite->getContentSize();
+            if (bgSize.width > 0.0f && bgSize.height > 0.0f)
+            {
+                bgSprite->setScale(std::max(visibleSize.width / bgSize.width,
+                    visibleSize.height / bgSize.height));
+            }
+            this->addChild(bgSprite, -2);
+        }
+    }
+
+    auto shade = LayerColor::create(Color4B(6, 10, 18, 185), winSize.width, winSize.height);
+    shade->setPosition(Vec2::ZERO);
+    this->addChild(shade, -1);
 
     showMainView(s);
     return true;
@@ -226,42 +363,37 @@ void StoryModeScene::showMainView(float s)
     _currentView = Node::create();
     this->addChild(_currentView, 1);
 
-    // Title
-    auto title = Label::createWithSystemFont(lm->getString("story_mode"), "Arial", 48.0f * s);
+    const bool english = lm->getLanguage() == LanguageManager::Language::ENGLISH;
+    const std::string modeTitle = _isEndlessMode
+        ? (english ? "Endless Mode" : u8"无尽模式")
+        : lm->getString("story_mode");
+    auto title = Label::createWithSystemFont(modeTitle, "Arial", 44.0f * s);
     title->setColor(Color3B(220, 220, 100));
-    title->setPosition(Vec2(cx, cy + 110.0f * s));
+    title->enableOutline(Color4B(20, 18, 8, 220), std::max(1, static_cast<int>(3.0f * s)));
+    title->enableShadow(Color4B(0, 0, 0, 200), Size(3.0f * s, -3.0f * s), 1);
+    title->setPosition(Vec2(cx, cy + 135.0f * s));
     _currentView->addChild(title);
 
-    // New Game button (large, prominent)
-    Size bigBtnSize(420.0f * s, 64.0f * s);
-    auto newGameLabel = Label::createWithSystemFont(lm->getString("new_game"), "Arial", 30.0f * s);
-    newGameLabel->setColor(Color3B(130, 230, 130));
-    auto newGameItem = MenuItemLabel::create(newGameLabel,
-        CC_CALLBACK_1(StoryModeScene::onNewGameClicked, this));
+    Size bigBtnSize(400.0f * s, 56.0f * s);
+    auto newGameItem = createStoryButton(lm->getString("new_game"), bigBtnSize, 28.0f * s,
+        Color3B(235, 245, 255), CC_CALLBACK_1(StoryModeScene::onNewGameClicked, this));
 
-    // Load Game button
-    auto loadGameLabel = Label::createWithSystemFont(lm->getString("load_game"), "Arial", 30.0f * s);
-    loadGameLabel->setColor(Color3B(220, 200, 100));
-    auto loadGameItem = MenuItemLabel::create(loadGameLabel,
-        CC_CALLBACK_1(StoryModeScene::onLoadGameClicked, this));
+    auto loadGameItem = createStoryButton(lm->getString("load_game"), bigBtnSize, 28.0f * s,
+        Color3B(235, 245, 255), CC_CALLBACK_1(StoryModeScene::onLoadGameClicked, this));
 
     // Check if any saves exist
-    auto saves = loadAllSaves();
+    auto saves = loadAllSaves(_isEndlessMode);
     if (saves.empty())
     {
         loadGameItem->setEnabled(false);
-        loadGameLabel->setColor(Color3B(95, 95, 105));
     }
 
-    // Back button
-    auto backLabel = Label::createWithSystemFont(lm->getString("back_to_title"), "Arial", 24.0f * s);
-    backLabel->setColor(Color3B(180, 180, 200));
-    auto backItem = MenuItemLabel::create(backLabel,
-        CC_CALLBACK_1(StoryModeScene::onBackClicked, this));
+    auto backItem = createStoryButton(lm->getString("back_to_title"), bigBtnSize, 26.0f * s,
+        Color3B(235, 245, 255), CC_CALLBACK_1(StoryModeScene::onBackClicked, this));
 
     auto menu = Menu::create(newGameItem, loadGameItem, backItem, nullptr);
-    menu->setPosition(Vec2(cx, cy - 10.0f * s));
-    menu->alignItemsVerticallyWithPadding(30.0f * s);
+    menu->setPosition(Vec2(cx, cy - 28.0f * s));
+    menu->alignItemsVerticallyWithPadding(24.0f * s);
     _currentView->addChild(menu);
 }
 
@@ -282,13 +414,19 @@ void StoryModeScene::showLoadView(float s)
     _currentView = Node::create();
     this->addChild(_currentView, 1);
 
-    // Title
-    auto title = Label::createWithSystemFont(lm->getString("load_game"), "Arial", 40.0f * s);
+    Size panelSize(std::max(360.0f * s, std::min(700.0f * s, visibleSize.width - 80.0f * s)),
+        std::max(360.0f * s, visibleSize.height - 110.0f * s));
+    auto panel = createUiPanel(panelSize, Color4B(15, 25, 42, 220));
+    panel->setPosition(Vec2(cx - panelSize.width * 0.5f,
+        origin.y + 70.0f * s));
+    _currentView->addChild(panel);
+
+    auto title = Label::createWithSystemFont(lm->getString("load_game"), "Arial", 38.0f * s);
     title->setColor(Color3B(220, 200, 100));
-    title->setPosition(Vec2(cx, origin.y + visibleSize.height * 0.88f));
+    title->setPosition(Vec2(cx, origin.y + visibleSize.height - 58.0f * s));
     _currentView->addChild(title);
 
-    auto saves = loadAllSaves();
+    auto saves = loadAllSaves(_isEndlessMode);
 
     if (saves.empty())
     {
@@ -299,10 +437,10 @@ void StoryModeScene::showLoadView(float s)
     }
     else
     {
-        float cardW = 560.0f * s;
+        float cardW = panelSize.width - 54.0f * s;
         float cardH = 70.0f * s;
         float gap = 12.0f * s;
-        float startY = origin.y + visibleSize.height * 0.78f;
+        float startY = origin.y + visibleSize.height - 125.0f * s;
         int maxVisible = 7;
         int totalToShow = std::min(static_cast<int>(saves.size()), maxVisible);
 
@@ -312,9 +450,15 @@ void StoryModeScene::showLoadView(float s)
             float cardY = startY - i * (cardH + gap);
 
             // Card background
-            auto cardBg = LayerColor::create(Color4B(35, 40, 60, 230), cardW, cardH);
+            auto cardBg = LayerColor::create(Color4B(28, 42, 64, 225), cardW, cardH);
             cardBg->setPosition(Vec2(cx - cardW * 0.5f, cardY - cardH * 0.5f));
             _currentView->addChild(cardBg);
+
+            auto cardBorder = DrawNode::create();
+            cardBorder->drawRect(Vec2(cx - cardW * 0.5f, cardY - cardH * 0.5f),
+                Vec2(cx + cardW * 0.5f, cardY + cardH * 0.5f),
+                Color4F(0.18f, 0.50f, 0.86f, 0.65f));
+            _currentView->addChild(cardBorder);
 
             // Type label
             const char* typeKey = (save.type == 0) ? "auto_save" : "manual_save";
@@ -338,10 +482,8 @@ void StoryModeScene::showLoadView(float s)
             _currentView->addChild(infoLabel);
 
             // Load button (right side)
-            auto loadBtnLabel = Label::createWithSystemFont(lm->getString("load"), "Arial", 20.0f * s);
-            loadBtnLabel->setColor(Color3B(100, 220, 100));
-            auto loadBtn = MenuItemLabel::create(loadBtnLabel,
-                CC_CALLBACK_1(StoryModeScene::onSaveLoadClicked, this));
+            auto loadBtn = createStoryButton(lm->getString("load"), Size(78.0f * s, 34.0f * s),
+                18.0f * s, Color3B(220, 245, 235), CC_CALLBACK_1(StoryModeScene::onSaveLoadClicked, this));
             loadBtn->setTag(i);  // display index
 
             // Delete button (only for manual saves)
@@ -350,11 +492,8 @@ void StoryModeScene::showLoadView(float s)
 
             if (save.type == 1)  // manual save can be deleted
             {
-                auto delBtnLabel = Label::createWithSystemFont(
-                    "X", "Arial", 22.0f * s);
-                delBtnLabel->setColor(Color3B(220, 120, 120));
-                auto delBtn = MenuItemLabel::create(delBtnLabel,
-                    CC_CALLBACK_1(StoryModeScene::onSaveDeleteClicked, this));
+                auto delBtn = createStoryButton("X", Size(36.0f * s, 34.0f * s),
+                    18.0f * s, Color3B(255, 160, 140), CC_CALLBACK_1(StoryModeScene::onSaveDeleteClicked, this));
                 delBtn->setTag(i);
                 btnItems.pushBack(delBtn);
             }
@@ -367,12 +506,10 @@ void StoryModeScene::showLoadView(float s)
     }
 
     // Back button
-    auto backLabel = Label::createWithSystemFont(lm->getString("back"), "Arial", 24.0f * s);
-    backLabel->setColor(Color3B(180, 180, 200));
-    auto backItem = MenuItemLabel::create(backLabel,
-        CC_CALLBACK_1(StoryModeScene::onLoadBackClicked, this));
+    auto backItem = createStoryButton(lm->getString("back"), Size(220.0f * s, 42.0f * s),
+        21.0f * s, Color3B(220, 230, 245), CC_CALLBACK_1(StoryModeScene::onLoadBackClicked, this));
     auto backMenu = Menu::create(backItem, nullptr);
-    backMenu->setPosition(Vec2(cx, origin.y + 35.0f * s));
+    backMenu->setPosition(Vec2(cx, origin.y + 38.0f * s));
     _currentView->addChild(backMenu);
 }
 
@@ -433,7 +570,7 @@ void StoryModeScene::startNewGame()
 {
     auto ud = UserDefault::getInstance();
     ud->setIntegerForKey("selected_level", 1);
-    ud->setIntegerForKey("selected_game_mode", 0);
+    ud->setIntegerForKey("selected_game_mode", _isEndlessMode ? 1 : 0);
     ud->flush();
 
     AudioManager::getInstance()->playGameStart();
@@ -442,14 +579,14 @@ void StoryModeScene::startNewGame()
 
 void StoryModeScene::loadSaveAndStart(int displayIndex)
 {
-    auto saves = loadAllSaves();
+    auto saves = loadAllSaves(_isEndlessMode);
     if (displayIndex < 0 || displayIndex >= static_cast<int>(saves.size()))
         return;
 
     int level = saves[displayIndex].level;
     auto ud = UserDefault::getInstance();
     ud->setIntegerForKey("selected_level", level);
-    ud->setIntegerForKey("selected_game_mode", 0);
+    ud->setIntegerForKey("selected_game_mode", _isEndlessMode ? 1 : 0);
     ud->flush();
 
     AudioManager::getInstance()->playGameStart();
@@ -478,8 +615,7 @@ void StoryModeScene::showDeleteConfirm(int displayIndex)
     _confirmLayer->addChild(overlay);
 
     Size dialogSize(400.0f * s, 140.0f * s);
-    auto dialogBg = LayerColor::create(Color4B(45, 50, 70, 255),
-        dialogSize.width, dialogSize.height);
+    auto dialogBg = createUiPanel(dialogSize, Color4B(18, 29, 48, 245));
     dialogBg->setPosition(Vec2(cx - dialogSize.width * 0.5f, cy - dialogSize.height * 0.5f));
     _confirmLayer->addChild(dialogBg);
 
@@ -489,15 +625,11 @@ void StoryModeScene::showDeleteConfirm(int displayIndex)
     confirmLabel->setPosition(Vec2(cx, cy + 25.0f * s));
     _confirmLayer->addChild(confirmLabel);
 
-    auto yesLabel = Label::createWithSystemFont(lm->getString("confirm"), "Arial", 24.0f * s);
-    yesLabel->setColor(Color3B(220, 100, 100));
-    auto yesItem = MenuItemLabel::create(yesLabel,
-        CC_CALLBACK_1(StoryModeScene::onDeleteConfirmYes, this));
+    auto yesItem = createStoryButton(lm->getString("confirm"), Size(118.0f * s, 40.0f * s),
+        21.0f * s, Color3B(255, 160, 140), CC_CALLBACK_1(StoryModeScene::onDeleteConfirmYes, this));
 
-    auto noLabel = Label::createWithSystemFont(lm->getString("back"), "Arial", 24.0f * s);
-    noLabel->setColor(Color3B(180, 180, 200));
-    auto noItem = MenuItemLabel::create(noLabel,
-        CC_CALLBACK_1(StoryModeScene::onDeleteConfirmNo, this));
+    auto noItem = createStoryButton(lm->getString("back"), Size(118.0f * s, 40.0f * s),
+        21.0f * s, Color3B(220, 230, 245), CC_CALLBACK_1(StoryModeScene::onDeleteConfirmNo, this));
 
     auto menu = Menu::create(yesItem, noItem, nullptr);
     menu->setPosition(Vec2(cx, cy - 30.0f * s));
@@ -519,7 +651,7 @@ void StoryModeScene::onDeleteConfirmYes(Ref*)
 {
     if (_pendingDeleteIndex >= 0)
     {
-        deleteSaveByIndex(_pendingDeleteIndex);
+        deleteSaveByIndex(_pendingDeleteIndex, _isEndlessMode);
     }
     hideDeleteConfirm();
 

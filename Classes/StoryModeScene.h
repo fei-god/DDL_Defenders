@@ -9,6 +9,7 @@ class StoryModeScene : public cocos2d::Scene
 {
 public:
     static cocos2d::Scene* createScene();
+    static cocos2d::Scene* createEndlessScene();
 
     virtual bool init() override;
 
@@ -24,16 +25,16 @@ public:
     };
 
     // Load all saves sorted newest-first
-    static std::vector<SaveEntry> loadAllSaves();
+    static std::vector<SaveEntry> loadAllSaves(bool endlessMode = false);
 
     // Add an auto-save (max 5 auto-saves, oldest gets removed)
     static void addAutoSave(int level);
 
     // Add a manual save (max 10, returns false if full)
-    static bool addManualSave(int level);
+    static bool addManualSave(int level, bool endlessMode = false);
 
     // Delete a save by its index in the loadAllSaves() result
-    static void deleteSaveByIndex(int displayIndex);
+    static void deleteSaveByIndex(int displayIndex, bool endlessMode = false);
 
 private:
     // --- Views ---
@@ -63,6 +64,7 @@ private:
     cocos2d::Node* _currentView = nullptr;
     cocos2d::Node* _confirmLayer = nullptr;
     int _pendingDeleteIndex = -1;
+    bool _isEndlessMode = false;
 };
 
 #endif // __STORY_MODE_SCENE_H__
