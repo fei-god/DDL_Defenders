@@ -352,7 +352,7 @@ bool GameScene::init()
     Vec2 playerStart(_worldSize.width / 2, _worldSize.height / 2);
     std::string playerImagePath = AssetPaths::resolve("art/characters/player.png");
     m_player = Player::create("Hero", playerImagePath,
-        playerStart, 100, 240.0f, 5);
+        playerStart, 160, 250.0f, 8);
 
     if (m_player)
     {
@@ -523,8 +523,8 @@ bool GameScene::init()
                     _waveManager->setAllowedTypes({1}); // DDLMonster only
                     _waveManager->setTotalWaves(9999);  // effectively infinite
                     _waveManager->setWaveTimerExpiredCallback([this](int wave) {
-                        // Restart the same wave to keep continuous spawning
-                        _waveManager->startWave(wave);
+                        // Advance wave number so difficulty keeps increasing
+                        _waveManager->startWave(wave + 1);
                     });
                 }
                 else if (_sceneId == 2) // Classroom: 4 waves
@@ -558,8 +558,8 @@ bool GameScene::init()
                 // Endless: continuous wave cycling
                 _waveManager->setTotalWaves(9999);
                 _waveManager->setWaveTimerExpiredCallback([this](int wave) {
-                    // Restart wave: spawn difficulty scales with survival time
-                    _waveManager->startWave(wave);
+                    // Advance wave: spawn difficulty scales with survival time + wave number
+                    _waveManager->startWave(wave + 1);
                 });
             }
             int startingWave = _isEndlessMode ? 1 : ((_levelNumber + 1) / 2);
@@ -1013,6 +1013,9 @@ void GameScene::update(float dt)
     // ===================================================================
     // Combat mode (non-Hub) — weapons auto-aim, bullets, wave manager, collision
     // ===================================================================
+    // Visible screen radius (world coords): only target enemies on screen
+    float visibleRadius = std::min(visibleSize.width, visibleSize.height) * 0.5f / _worldScale;
+
     for (auto* weapon : _weapons)
     {
         if (weapon)
@@ -1027,7 +1030,8 @@ void GameScene::update(float dt)
                 Vec2 playerPos = m_player->getObjectPosition();
                 Vec2 playerToEnemy = enemyPos - playerPos;
                 float dist = playerToEnemy.length();
-                if (dist <= weapon->getAttackRange())
+                // Only attack enemies visible on screen AND within weapon range
+                if (dist <= weapon->getAttackRange() && dist <= visibleRadius)
                 {
                     if (playerToEnemy.lengthSquared() > 0.0001f)
                     {
@@ -1944,7 +1948,7 @@ void GameScene::updateCamera()
     }
 
     Vec2 current = _worldLayer->getPosition();
-    _worldLayer->setPosition(current + (target - current) * 0.18f);
+    _worldLayer->setPosition(current + (target - current) * 0.45f);
 }
 
 void GameScene::updateEnemyPlayerContact(float dt)
@@ -2031,16 +2035,16 @@ void GameScene::updateEnemyPlayerContact(float dt)
                 }
             }
 
-            _enemyContactDamageCooldown = 0.45f;
+            _enemyContactDamageCooldown = 0.7f;
         }
 
-        // Push ALL colliding enemies away (not just one), stronger push when cornered
+        // Push ALL colliding enemies away — stronger push to prevent surround
         Vec2 pushDir = m_player->getPosition() - enemy->getPosition();
         if (pushDir.lengthSquared() > 0.001f)
         {
             pushDir.normalize();
-            float playerPush = nearWall ? 12.0f : 8.0f;
-            float enemyPush = nearWall ? 22.0f : 12.0f;
+            float playerPush = nearWall ? 18.0f : 12.0f;
+            float enemyPush = nearWall ? 30.0f : 18.0f;
             m_player->setPosition(m_player->getPosition() + pushDir * playerPush);
             enemy->setPosition(enemy->getPosition() - pushDir * enemyPush);
         }

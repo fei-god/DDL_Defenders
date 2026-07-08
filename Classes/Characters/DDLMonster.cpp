@@ -50,9 +50,9 @@ bool DDLMonster::initDDLMonster(const std::string& imagePath,
     Player* target,
     int waveLevel)
 {
-    int scaledHp = 24 + waveLevel * 5;
+    int scaledHp = 28 + waveLevel * 5;
     float scaledSpeed = 115.0f + waveLevel * 3.0f;
-    int scaledAtk = 12 + waveLevel * 2;
+    int scaledAtk = 10 + waveLevel * 1;
     int scaledExp = 50 + waveLevel * 8;
     bool ok = initEnemy("DDLMonster",
         imagePath,
