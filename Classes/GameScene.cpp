@@ -1014,6 +1014,7 @@ void GameScene::update(float dt)
     // Combat mode (non-Hub) — weapons auto-aim, bullets, wave manager, collision
     // ===================================================================
     // Visible screen radius (world coords): only target enemies on screen
+    auto visibleSize = Director::getInstance()->getVisibleSize();
     float visibleRadius = std::min(visibleSize.width, visibleSize.height) * 0.5f / _worldScale;
 
     for (auto* weapon : _weapons)
