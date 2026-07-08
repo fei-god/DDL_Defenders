@@ -54,6 +54,7 @@ public:
     float getAttackRange() const;
     void setExpReward(int exp);
     int getExpReward() const;
+    void setAttackCooldown(float cd) { _attackCooldown = cd; }
 
     virtual void die() override;
     virtual void takeDamage(int damage) override;

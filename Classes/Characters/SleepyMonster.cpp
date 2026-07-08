@@ -50,9 +50,9 @@ bool SleepyMonster::initSleepyMonster(const std::string& imagePath,
     Player* target,
     int waveLevel)
 {
-    int scaledHp = 20 + waveLevel * 4;
+    int scaledHp = 24 + waveLevel * 4;
     float scaledSpeed = 82.0f + waveLevel * 2.5f;
-    int scaledAtk = 7 + waveLevel * 1;
+    int scaledAtk = 5 + waveLevel * 1;
     int scaledExp = 20 + waveLevel * 5;
     bool ok = initEnemy("SleepyMonster",
         imagePath,

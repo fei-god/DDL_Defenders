@@ -49,9 +49,9 @@ bool PhoneMonster::initPhoneMonster(const std::string& imagePath,
     Player* target,
     int waveLevel)
 {
-    int scaledHp = 20 + waveLevel * 3;
+    int scaledHp = 23 + waveLevel * 3;
     float scaledSpeed = 145.0f + waveLevel * 2.0f;
-    int scaledAtk = 6 + waveLevel * 1;
+    int scaledAtk = 5 + waveLevel * 1;
     int scaledExp = 35 + waveLevel * 5;
     bool ok = initEnemy("PhoneMonster", imagePath, startPosition,
         scaledHp, scaledSpeed, 0, scaledAtk, 46.0f, scaledExp);

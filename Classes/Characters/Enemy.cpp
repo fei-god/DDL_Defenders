@@ -417,11 +417,16 @@ void Enemy::playHitEffect()
 
 float Enemy::getTimeScaleFactor(float elapsedTime)
 {
-    // Monsters get progressively stronger as time passes
-    // Every 60 seconds, monsters gain ~1 wave worth of stats
-    // Caps at 6x after 360 seconds (6 minutes)
-    float factor = 1.0f + (elapsedTime / 60.0f) * 0.8f;
-    if (factor > 6.0f) factor = 6.0f;
+    // Monsters get progressively stronger as time passes.
+    // Growth accelerates: every 30s adds ~0.7x multiplier, plus
+    // an extra quadratic boost for long survival runs.
+    // 30s → 1.7x   60s → 2.5x   120s → 4.3x   180s → 6.4x
+    // 300s → 10x   600s → 16x (cap)
+    float linearPart = 1.0f + (elapsedTime / 30.0f) * 0.7f;
+    float quadraticPart = 1.0f + (elapsedTime * elapsedTime) / 72000.0f;
+    float factor = linearPart * 0.6f + quadraticPart * 0.4f;
+    if (factor > 16.0f) factor = 16.0f;
+    if (factor < 1.0f) factor = 1.0f;
     return factor;
 }
 
@@ -562,28 +567,30 @@ void Enemy::updateProjectiles(float dt)
             // Rotate for visual interest
             proj.node->setRotation(proj.node->getRotation() + dt * 120.0f);
 
-            // Continuous trail behind projectile (every frame creates glow trail)
-            auto trailDot = DrawNode::create();
-            trailDot->setPosition(Vec2::ZERO);
-            // Glowing trail dot behind the projectile
-            float trailAlpha = 0.45f;
-            trailDot->drawSolidCircle(Vec2::ZERO, proj.radius * 1.4f, 0, 6,
-                Color4F(1.0f, 0.9f, 0.7f, trailAlpha));
-            trailDot->drawSolidCircle(Vec2::ZERO, proj.radius * 0.7f, 0, 4,
-                Color4F(1.0f, 1.0f, 0.9f, trailAlpha * 1.3f));
-            proj.node->addChild(trailDot, -1);
+            // Trail particles only every 3 frames to reduce draw calls
+            static int trailFrameSkip = 0;
+            trailFrameSkip++;
+            if (trailFrameSkip % 3 == 0)
+            {
+                auto trailDot = DrawNode::create();
+                trailDot->setPosition(Vec2::ZERO);
+                float trailAlpha = 0.4f;
+                trailDot->drawSolidCircle(Vec2::ZERO, proj.radius * 1.2f, 0, 4,
+                    Color4F(1.0f, 0.9f, 0.7f, trailAlpha));
+                proj.node->addChild(trailDot, -1);
 
-            auto trailAnim = Sequence::create(
-                Spawn::create(
-                    FadeOut::create(0.35f),
-                    ScaleTo::create(0.35f, 0.15f),
-                    nullptr),
-                RemoveSelf::create(),
-                nullptr);
-            trailDot->runAction(trailAnim);
+                auto trailAnim = Sequence::create(
+                    Spawn::create(
+                        FadeOut::create(0.3f),
+                        ScaleTo::create(0.3f, 0.1f),
+                        nullptr),
+                    RemoveSelf::create(),
+                    nullptr);
+                trailDot->runAction(trailAnim);
+            }
 
-            // Extra sparkle occasionally
-            if (CCRANDOM_0_1() < 0.15f)
+            // Extra sparkle occasionally (reduced frequency)
+            if (CCRANDOM_0_1() < 0.05f)
             {
                 auto spark = DrawNode::create();
                 spark->setPosition(Vec2(

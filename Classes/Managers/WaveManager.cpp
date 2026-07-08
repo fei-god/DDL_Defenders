@@ -31,10 +31,10 @@ bool WaveManager::init(Player* player, Node* parentLayer)
     _totalWaves = 1000000;
     _enemiesToSpawn = 0;
     _spawnTimer = 0.0f;
-    _spawnInterval = 2.0f;
+    _spawnInterval = 1.5f;
     _spawnElapsed = 0.0f;
     _waveTimer = 0.0f;
-    _waveDuration = 30.0f;
+    _waveDuration = 24.0f;
     _isSpawning = false;
     _totalEnemiesThisWave = 0;
     _enemiesSpawnedCount = 0;
@@ -51,9 +51,14 @@ bool WaveManager::init(Player* player, Node* parentLayer)
 
 int WaveManager::getEnemyCountForWave(int wave)
 {
-    // Increased spawn counts: base of 15 + wave*6, cap raised to 80
-    int count = 15 + wave * 6;
-    if (count > 80) count = 80;
+    // More enemies, but individually weaker — satisfying to mow down
+    int count = 20 + wave * 5;
+    // Time-based bonus: +1 enemy per 15 seconds survived
+    int timeBonus = static_cast<int>(_elapsedTime / 15.0f);
+    count += timeBonus;
+    int cap = 85 + static_cast<int>(_elapsedTime / 60.0f) * 5;
+    if (cap > 140) cap = 140;
+    if (count > cap) count = cap;
     return count;
 }
 
@@ -85,11 +90,7 @@ void WaveManager::stopSpawn()
 void WaveManager::showWaveAnnouncement(int wave)
 {
     Size visibleSize = Director::getInstance()->getVisibleSize();
-    if (_parentLayer && _parentLayer->getContentSize().width > 0.0f &&
-        _parentLayer->getContentSize().height > 0.0f)
-    {
-        visibleSize = _parentLayer->getContentSize();
-    }
+    Vec2 origin = Director::getInstance()->getVisibleOrigin();
 
     std::string waveText;
     if (_isBossWave)
@@ -101,21 +102,47 @@ void WaveManager::showWaveAnnouncement(int wave)
         waveText = "Wave " + std::to_string(wave);
     }
 
-    auto label = Label::createWithSystemFont(waveText, "Arial", 36);
-    Vec2 labelPos(visibleSize.width / 2, visibleSize.height / 2 + 100);
-    if (_player)
-    {
-        labelPos = _player->getPosition() + Vec2(0, 120);
-    }
-    label->setPosition(labelPos);
+    // Display at screen center (UI space, not world space) so it always
+    // appears in the middle of the screen regardless of camera position.
+    auto label = Label::createWithSystemFont(waveText, "Arial", 48);
+    label->setPosition(Vec2(origin.x + visibleSize.width / 2,
+                            origin.y + visibleSize.height / 2));
     label->setOpacity(0);
-    _parentLayer->addChild(label, 100);
 
-    auto fadeIn = FadeIn::create(0.3f);
-    auto delay = DelayTime::create(1.5f);
-    auto fadeOut = FadeOut::create(0.5f);
-    auto remove = RemoveSelf::create();
-    label->runAction(Sequence::create(fadeIn, delay, fadeOut, remove, nullptr));
+    // Add to the running scene directly (screen-space UI layer) instead of
+    // the world layer so the text stays centered on screen.
+    Scene* runningScene = Director::getInstance()->getRunningScene();
+    if (runningScene)
+    {
+        runningScene->addChild(label, 200);
+    }
+    else if (_parentLayer)
+    {
+        _parentLayer->addChild(label, 200);
+    }
+
+    // Boss wave gets a bigger, redder announcement
+    if (_isBossWave)
+    {
+        label->setColor(Color3B(255, 80, 60));
+        label->setScale(0.5f);
+        auto scaleUp = ScaleTo::create(0.3f, 1.3f);
+        auto scaleDown = ScaleTo::create(0.15f, 1.0f);
+        auto fadeIn = FadeIn::create(0.25f);
+        auto spawn = Spawn::create(Sequence::create(scaleUp, scaleDown, nullptr), fadeIn, nullptr);
+        auto delay = DelayTime::create(2.0f);
+        auto fadeOut = FadeOut::create(0.5f);
+        auto remove = RemoveSelf::create();
+        label->runAction(Sequence::create(spawn, delay, fadeOut, remove, nullptr));
+    }
+    else
+    {
+        auto fadeIn = FadeIn::create(0.3f);
+        auto delay = DelayTime::create(1.5f);
+        auto fadeOut = FadeOut::create(0.5f);
+        auto remove = RemoveSelf::create();
+        label->runAction(Sequence::create(fadeIn, delay, fadeOut, remove, nullptr));
+    }
 }
 
 Enemy* WaveManager::createEnemyByType(int enemyType, const Vec2& pos, int waveLevel)
@@ -196,12 +223,12 @@ void WaveManager::spawnEnemy()
         break;
     }
 
-    // Ensure spawn is at least 400px away from player (so they don't spawn on top of player)
+    // Ensure spawn is at least 500px away from player (visible on screen before attacking)
     float distToPlayer = spawnPos.distance(playerPos);
-    if (distToPlayer < 400.0f && distToPlayer > 0.001f)
+    if (distToPlayer < 500.0f && distToPlayer > 0.001f)
     {
         Vec2 awayDir = (spawnPos - playerPos).getNormalized();
-        spawnPos = playerPos + awayDir * 400.0f;
+        spawnPos = playerPos + awayDir * 500.0f;
         // Clamp to valid bounds
         spawnPos.x = std::max(margin, std::min(visibleSize.width - margin, spawnPos.x));
         spawnPos.y = std::max(margin, std::min(visibleSize.height - margin, spawnPos.y));
@@ -255,8 +282,8 @@ void WaveManager::spawnEnemy()
         bool isBossEnemy = enemy->hasTag("Boss") || enemy->getObjectName() == "ThesisBoss" ||
             enemy->getObjectName() == "BossMonster";
 
-        // Smaller monster sizes: 60px for regular, 120px for boss
-        float targetSize = isBossEnemy ? 360.0f : 180.0f;
+        // Smaller monsters: more can fit on screen, less overwhelming
+        float targetSize = isBossEnemy ? 260.0f : 120.0f;
         Size enemySize = enemy->getContentSize();
         float targetScale = 1.0f;
         if (enemySize.width > 0.0f && enemySize.height > 0.0f)
@@ -271,6 +298,9 @@ void WaveManager::spawnEnemy()
             enemy->startIdleAnimation();
         });
         enemy->runAction(Sequence::create(scaleUp, startAnim, nullptr));
+
+        // Delay first attack so enemies are visible on screen before engaging
+        enemy->setAttackCooldown(1.5f);
 
         _parentLayer->addChild(enemy, 10);
 
@@ -502,20 +532,27 @@ void WaveManager::update(float dt)
 
         if (_spawnTimer <= 0.0f)
         {
-            // Increased alive cap: scales faster with waves
-            int aliveCap = std::min(_isBossWave ? 55 : 48, 18 + _currentWave * 5);
+            // Alive cap: keep manageable to avoid lag and surround
+            int waveCap = 14 + _currentWave * 3;
+            int timeBonus = static_cast<int>(_elapsedTime / 30.0f) * 2;
+            int aliveCap = waveCap + timeBonus;
+            int maxCap = _isBossWave ? 60 : 40;
+            if (aliveCap > maxCap) aliveCap = maxCap;
             if (static_cast<int>(_aliveEnemies.size()) < aliveCap)
             {
                 spawnEnemy();
             }
 
-            // Faster spawn intervals over time (was 0.85/0.55/0.65 min)
+            // Faster spawn intervals over time
             float waveDifficulty = std::min(1.0f, (_currentWave - 1) * 0.14f);
             float linearPressure = std::min(0.65f, _waveTimer * 0.016f);
-            float dynamicInterval = _spawnInterval - waveDifficulty - linearPressure;
+            // Global time pressure: intervals keep shrinking the longer you survive
+            float globalPressure = std::min(0.55f, _elapsedTime * 0.004f);
+            float dynamicInterval = _spawnInterval - waveDifficulty - linearPressure - globalPressure;
             if (_isBossWave) dynamicInterval += 0.2f;
-            // Minimum spawn interval reduced from 0.65 to 0.45
-            if (dynamicInterval < 0.45f) dynamicInterval = 0.45f;
+            // Minimum spawn interval shrinks over time: starts at 0.45, drops to 0.22
+            float minInterval = 0.45f - std::min(0.23f, _elapsedTime * 0.0015f);
+            if (dynamicInterval < minInterval) dynamicInterval = minInterval;
             _spawnTimer = dynamicInterval;
         }
 
