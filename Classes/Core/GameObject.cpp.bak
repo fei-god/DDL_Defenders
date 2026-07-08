@@ -17,6 +17,7 @@ GameObject::GameObject()
     , isActive(true)
     , updateEnabled(true)
     , collisionEnabled(true)
+    , interactable(false)
     , shouldDestroy(false)
     , velocity(Vec2::ZERO)
     , direction(Vec2(1.0f, 0.0f))
@@ -346,6 +347,29 @@ void GameObject::moveByVelocity(float dt)
 }
 
 
+void GameObject::faceTo(const Vec2& targetPosition)
+{
+    Vec2 dir = targetPosition - this->getPosition();
+    faceToDirection(dir);
+}
+
+void GameObject::faceToDirection(const Vec2& direction)
+{
+    if (direction.isZero())
+    {
+        return;
+    }
+
+    Vec2 normalized = direction;
+    normalized.normalize();
+    this->direction = normalized;
+
+    float angle = CC_RADIANS_TO_DEGREES(std::atan2(normalized.y, normalized.x));
+
+    // Cocos2d-x �� rotation ��˳ʱ�뷽���������ȡ����
+    this->setRotation(-angle);
+}
+
 // =========================
 // ��ײ�뷶Χ�ж�
 // =========================
@@ -366,6 +390,10 @@ float GameObject::getCollisionRadius() const
     return collisionRadius * (this->getScaleX() + this->getScaleY()) * 0.5f;
 }
 
+void GameObject::setUseCircleCollision(bool useCircle)
+{
+    this->useCircleCollision = useCircle;
+}
 
 bool GameObject::isUsingCircleCollision() const
 {
@@ -450,7 +478,15 @@ float GameObject::getLifeTime() const
     return lifeTime;
 }
 
+float GameObject::getCurrentLifeTime() const
+{
+    return currentLifeTime;
+}
 
+void GameObject::resetLifeTime()
+{
+    currentLifeTime = 0.0f;
+}
 
 void GameObject::updateLifeTime(float dt)
 {
@@ -507,7 +543,15 @@ bool GameObject::isUpdateEnabled() const
     return updateEnabled;
 }
 
+void GameObject::setInteractable(bool interactable)
+{
+    this->interactable = interactable;
+}
 
+bool GameObject::isInteractable() const
+{
+    return interactable;
+}
 
 void GameObject::markForDestroy()
 {
@@ -537,6 +581,15 @@ bool GameObject::isOutOfBounds(const Rect& bounds) const
         pos.y > bounds.getMaxY();
 }
 
+void GameObject::clampPositionInBounds(const Rect& bounds)
+{
+    Vec2 pos = this->getPosition();
+
+    float x = std::max(bounds.getMinX(), std::min(pos.x, bounds.getMaxX()));
+    float y = std::max(bounds.getMinY(), std::min(pos.y, bounds.getMaxY()));
+
+    this->setPosition(Vec2(x, y));
+}
 
 // =========================
 // ������Ϣ

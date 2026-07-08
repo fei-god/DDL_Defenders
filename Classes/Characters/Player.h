@@ -13,7 +13,7 @@ public:
     Player();
     virtual ~Player();
 
-    // ³õÊ¼»¯Íæ¼Ò
+    // ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½
     virtual bool initPlayer(
         const std::string& name,
         const std::string& imagePath,
@@ -23,7 +23,7 @@ public:
         int defense
     );
 
-    // ´´½¨Íæ¼Ò
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     static Player* create(
         const std::string& name,
         const std::string& imagePath,
@@ -33,12 +33,12 @@ public:
         int defense
     );
 
-    // Ã¿Ö¡¸üÐÂ
+    // Ã¿Ö¡ï¿½ï¿½ï¿½ï¿½
     virtual void updateObject(float dt) override;
     virtual void updatePlayer(float dt);
 
     // =========================
-    // ÒÆ¶¯ÊäÈë
+    // ï¿½Æ¶ï¿½ï¿½ï¿½ï¿½ï¿½
     // =========================
 
     virtual void movePlayer(float dt);
@@ -49,7 +49,7 @@ public:
     virtual bool getIsMoving() const;
 
     // =========================
-    // Íæ¼ÒÊÜÉË / ËÀÍö
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ / ï¿½ï¿½ï¿½ï¿½
     // =========================
 
     virtual void takeDamage(int damage) override;
@@ -58,7 +58,7 @@ public:
     virtual void die() override;
 
     // =========================
-    // ÇéÐ÷ÏµÍ³
+    // ï¿½ï¿½ï¿½ï¿½ÏµÍ³
     // =========================
 
     virtual void changeMood(MoodType mood);
@@ -72,7 +72,7 @@ public:
     virtual MoodSystem* getMoodSystem();
 
     // =========================
-    // ËÙ¶È
+    // ï¿½Ù¶ï¿½
     // =========================
 
     virtual float getBaseSpeed() const;
@@ -81,7 +81,7 @@ public:
     virtual float getCurrentSpeed() const override;
 
     // =========================
-    // ÎÞµÐ×´Ì¬
+    // ï¿½Þµï¿½×´Ì¬
     // =========================
 
     virtual void setInvincible(bool invincible);
@@ -91,7 +91,7 @@ public:
     virtual float getInvincibleTime() const;
 
     // =========================
-    // ¾­ÑéºÍµÈ¼¶
+    // ï¿½ï¿½ï¿½ï¿½ÍµÈ¼ï¿½
     // =========================
 
     virtual void addExp(int amount);
@@ -111,8 +111,8 @@ public:
     virtual bool spendUpgradePoint(int amount = 1);
 
     // =========================
-    // ²ÄÁÏ / ½ð±Ò
-    // Brotato Àï¸ü½Ó½ü materials£¬ÕâÀïÓÃ material ±íÊ¾¾ÖÄÚ»õ±Ò
+    // ï¿½ï¿½ï¿½ï¿½ / ï¿½ï¿½ï¿½
+    // Brotato ï¿½ï¿½ï¿½ï¿½Ó½ï¿½ materialsï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ material ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½Ú»ï¿½ï¿½ï¿½
     // =========================
 
     virtual void addMaterial(int amount);
@@ -121,13 +121,13 @@ public:
     virtual int getMaterial() const;
     virtual void setMaterial(int amount);
 
-    // ¼æÈÝÄãºóÃæÈç¹ûÏë½Ð½ð±Ò
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð½ï¿½ï¿½
     virtual void addGold(int amount);
     virtual bool spendGold(int amount);
     virtual int getGold() const;
 
     // =========================
-    // Íæ¼Ò¾­¼Ã / ³É³¤ÊôÐÔ
+    // ï¿½ï¿½Ò¾ï¿½ï¿½ï¿½ / ï¿½É³ï¿½ï¿½ï¿½ï¿½ï¿½
     // =========================
 
     virtual int getHarvesting() const;
@@ -146,13 +146,12 @@ public:
     virtual void setHpRegen(float value);
     virtual void addHpRegen(float value);
 
-    virtual float getEnemySpeedModifier() const;
-    virtual void setEnemySpeedModifier(float value);
+
 
     // =========================
-    // ÎäÆ÷²Û
-    // ÓÃ GameObject* ÊÇÎªÁË²»Ç¿°ó¶¨ Weapon Àà£¬±ÜÃâÑ­»· include
-    // ºóÃæ Weapon ¼Ì³Ð GameObject Ê±¿ÉÒÔÖ±½Ó·Å½øÀ´
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    // ï¿½ï¿½ GameObject* ï¿½ï¿½Îªï¿½Ë²ï¿½Ç¿ï¿½ï¿½ Weapon ï¿½à£¬ï¿½ï¿½ï¿½ï¿½Ñ­ï¿½ï¿½ include
+    // ï¿½ï¿½ï¿½ï¿½ Weapon ï¿½Ì³ï¿½ GameObject Ê±ï¿½ï¿½ï¿½ï¿½Ö±ï¿½Ó·Å½ï¿½ï¿½ï¿½
     // =========================
 
     virtual int getMaxWeaponCount() const;
@@ -167,7 +166,7 @@ public:
     virtual int getWeaponCount() const;
 
     // =========================
-    // ×Ô¶¯Ãé×¼ / Ä¿±ê
+    // ï¿½Ô¶ï¿½ï¿½ï¿½×¼ / Ä¿ï¿½ï¿½
     // =========================
 
     virtual void setTarget(GameObject* target);
@@ -179,25 +178,21 @@ public:
     virtual GameObject* findNearestTarget(const std::vector<GameObject*>& candidates, float searchRange) const;
 
     // =========================
-    // Ê°È¡Óë½»»¥
+    // Ê°È¡ï¿½ë½»ï¿½ï¿½
     // =========================
 
     virtual bool canPickup(GameObject* item) const;
     virtual bool isItemInPickupRange(GameObject* item) const;
 
-    virtual void pickupExp(int amount);
-    virtual void pickupMaterial(int amount);
-    virtual void pickupHeal(int amount);
 
     // =========================
-    // ²¨´Î¿ªÊ¼ / ½áÊø
+    // ï¿½ï¿½ï¿½Î¿ï¿½Ê¼ / ï¿½ï¿½ï¿½ï¿½
     // =========================
 
-    virtual void onWaveStart();
-    virtual void onWaveEnd();
+
 
     // =========================
-    // Íæ¼ÒÊôÐÔ×ÜÀÀ
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     // =========================
 
     virtual std::string getPlayerStatsInfo() const;
@@ -228,9 +223,6 @@ protected:
     float luck;
     float pickupRange;
     float hpRegen;
-
-    // ÀýÈçÄ³Ð©µÀ¾ß»áÈÃµÐÈËËÙ¶È +10% »ò -10%
-    float enemySpeedModifier;
 
     int maxWeaponCount;
     std::vector<GameObject*> weapons;

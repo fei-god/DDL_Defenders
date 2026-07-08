@@ -245,23 +245,6 @@ bool SaveManager::initSaveFile()
     return true;
 }
 
-bool SaveManager::createOrResetPlayer(int playerId, const char* playerName)
-{
-    if (!isValidPlayerId(playerId))
-    {
-        std::cerr << "[SaveManager] Invalid playerId: " << playerId << std::endl;
-        return false;
-    }
-
-    if (!initSaveFile())
-    {
-        return false;
-    }
-
-    PlayerRecord record = makeNewPlayerRecord(playerId, playerName);
-    return savePlayerRecord(record);
-}
-
 bool SaveManager::loadPlayerRecord(int playerId, PlayerRecord& outRecord)
 {
     if (!isValidPlayerId(playerId))
@@ -505,34 +488,9 @@ std::vector<PlayerRecord> SaveManager::loadLeaderboardByHighScore(int maxCount)
     return records;
 }
 
-std::vector<PlayerRecord> SaveManager::loadLeaderboardByRankPoints(int maxCount)
-{
-    std::vector<PlayerRecord> records = loadAllPlayerRecords();
-
-    std::sort(records.begin(), records.end(),
-              [](const PlayerRecord& a, const PlayerRecord& b)
-              {
-                  if (a.rankPoints != b.rankPoints)
-                  {
-                      return a.rankPoints > b.rankPoints;
-                  }
-                  return a.highScore > b.highScore;
-              });
-
-    if (maxCount > 0 && static_cast<int>(records.size()) > maxCount)
-    {
-        records.resize(maxCount);
-    }
-
-    return records;
-}
-
 const char* SaveManager::getRankName(int rankLevel) const
 {
     return rankToString(static_cast<PlayerRank>(rankLevel));
 }
 
-const char* SaveManager::getRankChineseName(int rankLevel) const
-{
-    return rankToChineseString(static_cast<PlayerRank>(rankLevel));
-}
+

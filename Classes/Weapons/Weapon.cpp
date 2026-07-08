@@ -98,53 +98,6 @@ void Weapon::bindBattleData(
     _bulletLayer = bulletLayer;
 }
 
-void Weapon::updateObject(float dt)
-{
-    if (!isObjectActive())
-    {
-        return;
-    }
-
-    // 武器跟随玩家位置。
-    if (_owner != nullptr)
-    {
-        Vec2 displayDir = _aimDirection.lengthSquared() > 0.0001f
-            ? _aimDirection.getNormalized()
-            : Vec2(1, 0);
-        Vec2 side(-displayDir.y, displayDir.x);
-        Vec2 displayOffset = displayDir * 20.0f + side * 4.0f + Vec2(0.0f, -8.0f);
-        if (getParent() == _owner)
-        {
-            setObjectPosition(displayOffset);
-        }
-        else
-        {
-            setObjectPosition(_owner->getObjectPosition() + displayOffset);
-        }
-        faceWeaponWithoutUpsideDown(this, displayDir);
-    }
-
-    // 冷却时间每帧减少 dt。
-    if (_cooldownTimer > 0.0f)
-    {
-        _cooldownTimer -= dt;
-    }
-
-    if (_currentEnergy < _maxEnergy)
-    {
-        _currentEnergy += _energyRecoverPerSecond * dt;
-        if (_currentEnergy > _maxEnergy)
-        {
-            _currentEnergy = _maxEnergy;
-        }
-    }
-
-    if (canFire())
-    {
-        fire();
-    }
-}
-
 void Weapon::updateCooldown(float dt)
 {
     if (_owner != nullptr)
@@ -182,11 +135,6 @@ void Weapon::updateCooldown(float dt)
             _currentEnergy = _maxEnergy;
         }
     }
-}
-
-void Weapon::readyNow()
-{
-    _cooldownTimer = 0.0f;
 }
 
 bool Weapon::canFire() const
@@ -243,26 +191,6 @@ float Weapon::getEnergyRatio() const
     if (ratio < 0.0f) ratio = 0.0f;
     if (ratio > 1.0f) ratio = 1.0f;
     return ratio;
-}
-
-float Weapon::getCurrentEnergy() const
-{
-    return _currentEnergy;
-}
-
-float Weapon::getMaxEnergy() const
-{
-    return _maxEnergy;
-}
-
-float Weapon::getEnergyCost() const
-{
-    return _energyCost;
-}
-
-float Weapon::getEnergyRecoverPerSecond() const
-{
-    return _energyRecoverPerSecond;
 }
 
 bool Weapon::consumeEnergyForShot()

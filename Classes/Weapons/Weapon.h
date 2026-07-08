@@ -33,10 +33,8 @@ public:
     );
     void bindBulletPool(BulletPool* bulletPool);
 
-    // 每帧更新武器冷却，冷却结束后自动开火。
-    virtual void updateObject(float dt) override;
+    // 每帧更新武器冷却，冷却结束后不自动开火（由GameScene控制）。
     void updateCooldown(float dt);
-    void readyNow();
 
     virtual void fire() = 0;
 
@@ -44,10 +42,6 @@ public:
     bool isReadyToFire() const;
     bool hasEnoughEnergy() const;
     float getEnergyRatio() const;
-    float getCurrentEnergy() const;
-    float getMaxEnergy() const;
-    float getEnergyCost() const;
-    float getEnergyRecoverPerSecond() const;
 
     void setAimDirection(const cocos2d::Vec2& direction);
     cocos2d::Vec2 getAimDirection() const;

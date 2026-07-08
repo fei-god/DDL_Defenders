@@ -102,7 +102,6 @@ public:
     virtual int calculateFinalDamage(int damage, DamageType damageType) const;
 
     virtual void heal(int amount);
-    virtual void healByPercent(float percent);
 
     virtual bool isDead() const;
     virtual void die();
@@ -177,18 +176,8 @@ public:
     virtual float getKnockbackResistance() const;
     virtual void setKnockbackResistance(float resistance);
 
-    // �����˺����ͻ�ù����ӳ�
-    virtual int getDamageBonusByType(DamageType damageType) const;
-
-    // �����ж�����������˺�
-    virtual bool rollCritical() const;
-    virtual int calculateOutgoingDamage(int baseDamage, DamageType damageType) const;
-
     // �����ж�
     virtual bool rollDodge() const;
-
-    // ����͵ȡ����
-    virtual void tryLifeSteal(int damageDealt);
 
     // =========================
     // ״̬Ч��
@@ -213,7 +202,6 @@ public:
     // �ܻ�����
     // =========================
 
-    virtual void applyKnockback(const cocos2d::Vec2& fromPosition, float force);
     virtual void flashWhenHit();
 
     // =========================

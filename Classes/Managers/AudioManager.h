@@ -52,11 +52,7 @@ public:
     // UI / menu sound effects
     // ------------------------------------------------------------
     void playButtonClick();
-    void playButtonHover();
-    void playMenuOpen();
-    void playMenuClose();
     void playPause();
-    void playResume();
 
     // ------------------------------------------------------------
     // Player sound effects
@@ -66,7 +62,6 @@ public:
     void playPlayerMonsterCollision();
     void playPlayerDie();
     void playPlayerLevelUp();
-    void playPlayerRankUp();
 
     // ------------------------------------------------------------
     // Weapon sound effects
@@ -85,17 +80,10 @@ public:
     void playEnemyHit();
     void playEnemyDie();
 
-    void playSleepyMonsterSpawn();
-    void playPhoneMonsterSpawn();
-    void playDDLMonsterSpawn();
-
     // ------------------------------------------------------------
     // Boss sound effects
     // ------------------------------------------------------------
-    void playBossWarning();
-    void playBossSpawn();
-    void playBossHit();
-    void playBossDie();
+    // Boss sounds use playEnemySpawn/playEnemyHit/playEnemyDie generically
 
     // ------------------------------------------------------------
     // Game flow sound effects
@@ -103,14 +91,11 @@ public:
     void playGameStart();
     void playGameOver();
     void playVictory();
-    void playProgressComplete();
 
     // ------------------------------------------------------------
     // Mood system sound effects
     // ------------------------------------------------------------
-    void playMoodFocus();
-    void playMoodIrritable();
-    void playMoodExhausted();
+    // Mood sounds handled by environment effects
 
     // ------------------------------------------------------------
     // Environmental interaction sound effects

@@ -609,8 +609,55 @@ void Role::setKnockbackResistance(float resistance)
     this->knockbackResistance = resistance;
 }
 
+int Role::getDamageBonusByType(DamageType damageType) const
+{
+    switch (damageType)
+    {
+    case DamageType::Melee:
+        return meleeDamage;
 
+    case DamageType::Ranged:
+        return rangedDamage;
 
+    case DamageType::Elemental:
+    case DamageType::Burning:
+        return elementalDamage;
+
+    default:
+        return 0;
+    }
+}
+
+bool Role::rollCritical() const
+{
+    if (critChance <= 0.0f)
+    {
+        return false;
+    }
+
+    float randomValue = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+    return randomValue <= critChance;
+}
+
+int Role::calculateOutgoingDamage(int baseDamage, DamageType damageType) const
+{
+    int damage = baseDamage;
+
+    damage += this->baseDamage;
+    damage += getDamageBonusByType(damageType);
+
+    if (damage < 1)
+    {
+        damage = 1;
+    }
+
+    if (rollCritical())
+    {
+        damage = static_cast<int>(std::ceil(damage * critDamageMultiplier));
+    }
+
+    return std::max(1, damage);
+}
 
 bool Role::rollDodge() const
 {
@@ -623,6 +670,26 @@ bool Role::rollDodge() const
     return randomValue <= dodgeChance;
 }
 
+void Role::tryLifeSteal(int damageDealt)
+{
+    if (!isAlive || damageDealt <= 0)
+    {
+        return;
+    }
+
+    if (lifeStealChance <= 0.0f)
+    {
+        return;
+    }
+
+    float randomValue = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+
+    if (randomValue <= lifeStealChance)
+    {
+        // ���� Brotato������͵ȡͨ�����ǰ��˺�ȫ����Ѫ������򵥻� 1 ��
+        heal(1);
+    }
+}
 
 // =========================
 // ״̬Ч��
@@ -757,6 +824,31 @@ bool Role::isSlowed() const
 // �ܻ�����
 // =========================
 
+void Role::applyKnockback(const Vec2& fromPosition, float force)
+{
+    if (force <= 0.0f)
+    {
+        return;
+    }
+
+    Vec2 dir = getPosition() - fromPosition;
+
+    if (dir == Vec2::ZERO)
+    {
+        return;
+    }
+
+    dir.normalize();
+
+    float finalForce = force * (1.0f - knockbackResistance);
+
+    if (finalForce <= 0.0f)
+    {
+        return;
+    }
+
+    setPosition(getPosition() + dir * finalForce);
+}
 
 void Role::flashWhenHit()
 {

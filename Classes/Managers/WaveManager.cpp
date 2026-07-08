@@ -36,8 +36,6 @@ bool WaveManager::init(Player* player, Node* parentLayer)
     _waveTimer = 0.0f;
     _waveDuration = 30.0f;
     _isSpawning = false;
-    _totalEnemiesThisWave = 0;
-    _enemiesSpawnedCount = 0;
     _killCount = 0;
     _isBossWave = false;
     _bossSpawned = false;
@@ -60,14 +58,12 @@ int WaveManager::getEnemyCountForWave(int wave)
 void WaveManager::startWave(int waveIndex)
 {
     _currentWave = waveIndex;
-    _enemiesSpawnedCount = 0;
     _waitingForNextWave = false;
     _waveDelayTimer = 0.0f;
     _spawnElapsed = 0.0f;
     _waveTimer = 0.0f;
     _bossSpawned = false;
     _isBossWave = (waveIndex > 0 && waveIndex % 3 == 0);
-    _totalEnemiesThisWave = 0;
     _enemiesToSpawn = 0;
     _spawnTimer = 1.0f;
     _isSpawning = true;
@@ -208,7 +204,6 @@ void WaveManager::spawnEnemy()
     }
 
     Enemy* enemy = nullptr;
-    _enemiesSpawnedCount++;
 
     int type = 0;
     if (_isBossWave && !_bossSpawned && _waveTimer >= 6.0f)
@@ -279,13 +274,13 @@ void WaveManager::spawnEnemy()
     else
     {
         CCLOG("ERROR: Failed to create enemy!");
-        _enemiesSpawnedCount--;
     }
 }
 
 void WaveManager::update(float dt)
 {
-    if (!_isSpawning)
+    // Only skip entirely if truly idle (no spawning, no enemies, no projectiles)
+    if (!_isSpawning && _aliveEnemies.empty() && _orphanProjectiles.empty())
     {
         return;
     }
@@ -494,6 +489,17 @@ void WaveManager::update(float dt)
         }
     }
 
+    // --- All-waves-cleared check: no spawning, no enemies, all waves done ---
+    if (!_isSpawning)
+    {
+        if (_currentWave >= _totalWaves && _allWavesClearedCallback)
+        {
+            _allWavesClearedCallback();
+            _allWavesClearedCallback = nullptr;
+        }
+        return;
+    }
+
     if (!_isFrozen)
     {
         _spawnElapsed += dt;
@@ -557,11 +563,6 @@ void WaveManager::setWaveClearedCallback(std::function<void(int)> callback)
 void WaveManager::setAllWavesClearedCallback(std::function<void()> callback)
 {
     _allWavesClearedCallback = callback;
-}
-
-void WaveManager::setBossWaveCallback(std::function<void(int)> callback)
-{
-    _bossWaveCallback = callback;
 }
 
 void WaveManager::setEnemyKilledCallback(std::function<void(Enemy*)> callback)

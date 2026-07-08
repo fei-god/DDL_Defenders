@@ -3,7 +3,8 @@
 #include "MainMenuScene.h"
 #include "SettingsScene.h"
 #include "StoryModeScene.h"
-#include "VictoryScene.h"
+#include "DeskUpgradeLayer.h"
+
 #include "Weapons/CoffeeGun.h"
 #include "Weapons/CoffeeLaser.h"
 #include "Weapons/KeyboardWave.h"
@@ -359,18 +360,47 @@ bool GameScene::init()
         m_player->setLocalZOrder(100);
         applySpriteFit(m_player, 306.0f, 306.0f);
 
-        // Triangle visual — points right (+X) in local space, rotates toward mouse
-        _playerVisual = DrawNode::create();
-        Vec2 triVerts[3] = {
-            Vec2( 18,   0),  // head  (right)
-            Vec2(-10, -10),  // bottom
-            Vec2(-10,  10)   // top
-        };
-        Color4F triFill(0.31f, 0.73f, 0.96f, 1.0f);   // bright sky-blue
-        Color4F triBorder(1.0f, 1.0f, 1.0f, 0.6f);     // white outline
-        _playerVisual->drawPolygon(triVerts, 3, triFill, 1.2f, triBorder);
-        _playerVisual->setPosition(Vec2::ZERO);
-        m_player->addChild(_playerVisual, playerImagePath.empty() ? 1 : 2);
+        // Character animation sprites (replaces the triangle)
+        _characterAnimTimer = 0.0f;
+        _characterWasMoving = false;
+
+        auto charTex1 = Director::getInstance()->getTextureCache()
+            ->addImage(AssetPaths::resolve("art/characters/character1.png"));
+        auto charTex2 = Director::getInstance()->getTextureCache()
+            ->addImage(AssetPaths::resolve("art/characters/character2.png"));
+
+        _characterSprite1 = Sprite::createWithTexture(charTex1);
+        _characterSprite2 = Sprite::createWithTexture(charTex2);
+
+        applySpriteFit(_characterSprite1, 306.0f, 306.0f);
+        applySpriteFit(_characterSprite2, 306.0f, 306.0f);
+
+        _characterSprite1->setPosition(Vec2::ZERO);
+        _characterSprite2->setPosition(Vec2::ZERO);
+        _characterSprite2->setVisible(false);  // Start showing frame 1
+
+        m_player->addChild(_characterSprite1, 2);
+        m_player->addChild(_characterSprite2, 2);
+
+        // Walk animation sprites
+        auto walkTex1 = Director::getInstance()->getTextureCache()
+            ->addImage(AssetPaths::resolve("art/characters/characterwalk1.png"));
+        auto walkTex2 = Director::getInstance()->getTextureCache()
+            ->addImage(AssetPaths::resolve("art/characters/characterwalk2.png"));
+
+        _characterWalkSprite1 = Sprite::createWithTexture(walkTex1);
+        _characterWalkSprite2 = Sprite::createWithTexture(walkTex2);
+
+        applySpriteFit(_characterWalkSprite1, 306.0f, 306.0f);
+        applySpriteFit(_characterWalkSprite2, 306.0f, 306.0f);
+
+        _characterWalkSprite1->setPosition(Vec2::ZERO);
+        _characterWalkSprite2->setPosition(Vec2::ZERO);
+        _characterWalkSprite1->setVisible(false);
+        _characterWalkSprite2->setVisible(false);
+
+        m_player->addChild(_characterWalkSprite1, 2);
+        m_player->addChild(_characterWalkSprite2, 2);
 
         _playerDir = Vec2(1.0f, 0.0f); // default: facing right
 
@@ -399,14 +429,19 @@ bool GameScene::init()
     _projectileBonus = 0;
     _energyRecoveryBonusPercent = 0.0f;
     _masteredWeaponIds.clear();
-    for (int i = 0; i < 2; ++i)
-    {
-        _weaponLoadoutIds.push_back(ud->getIntegerForKey(("weapon_equipped_" + std::to_string(i)).c_str(), i));
-    }
     for (int i = 0; i < 4; ++i)
     {
-        _backpackWeaponIds.push_back(ud->getIntegerForKey(("weapon_backpack_" + std::to_string(i)).c_str(), i + 2));
+        int bid = ud->getIntegerForKey(("weapon_backpack_" + std::to_string(i)).c_str(), -1);
+        if (bid >= 0) _backpackWeaponIds.push_back(bid);
     }
+    for (int i = 0; i < 2; ++i)
+    {
+        int wid = ud->getIntegerForKey(("weapon_equipped_" + std::to_string(i)).c_str(), -1);
+        if (wid >= 0) _weaponLoadoutIds.push_back(wid);
+    }
+    // Default on first launch only — respect user's empty choice
+    if (_weaponLoadoutIds.empty() && _backpackWeaponIds.empty())
+        _weaponLoadoutIds = {0, 1};
 
     _levelIntroLayer = nullptr;
     _levelIntroActive = false;
@@ -492,12 +527,13 @@ bool GameScene::init()
                         _waveManager->startWave(wave);
                     });
                 }
-                else if (_sceneId == 2) // Classroom: 6 waves
+                else if (_sceneId == 2) // Classroom: 4 waves
                 {
                     _waveManager->setAllowedTypes({0, 1}); // Sleepy + DDL
-                    _waveManager->setTotalWaves(6);
+                    _waveManager->setTotalWaves(4);
+                    _waveManager->setWaveDuration(25.0f);
                     _waveManager->setWaveTimerExpiredCallback([this](int wave) {
-                        if (wave < 6) {
+                        if (wave < 4) {
                             _waveManager->startWave(wave + 1);
                         } else {
                             _waveManager->stopSpawn();
@@ -519,8 +555,7 @@ bool GameScene::init()
             }
             else
             {
-                // Endless: time-based spawn, continuous wave cycling
-                _waveManager->setUseTimeBasedSpawn(true);
+                // Endless: continuous wave cycling
                 _waveManager->setTotalWaves(9999);
                 _waveManager->setWaveTimerExpiredCallback([this](int wave) {
                     // Restart wave: spawn difficulty scales with survival time
@@ -633,7 +668,6 @@ bool GameScene::init()
 
     _weaponSlotNodes.clear();
     _lastWeaponSlotIds.clear();
-    _lastWeaponSlotIndex = -1;
     Size slotSize(76.0f * s, 76.0f * s);
     float slotGap = 12.0f * s;
     float slotStartX = origin.x + visibleSize.width * 0.5f - (slotSize.width * 2.0f + slotGap * 1.0f) * 0.5f;
@@ -712,7 +746,6 @@ bool GameScene::init()
     _isVictory = false;
     _assignmentProgress = 0.0f;
     _nearDesk = false;
-    _nearPowerSocket = false;
     _lastKillCount = 0;
     _enemyContactDamageCooldown = 0.0f;
     _lowHpMoodTimer = 0.0f;
@@ -810,24 +843,55 @@ void GameScene::update(float dt)
         return;
     }
 
-    // Process wave/level completion → return to Hub
+    // Process wave/level completion → return to Hub or Main Menu
     if (_pendingAfterBattle)
     {
         _pendingAfterBattle = false;
-        auto ud = UserDefault::getInstance();
-        ud->setIntegerForKey("selected_scene", 0); // return to hub
-        ud->flush();
-        auto scene = GameScene::createScene();
-        if (scene)
+        if (_goToMainMenu)
+        {
+            // Story mode all 3 levels cleared → main menu
+            _goToMainMenu = false;
             Director::getInstance()->replaceScene(
-                TransitionFade::create(0.3f, scene, Color3B::BLACK));
+                TransitionFade::create(0.8f, MainMenuScene::createScene(), Color3B::BLACK));
+        }
         else
-            Director::getInstance()->replaceScene(MainMenuScene::createScene());
+        {
+            auto ud = UserDefault::getInstance();
+            ud->setIntegerForKey("selected_scene", 0); // return to hub
+            ud->flush();
+            auto scene = GameScene::createScene();
+            if (scene)
+                Director::getInstance()->replaceScene(
+                    TransitionFade::create(0.3f, scene, Color3B::BLACK));
+            else
+                Director::getInstance()->replaceScene(MainMenuScene::createScene());
+        }
         return;
     }
 
     // Don't process game logic while paused
     if (_isPaused) return;
+
+    // --- Victory delay: freeze gameplay, count down to scene transition ---
+    if (_victoryDelayActive)
+    {
+        _victoryDelayTimer -= dt;
+        // Update countdown hint
+        if (_topHintLabel && !_goToMainMenu)
+        {
+            int secs = static_cast<int>(std::ceil(_victoryDelayTimer));
+            _topHintLabel->setString(textByLanguage(
+                "Victory! Returning to Hub in " + std::to_string(secs) + "...",
+                u8"胜利！" + std::to_string(secs) + u8"秒后返回宿舍…"));
+        }
+        if (_victoryDelayTimer <= 0.0f)
+        {
+            _victoryDelayActive = false;
+            _pendingAfterBattle = true;
+            _pendingWave = 0;
+        }
+        return;
+    }
 
     // --- Level Intro (blocks gameplay during countdown; never active in Hub) ---
     if (_levelIntroActive)
@@ -849,11 +913,58 @@ void GameScene::update(float dt)
     {
         m_player->setLocalZOrder(100);
 
-        // Face the last movement direction
-        if (_playerVisual)
+        // Character animation: idle (0.25s), walk speed-dependent
+        bool isMoving = (_moveDirection != Vec2::ZERO);
+        float animInterval;
+        if (isMoving)
         {
-            float angle = std::atan2(_playerDir.y, _playerDir.x);
-            _playerVisual->setRotation(CC_RADIANS_TO_DEGREES(angle));
+            float v = m_player->getCurrentSpeed();
+            float v0 = m_player->getBaseSpeed();
+            const float f0 = 5.0f;  // base frequency (Hz), gives 0.2s at base speed
+            animInterval = (v > 0.0f) ? (v0 / (f0 * v)) : 0.2f;
+        }
+        else
+        {
+            animInterval = 0.25f;
+        }
+
+        // On transition, immediately switch to the correct sprite set
+        if (isMoving != _characterWasMoving)
+        {
+            _characterAnimTimer = 0.0f;
+            _characterWasMoving = isMoving;
+            if (isMoving)
+            {
+                _characterSprite1->setVisible(false);
+                _characterSprite2->setVisible(false);
+                _characterWalkSprite1->setVisible(true);
+                _characterWalkSprite2->setVisible(false);
+            }
+            else
+            {
+                _characterWalkSprite1->setVisible(false);
+                _characterWalkSprite2->setVisible(false);
+                _characterSprite1->setVisible(true);
+                _characterSprite2->setVisible(false);
+            }
+        }
+
+        _characterAnimTimer += dt;
+        if (_characterAnimTimer >= animInterval)
+        {
+            _characterAnimTimer -= animInterval;
+            if (isMoving)
+            {
+                bool showOne = _characterWalkSprite1->isVisible();
+                _characterWalkSprite1->setVisible(!showOne);
+                _characterWalkSprite2->setVisible(showOne);
+            }
+            else
+            {
+                bool showOne = _characterSprite1->isVisible();
+                _characterSprite1->setVisible(!showOne);
+                _characterSprite2->setVisible(showOne);
+            }
         }
 
         Vec2 beforeMove = m_player->getPosition();
@@ -982,8 +1093,9 @@ void GameScene::update(float dt)
             int kills = _waveManager->getKillCount();
             if (_sceneId == 1 && m_survivalTime >= 90.0f && kills >= 10)
                 goToVictory(); // Library: survive 90s + kill 10
-            else if (_sceneId == 2 && _waveManager->getCurrentWave() > 6)
-                goToVictory(); // Classroom: 6 waves done
+            else if (_sceneId == 2 && _waveManager->getCurrentWave() >= 4
+                     && !_waveManager->isWaveActive())
+                goToVictory(); // Classroom: 4 waves done + all enemies cleared
             else if (_sceneId == 3 && _thesisProgress >= 100.0f)
                 goToVictory(); // Office: boss defeated
         }
@@ -1481,14 +1593,6 @@ void GameScene::refreshWeaponSlotUI()
             }
         }
 
-        auto numBg = LayerColor::create(Color4B(0, 0, 0, 150), 16.0f * s, 16.0f * s);
-        numBg->setPosition(Vec2(2.0f * s, slotSize.height - 18.0f * s));
-        slot->addChild(numBg, 4);
-
-        auto num = Label::createWithSystemFont(std::to_string(i + 1), "Arial", 12.0f * s);
-        num->setColor(Color3B(222, 226, 232));
-        num->setPosition(numBg->getPosition() + Vec2(8.0f * s, 8.0f * s));
-        slot->addChild(num, 5);
     }
 
     _lastWeaponSlotIds = _weaponLoadoutIds;
@@ -1760,12 +1864,6 @@ void GameScene::initInputListeners()
         _mousePos = screenToWorldCoords(viewToGameCoords(mouseEv->getLocationInView()));
     };
 
-    // Press O to attack in the current movement-facing direction.
-    mouseListener->onMouseDown = [this](EventMouse* mouseEv)
-    {
-        _mousePos = screenToWorldCoords(viewToGameCoords(mouseEv->getLocationInView()));
-    };
-
     _eventDispatcher->addEventListenerWithSceneGraphPriority(mouseListener, this);
 }
 
@@ -1780,28 +1878,20 @@ void GameScene::updateMoveDirection()
     if (_moveDirection != Vec2::ZERO)
     {
         _playerDir = _moveDirection.getNormalized();
-        if (m_player && _moveDirection.x != 0.0f)
+        if (_moveDirection.x != 0.0f)
         {
             // Character artwork faces right by default. Mirror only while the
             // latest horizontal movement is toward the left.
-            m_player->setFlippedX(_moveDirection.x < 0.0f);
-        }
-        if (_playerVisual)
-        {
-            float angle = std::atan2(_playerDir.y, _playerDir.x);
-            _playerVisual->setRotation(CC_RADIANS_TO_DEGREES(angle));
+            bool flipX = (_moveDirection.x < 0.0f);
+            if (_characterSprite1) _characterSprite1->setFlippedX(flipX);
+            if (_characterSprite2) _characterSprite2->setFlippedX(flipX);
+            if (_characterWalkSprite1) _characterWalkSprite1->setFlippedX(flipX);
+            if (_characterWalkSprite2) _characterWalkSprite2->setFlippedX(flipX);
         }
     }
 
     if (m_player)
         m_player->setInputDirection(_moveDirection);
-
-    if (_environmentLabel && _moveDirection != Vec2::ZERO)
-    {
-        char buf[64];
-        snprintf(buf, sizeof(buf), "Move: %.0f, %.0f", _moveDirection.x, _moveDirection.y);
-        _environmentLabel->setString(buf);
-    }
 }
 
 void GameScene::updatePlayerMovement(float dt)
@@ -1819,12 +1909,6 @@ void GameScene::updatePlayerMovement(float dt)
     nextPos.y = std::max(margin, std::min(_worldSize.height - margin, nextPos.y));
     m_player->setPosition(nextPos);
     updateCamera();
-    if (_environmentLabel)
-    {
-        char buf[80];
-        snprintf(buf, sizeof(buf), "Player: %.0f, %.0f", nextPos.x, nextPos.y);
-        _environmentLabel->setString(buf);
-    }
 }
 
 void GameScene::updateCamera()
@@ -2058,16 +2142,7 @@ void GameScene::rebuildWeaponLoadout()
     }
     _weapons.clear();
 
-    if (_weaponLoadoutIds.empty())
-    {
-        _weaponLoadoutIds = { 0, 1 };
-    }
-    while (_weaponLoadoutIds.size() < 2)
-    {
-        _weaponLoadoutIds.push_back(static_cast<int>(_weaponLoadoutIds.size()));
-    }
-
-    for (int i = 0; i < 2; ++i)
+    for (int i = 0; i < (int)_weaponLoadoutIds.size(); ++i)
     {
         Weapon* weapon = createWeaponById(_weaponLoadoutIds[i]);
         if (weapon)
@@ -2190,7 +2265,6 @@ void GameScene::updateEnvironmentEffects(float dt)
     if (!m_player) return;
 
     _nearDesk = false;
-    _nearPowerSocket = false;
     std::string effectText = textByLanguage("Environment: None", u8"环境: 无");
     Rect playerBox = m_player->getBoundingBox();
 
@@ -2226,7 +2300,6 @@ void GameScene::updateEnvironmentEffects(float dt)
             AudioManager::getInstance()->playDeskEffect();
             break;
         case EnvironmentZoneType::PowerSocket:
-            _nearPowerSocket = true;
             if (m_player->getMoodSystem())
             {
                 m_player->getMoodSystem()->addMoodValue(4.0f * dt);
@@ -2357,36 +2430,6 @@ int GameScene::getScoreRewardForEnemy(Enemy* enemy) const
     }
 
     return std::max(50, enemy->getExpReward() * 2);
-}
-
-void GameScene::applyWeaponMastery(Weapon* weapon)
-{
-    if (!weapon)
-    {
-        return;
-    }
-
-    // Find weapon ID from loaded options and mark as mastered
-    {
-        auto options = getWeaponOptions();
-        for (const auto& opt : options)
-        {
-            if (opt.name == weapon->getWeaponName())
-            {
-                _masteredWeaponIds.push_back(opt.id);
-                break;
-            }
-        }
-    }
-
-    applyWeaponMasteryEffects(weapon);
-
-    const std::string name = weapon->getWeaponName();
-    if (_topHintLabel)
-    {
-        _topHintLabel->setString(textByLanguage("Weapon mastery activated: ", u8"武器专精已激活: ") +
-            weaponNameForUi(name));
-    }
 }
 
 void GameScene::applyWeaponMasteryEffects(Weapon* weapon)
@@ -2803,10 +2846,14 @@ void GameScene::updateHubInteraction()
         hideBedPanel();
 
     // Desk: auto popup when entering
-    if (nearDesk && !_deskPanelOpen)
+    if (nearDesk && !_deskPanelOpen && DeskUpgradeLayer::canShowPanel())
         showDeskPanel();
-    else if (!nearDesk && _deskPanelOpen)
-        hideDeskPanel();
+    else if (!nearDesk)
+    {
+        DeskUpgradeLayer::resetCanShow();  // always reset on exit
+        if (_deskPanelOpen)
+            hideDeskPanel();
+    }
 
     // Door: E-key hint
     if (_hubHintLabel)
@@ -2912,83 +2959,102 @@ void GameScene::showDeskPanel()
     auto visibleSize = Director::getInstance()->getVisibleSize();
     Vec2 origin = Director::getInstance()->getVisibleOrigin();
     auto winSize = Director::getInstance()->getWinSize();
-    float s = winSize.height / 640.0f;
 
-    // Dark overlay
-    _hubOverlay = LayerColor::create(Color4B(0, 0, 0, 128), winSize.width, winSize.height);
+    // --- Dark overlay ---
+    _hubOverlay = LayerColor::create(Color4B(0, 0, 0, 160), winSize.width, winSize.height);
     _hubOverlay->setPosition(Vec2::ZERO);
     _hubOverlay->setOpacity(0);
     this->addChild(_hubOverlay, 50);
-    _hubOverlay->runAction(FadeTo::create(0.25f, 128));
+    _hubOverlay->runAction(FadeTo::create(0.25f, 160));
 
-    // Desk panel
-    _deskPanel = Node::create();
-    _deskPanel->setPosition(Vec2(origin.x + visibleSize.width / 2, origin.y + visibleSize.height / 2));
+    // --- DeskUpgradeLayer ---
+    auto deskLayer = DeskUpgradeLayer::create();
+    _deskPanel = deskLayer;
+    _deskPanel->setOpacity(0);
     this->addChild(_deskPanel, 55);
 
-    auto* lm = LanguageManager::getInstance();
-    float panelW = 500.0f * s, panelH = 400.0f * s;
+    // Wire close button to full cleanup
+    deskLayer->setOnClose([this]() {
+        hideDeskPanel();
+    });
 
-    auto bg = LayerColor::create(Color4B(20, 25, 40, 240), panelW, panelH);
-    bg->setPosition(Vec2(-panelW * 0.5f, -panelH * 0.5f));
-    _deskPanel->addChild(bg);
+    // Sync current equipped weapons
+    int w1 = _weaponLoadoutIds.size() > 0 ? _weaponLoadoutIds[0] : -1;
+    int w2 = _weaponLoadoutIds.size() > 1 ? _weaponLoadoutIds[1] : -1;
+    deskLayer->setEquippedWeapons(w1, w2);
 
-    // Title
-    auto title = Label::createWithSystemFont(
-        lm->getString("player_stats"), "Arial", 24.0f * s);
-    title->setColor(Color3B(255, 220, 100));
-    title->setPosition(Vec2(0, panelH * 0.5f - 30.0f * s));
-    _deskPanel->addChild(title);
+    // Sync upgrade points
+    deskLayer->setUpgradePoints(m_player ? m_player->getUpgradePoints() : 0);
 
-    // Upgrade points
-    char buf[128];
-    int pts = m_player ? m_player->getUpgradePoints() : 0;
-    snprintf(buf, sizeof(buf), "%s: %d", lm->getString("upgrade_points_fmt").c_str(), pts);
-    auto ptsLabel = Label::createWithSystemFont(buf, "Arial", 20.0f * s);
-    ptsLabel->setColor(Color3B(120, 230, 120));
-    ptsLabel->setPosition(Vec2(0, panelH * 0.5f - 60.0f * s));
-    _deskPanel->addChild(ptsLabel);
+    // Weapon equip/unequip → update real loadout & player visuals
+    deskLayer->setOnWeaponChanged([this](int s1, int s2) {
+        // Remove old weapons (use _weapons — guaranteed to track all weapons)
+        for (auto* w : _weapons) {
+            if (w) w->removeFromParentAndCleanup(true);
+        }
+        _weapons.clear();
 
-    // Upgrade buttons
-    struct Upg { std::string key; int type; };
-    std::vector<Upg> upgrades = {
-        {"upgrade_atk", 0}, {"upgrade_hp", 1}, {"upgrade_spd", 2},
-        {"upgrade_regen", 3}, {"upgrade_projectile", 4}
-    };
-    float btnY = panelH * 0.5f - 100.0f * s;
-    for (const auto& u : upgrades)
-    {
-        auto btnLabel = Label::createWithSystemFont(
-            lm->getString(u.key) + " (1pt)", "Arial", 18.0f * s);
-        btnLabel->setColor(Color3B(180, 210, 180));
-        auto item = MenuItemLabel::create(btnLabel, [this, type = u.type](Ref*) {
-            if (!m_player || m_player->getUpgradePoints() <= 0) return;
-            m_player->spendUpgradePoint(1);
-            auto ud = UserDefault::getInstance();
-            switch (type)
-            {
-            case 0: _weaponDamageBonus += 2; ud->setIntegerForKey("weapon_damage_bonus", _weaponDamageBonus); break;
-            case 1: m_player->addMaxHp(10); m_player->heal(10); break;
-            case 2: m_player->setBaseSpeed(m_player->getBaseSpeed() + 10.0f); break;
-            case 3: _energyRecoveryBonusPercent += 0.1f; break;
-            case 4: ++_projectileBonus; ud->setIntegerForKey("projectile_bonus", _projectileBonus); break;
+        // Update loadout — allow empty
+        _weaponLoadoutIds.clear();
+        _backpackWeaponIds.clear();
+        if (s1 >= 0) _weaponLoadoutIds.push_back(s1);
+        if (s2 >= 0) _weaponLoadoutIds.push_back(s2);
+        for (int i = 0; i < 6; i++) {
+            if (i != s1 && i != s2) _backpackWeaponIds.push_back(i);
+        }
+
+        // Create weapon nodes for each equipped slot
+        for (int wid : _weaponLoadoutIds) {
+            Weapon* weapon = createWeaponById(wid);
+            if (weapon && m_player) {
+                float parentScale = m_player->getScale();
+                if (parentScale > 0.001f)
+                    weapon->setScale(weapon->getScale() / parentScale);
+                m_player->addChild(weapon, 4);
+                if (_waveManager) {
+                    weapon->bindBattleData(&_waveManager->getAliveEnemies(), &_bullets, _bulletLayer);
+                    weapon->bindBulletPool(&_bulletPool);
+                }
+                weapon->setVisible(true);
+                _weapons.push_back(weapon);
             }
-            ud->setIntegerForKey("player_upgrade_points", m_player->getUpgradePoints());
-            ud->flush();
-            // Refresh panel
-            hideDeskPanel();
-            showDeskPanel();
-        });
-        auto menu = Menu::createWithItem(item);
-        menu->setPosition(Vec2(0, btnY));
-        _deskPanel->addChild(menu);
-        btnY -= 30.0f * s;
-    }
+        }
 
-    // Slide-up animation
-    _deskPanel->setPositionY(_deskPanel->getPositionY() - 200.0f * s);
-    auto targetPos = Vec2(origin.x + visibleSize.width / 2, origin.y + visibleSize.height / 2);
-    _deskPanel->runAction(EaseBackOut::create(MoveTo::create(0.35f, targetPos)));
+        // Save
+        auto ud = UserDefault::getInstance();
+        for (int j = 0; j < 2; ++j)
+            ud->setIntegerForKey(("weapon_equipped_"+std::to_string(j)).c_str(),
+                j < (int)_weaponLoadoutIds.size() ? _weaponLoadoutIds[j] : -1);
+        for (int j = 0; j < 4; ++j)
+            ud->setIntegerForKey(("weapon_backpack_"+std::to_string(j)).c_str(),
+                j < (int)_backpackWeaponIds.size() ? _backpackWeaponIds[j] : -1);
+        ud->flush();
+    });
+
+    // Attribute upgrade → apply real stat
+    deskLayer->setOnUpgrade([this](int attrIdx) {
+        if (!m_player || m_player->getUpgradePoints() <= 0) return;
+        m_player->spendUpgradePoint(1);
+        auto ud = UserDefault::getInstance();
+        switch (attrIdx) {
+        case 0: _weaponDamageBonus += 2;
+            ud->setIntegerForKey("weapon_damage_bonus", _weaponDamageBonus); break;
+        case 1: m_player->addMaxHp(10); m_player->heal(10); break;
+        case 2: m_player->setBaseSpeed(m_player->getBaseSpeed() + 10.0f); break;
+        case 3: _energyRecoveryBonusPercent += 0.1f;
+            ud->setFloatForKey("energy_recovery_bonus", _energyRecoveryBonusPercent); break;
+        case 4: ++_projectileBonus;
+            ud->setIntegerForKey("projectile_bonus", _projectileBonus); break;
+        }
+        ud->setIntegerForKey("player_upgrade_points", m_player->getUpgradePoints());
+        ud->flush();
+        // Update panel display
+        auto* dl = dynamic_cast<DeskUpgradeLayer*>(_deskPanel);
+        if (dl) dl->setUpgradePoints(m_player->getUpgradePoints());
+    });
+
+    // Entrance animation
+    _deskPanel->runAction(FadeIn::create(0.25f));
 }
 
 void GameScene::hideDeskPanel()
@@ -3004,9 +3070,9 @@ void GameScene::hideDeskPanel()
     }
     if (_deskPanel)
     {
-        auto moveOut = MoveBy::create(0.2f, Vec2(0, -200.0f));
         _deskPanel->runAction(Sequence::create(
-            EaseBackIn::create(moveOut), RemoveSelf::create(), nullptr));
+            FadeOut::create(0.2f),
+            RemoveSelf::create(), nullptr));
         _deskPanel = nullptr;
     }
 }
@@ -3026,12 +3092,41 @@ void GameScene::goToVictory()
     _isVictory = true;
     if (_waveManager) _waveManager->stopSpawn();
 
+    // Clear remaining enemies for time-based / boss levels
+    if (_waveManager && (_sceneId == 1 || _sceneId == 3))
+    {
+        auto& enemies = _waveManager->getAliveEnemies();
+        for (auto* enemy : enemies)
+        {
+            if (enemy && enemy->isRoleAlive())
+            {
+                enemy->die();
+                enemy->removeFromParent();
+            }
+        }
+        enemies.clear();
+    }
+
     auto ud = UserDefault::getInstance();
+    _goToMainMenu = false;
+
     if (!_isEndlessMode)
     {
-        int nextLevel = _levelNumber + 1;
-        ud->setIntegerForKey("unlocked_level", nextLevel);
-        StoryModeScene::addAutoSave(nextLevel);
+        if (_levelNumber >= 3)
+        {
+            // Story mode complete — go to main menu after delay
+            _goToMainMenu = true;
+            // Keep save at level 3 (don't unlock level 4)
+            int nextLevel = 3;
+            ud->setIntegerForKey("unlocked_level", nextLevel);
+            StoryModeScene::addAutoSave(nextLevel);
+        }
+        else
+        {
+            int nextLevel = _levelNumber + 1;
+            ud->setIntegerForKey("unlocked_level", nextLevel);
+            StoryModeScene::addAutoSave(nextLevel);
+        }
     }
 
     // Persist player state for hub return
@@ -3052,15 +3147,25 @@ void GameScene::goToVictory()
     }
     ud->flush();
 
-    // Defer return to Hub
-    _pendingAfterBattle = true;
-    _pendingWave = 0;
+    // Start 5-second victory delay before scene transition
+    _victoryDelayTimer = 5.0f;
+    _victoryDelayActive = true;
+
+    // Show victory / completion message
+    if (_topHintLabel)
+    {
+        if (_goToMainMenu)
+        {
+            _topHintLabel->setString("DDL FINISHED! Thanks for playing!");
+        }
+        else
+        {
+            _topHintLabel->setString(textByLanguage("Victory! Returning to Hub...",
+                u8"胜利！即将返回宿舍…"));
+        }
+    }
 }
 
-void GameScene::goToAfterBattle(int wave)
-{
-    goToVictory(); // Route through victory to hub
-}
 
 // ---------------------------------------------------------------------------
 // Pause menu
@@ -3274,16 +3379,6 @@ void GameScene::buildPauseWeaponPanel(Node* parent, const Vec2& pos, float s)
 
         y -= cardH + 5.0f * s;
     }
-}
-
-void GameScene::onPauseUnequipWeapon(Ref*)
-{
-    return;
-}
-
-void GameScene::onPauseEquipWeapon(Ref*)
-{
-    return;
 }
 
 void GameScene::applyWeaponLoadout()

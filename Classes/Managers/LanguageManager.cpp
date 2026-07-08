@@ -77,31 +77,6 @@ std::string LanguageManager::getStringF(const std::string& key, float value) con
     return std::string(buf);
 }
 
-std::vector<std::string> LanguageManager::getAvailableLanguageNames() const
-{
-    std::vector<std::string> names;
-    for (int i = 0; i < 2; ++i)
-    {
-        Language lang = static_cast<Language>(i);
-        auto it = _strings.find("lang_self");
-        if (it != _strings.end())
-        {
-            auto it2 = it->second.find(lang);
-            if (it2 != it->second.end())
-                names.push_back(it2->second);
-        }
-    }
-    return names;
-}
-
-std::vector<LanguageManager::Language> LanguageManager::getAvailableLanguages()
-{
-    std::vector<Language> langs;
-    for (int i = 0; i < 2; ++i)
-        langs.push_back(static_cast<Language>(i));
-    return langs;
-}
-
 LanguageManager::Language LanguageManager::intToLanguage(int idx)
 {
     if (idx < 0 || idx >= 2)
@@ -138,10 +113,10 @@ void LanguageManager::initStrings()
     _strings["exit_game"][L::JAPANESE]           = u8"ゲーム終了";
     _strings["exit_game"][L::KOREAN]             = u8"게임 종료";
 
-    _strings["mainmenu_hint"][L::SIMPLIFIED_CHINESE] = u8"WASD 移动 | 鼠标点击 射击";
-    _strings["mainmenu_hint"][L::ENGLISH]            = "WASD Move | Mouse Click Shoot";
-    _strings["mainmenu_hint"][L::JAPANESE]           = u8"WASD 移動 | マウスクリック 射撃";
-    _strings["mainmenu_hint"][L::KOREAN]             = u8"WASD 이동 | 마우스 클릭 발사";
+    _strings["mainmenu_hint"][L::SIMPLIFIED_CHINESE] = u8"WASD 移动  自动攻击  Esc 暂停";
+    _strings["mainmenu_hint"][L::ENGLISH]            = "WASD Move  Auto-attack  Esc Pause";
+    _strings["mainmenu_hint"][L::JAPANESE]           = u8"WASD 移動  自動攻撃  Esc 一時停止";
+    _strings["mainmenu_hint"][L::KOREAN]             = u8"WASD 이동  자동공격  Esc 일시정지";
 
     // ---- Game Over ----
     _strings["gameover_title"][L::SIMPLIFIED_CHINESE] = u8"游戏结束";
@@ -291,8 +266,8 @@ void LanguageManager::initStrings()
     _strings["settings"][L::ENGLISH] = "Settings";
     _strings["exit_game"][L::SIMPLIFIED_CHINESE] = u8"退出游戏";
     _strings["exit_game"][L::ENGLISH] = "Exit Game";
-    _strings["mainmenu_hint"][L::SIMPLIFIED_CHINESE] = u8"WASD 移动 | O 攻击";
-    _strings["mainmenu_hint"][L::ENGLISH] = "WASD Move | O Attack";
+    _strings["mainmenu_hint"][L::SIMPLIFIED_CHINESE] = u8"WASD 移动  自动攻击  Esc 暂停";
+    _strings["mainmenu_hint"][L::ENGLISH] = "WASD Move  Auto-attack  Esc Pause";
 
     _strings["gameover_title"][L::SIMPLIFIED_CHINESE] = u8"游戏结束";
     _strings["gameover_title"][L::ENGLISH] = "Game Over";
@@ -346,8 +321,8 @@ void LanguageManager::initStrings()
     _strings["fire_key"][L::ENGLISH] = "Attack";
     _strings["pause_key"][L::SIMPLIFIED_CHINESE] = u8"暂停";
     _strings["pause_key"][L::ENGLISH] = "Pause";
-    _strings["mouse_left"][L::SIMPLIFIED_CHINESE] = "O";
-    _strings["mouse_left"][L::ENGLISH] = "O";
+    _strings["mouse_left"][L::SIMPLIFIED_CHINESE] = u8"自动";
+    _strings["mouse_left"][L::ENGLISH] = "Auto";
     _strings["confirm"][L::SIMPLIFIED_CHINESE] = u8"确定";
     _strings["confirm"][L::ENGLISH] = "OK";
 
@@ -410,23 +385,53 @@ void LanguageManager::initStrings()
     _strings["return_to_menu"][L::SIMPLIFIED_CHINESE] = u8"返回菜单";
     _strings["return_to_menu"][L::ENGLISH] = "Return to Menu";
 
-    _strings["upgrade_points_fmt"][L::SIMPLIFIED_CHINESE] = u8"升级点数: %d";
-    _strings["upgrade_points_fmt"][L::ENGLISH] = "Upgrade Pts: %d";
+    _strings["upgrade_points_fmt"][L::SIMPLIFIED_CHINESE] = u8"升级点数";
+    _strings["upgrade_points_fmt"][L::ENGLISH] = "Upgrade Pts";
 
-    _strings["upgrade_atk"][L::SIMPLIFIED_CHINESE] = u8"攻击+2";
-    _strings["upgrade_atk"][L::ENGLISH] = "ATK +2";
+    _strings["upgrade_atk"][L::SIMPLIFIED_CHINESE] = u8"攻击";
+    _strings["upgrade_atk"][L::ENGLISH] = "ATK";
 
-    _strings["upgrade_hp"][L::SIMPLIFIED_CHINESE] = u8"生命上限+10";
-    _strings["upgrade_hp"][L::ENGLISH] = "Max HP +10";
+    _strings["upgrade_hp"][L::SIMPLIFIED_CHINESE] = u8"生命上限";
+    _strings["upgrade_hp"][L::ENGLISH] = "Max HP";
 
-    _strings["upgrade_spd"][L::SIMPLIFIED_CHINESE] = u8"速度+10";
-    _strings["upgrade_spd"][L::ENGLISH] = "SPD +10";
+    _strings["upgrade_spd"][L::SIMPLIFIED_CHINESE] = u8"速度";
+    _strings["upgrade_spd"][L::ENGLISH] = "SPD";
 
-    _strings["upgrade_regen"][L::SIMPLIFIED_CHINESE] = u8"能量恢复+10%";
-    _strings["upgrade_regen"][L::ENGLISH] = "Energy Regen +10%";
+    _strings["upgrade_regen"][L::SIMPLIFIED_CHINESE] = u8"能量恢复";
+    _strings["upgrade_regen"][L::ENGLISH] = "Energy Regen";
 
-    _strings["upgrade_projectile"][L::SIMPLIFIED_CHINESE] = u8"弹幕+1";
-    _strings["upgrade_projectile"][L::ENGLISH] = "Projectile +1";
+    _strings["upgrade_projectile"][L::SIMPLIFIED_CHINESE] = u8"弹幕";
+    _strings["upgrade_projectile"][L::ENGLISH] = "Projectile";
+
+    _strings["upgrade_atk_val"][L::SIMPLIFIED_CHINESE] = u8"+2";
+    _strings["upgrade_atk_val"][L::ENGLISH] = "+2";
+
+    _strings["upgrade_hp_val"][L::SIMPLIFIED_CHINESE] = u8"+10";
+    _strings["upgrade_hp_val"][L::ENGLISH] = "+10";
+
+    _strings["upgrade_spd_val"][L::SIMPLIFIED_CHINESE] = u8"+10";
+    _strings["upgrade_spd_val"][L::ENGLISH] = "+10";
+
+    _strings["upgrade_regen_val"][L::SIMPLIFIED_CHINESE] = u8"+10%";
+    _strings["upgrade_regen_val"][L::ENGLISH] = "+10%";
+
+    _strings["upgrade_projectile_val"][L::SIMPLIFIED_CHINESE] = u8"+1";
+    _strings["upgrade_projectile_val"][L::ENGLISH] = "+1";
+
+    _strings["upgrade_cost"][L::SIMPLIFIED_CHINESE] = u8"1pt";
+    _strings["upgrade_cost"][L::ENGLISH] = "1pt";
+
+    _strings["desk_weapon_title"][L::SIMPLIFIED_CHINESE] = u8"武器更换";
+    _strings["desk_weapon_title"][L::ENGLISH] = "Weapons";
+
+    _strings["desk_equip"][L::SIMPLIFIED_CHINESE] = u8"装备";
+    _strings["desk_equip"][L::ENGLISH] = "Equip";
+
+    _strings["desk_upgrade"][L::SIMPLIFIED_CHINESE] = u8"升级";
+    _strings["desk_upgrade"][L::ENGLISH] = "Upgrade";
+
+    _strings["desk_close"][L::SIMPLIFIED_CHINESE] = u8"关闭";
+    _strings["desk_close"][L::ENGLISH] = "Close";
 
     _strings["backpack"][L::SIMPLIFIED_CHINESE] = u8"背包";
     _strings["backpack"][L::ENGLISH] = "Backpack";

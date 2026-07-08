@@ -24,6 +24,7 @@ Player::Player()
     , luck(0.0f)
     , pickupRange(80.0f)
     , hpRegen(0.0f)
+    , enemySpeedModifier(0.0f)
     , maxWeaponCount(6)
     , currentTarget(nullptr)
     , hpRegenTimer(0.0f)
@@ -78,6 +79,7 @@ bool Player::initPlayer(
     this->luck = 0.0f;
     this->pickupRange = 80.0f;
     this->hpRegen = 0.0f;
+    this->enemySpeedModifier = 0.0f;
 
     this->maxWeaponCount = 6;
     this->weapons.clear();
@@ -135,7 +137,7 @@ void Player::updatePlayer(float dt)
         return;
     }
 
-    // GameObject ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú¸ï¿½ï¿½ï¿½
+    // GameObject µÄÉúÃüÖÜÆÚ¸üÐÂ
     updateLifeTime(dt);
 
     if (isExpired())
@@ -144,7 +146,7 @@ void Player::updatePlayer(float dt)
         return;
     }
 
-    // Role ï¿½ï¿½ï¿½ÞµÐ¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È´ï¿½ï¿½×´Ì¬Ð§ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    // Role µÄÎÞµÐ¡¢ÊÜÉËÀäÈ´¡¢×´Ì¬Ð§¹û¸üÐÂ
     if (invincibleTimer > 0.0f)
     {
         invincibleTimer -= dt;
@@ -165,7 +167,7 @@ void Player::updatePlayer(float dt)
 
     updateStatusEffects(dt);
 
-    // ï¿½ï¿½ï¿½ï¿½Ô¼ï¿½ï¿½ï¿½ï¿½Þµï¿½Ê±ï¿½ï¿½
+    // Íæ¼Ò×Ô¼ºµÄÎÞµÐÊ±¼ä
     if (isInvincible)
     {
         invincibleTime -= dt;
@@ -177,11 +179,11 @@ void Player::updatePlayer(float dt)
         }
     }
 
-    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    // ¸üÐÂÇéÐ÷
     moodSystem.updateMood(dt);
     applyMoodEffect();
 
-    // ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½Ã¿ 1 ï¿½ï¿½ï¿½Ð¶ï¿½Ò»ï¿½ï¿½
+    // ÉúÃü»Ö¸´£ºÃ¿ 1 ÃëÅÐ¶¨Ò»´Î
     if (hpRegen > 0.0f)
     {
         hpRegenTimer += dt;
@@ -205,7 +207,7 @@ void Player::updatePlayer(float dt)
 }
 
 // =========================
-// ï¿½Æ¶ï¿½ï¿½ï¿½ï¿½ï¿½
+// ÒÆ¶¯ÊäÈë
 // =========================
 
 void Player::movePlayer(float dt)
@@ -255,7 +257,7 @@ bool Player::getIsMoving() const
 }
 
 // =========================
-// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ / ï¿½ï¿½ï¿½ï¿½
+// Íæ¼ÒÊÜÉË / ËÀÍö
 // =========================
 
 void Player::takeDamage(int damage)
@@ -290,6 +292,7 @@ void Player::takeDamage(int damage, DamageType damageType, Role* attacker)
     {
         isInvincible = true;
         invincibleTime = maxInvincibleTime;
+        setInvincible(maxInvincibleTime);
     }
 }
 
@@ -301,11 +304,11 @@ void Player::die()
     inputDirection = Vec2::ZERO;
     currentTarget = nullptr;
 
-    // ï¿½ï¿½ï¿½ï¿½ GameScene ï¿½ï¿½ï¿½Ô¼ï¿½ï¿½ player->isDead() ï¿½ï¿½ï¿½ï¿½ Game Over
+    // ºóÃæ GameScene ¿ÉÒÔ¼ì²â player->isDead() ½øÈë Game Over
 }
 
 // =========================
-// ï¿½ï¿½ï¿½ï¿½ÏµÍ³
+// ÇéÐ÷ÏµÍ³
 // =========================
 
 void Player::changeMood(MoodType mood)
@@ -349,7 +352,7 @@ MoodSystem* Player::getMoodSystem()
 }
 
 // =========================
-// ï¿½Ù¶ï¿½
+// ËÙ¶È
 // =========================
 
 float Player::getBaseSpeed() const
@@ -369,7 +372,7 @@ float Player::getCurrentSpeed() const
 }
 
 // =========================
-// ï¿½Þµï¿½×´Ì¬
+// ÎÞµÐ×´Ì¬
 // =========================
 
 void Player::setInvincible(bool invincible)
@@ -403,7 +406,7 @@ float Player::getInvincibleTime() const
 }
 
 // =========================
-// ï¿½ï¿½ï¿½ï¿½ÍµÈ¼ï¿½
+// ¾­ÑéºÍµÈ¼¶
 // =========================
 
 void Player::addExp(int amount)
@@ -469,10 +472,10 @@ void Player::levelUp()
 
     upgradePoints++;
 
-    // Ô½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô½ï¿½ï¿½
+    // Ô½µ½ºóÆÚÉý¼¶Ô½Âý
     expToNextLevel = 100 + (level - 1) * 50;
 
-    // ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È«ï¿½ï¿½ï¿½É³ï¿½
+    // Éý¼¶Ê±¸øÒ»µã»ù´¡³É³¤£¬±ÜÃâÍæ¼ÒÍêÈ«²»³É³¤
     addMaxHp(1);
 }
 
@@ -508,7 +511,7 @@ bool Player::spendUpgradePoint(int amount)
 }
 
 // =========================
-// ï¿½ï¿½ï¿½ï¿½ / ï¿½ï¿½ï¿½
+// ²ÄÁÏ / ½ð±Ò
 // =========================
 
 void Player::addMaterial(int amount)
@@ -571,7 +574,7 @@ int Player::getGold() const
 }
 
 // =========================
-// ï¿½ï¿½Ò¾ï¿½ï¿½ï¿½ / ï¿½É³ï¿½ï¿½ï¿½ï¿½ï¿½
+// Íæ¼Ò¾­¼Ã / ³É³¤ÊôÐÔ
 // =========================
 
 int Player::getHarvesting() const
@@ -634,10 +637,18 @@ void Player::addHpRegen(float value)
     setHpRegen(hpRegen + value);
 }
 
+float Player::getEnemySpeedModifier() const
+{
+    return enemySpeedModifier;
+}
 
+void Player::setEnemySpeedModifier(float value)
+{
+    enemySpeedModifier = value;
+}
 
 // =========================
-// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ÎäÆ÷²Û
 // =========================
 
 int Player::getMaxWeaponCount() const
@@ -712,7 +723,7 @@ int Player::getWeaponCount() const
 }
 
 // =========================
-// ï¿½Ô¶ï¿½ï¿½ï¿½×¼ / Ä¿ï¿½ï¿½
+// ×Ô¶¯Ãé×¼ / Ä¿±ê
 // =========================
 
 void Player::setTarget(GameObject* target)
@@ -772,7 +783,7 @@ GameObject* Player::findNearestTarget(const std::vector<GameObject*>& candidates
 }
 
 // =========================
-// Ê°È¡ï¿½ë½»ï¿½ï¿½
+// Ê°È¡Óë½»»¥
 // =========================
 
 bool Player::canPickup(GameObject* item) const
@@ -805,17 +816,45 @@ bool Player::isItemInPickupRange(GameObject* item) const
     return distanceTo(item) <= pickupRange;
 }
 
+void Player::pickupExp(int amount)
+{
+    addExp(amount);
+}
 
+void Player::pickupMaterial(int amount)
+{
+    addMaterial(amount);
+}
 
+void Player::pickupHeal(int amount)
+{
+    heal(amount);
+}
 
 // =========================
-// ï¿½ï¿½ï¿½Î¿ï¿½Ê¼ / ï¿½ï¿½ï¿½ï¿½
+// ²¨´Î¿ªÊ¼ / ½áÊø
 // =========================
 
+void Player::onWaveStart()
+{
+    clearTarget();
+    inputDirection = Vec2::ZERO;
+    isMoving = false;
+}
 
+void Player::onWaveEnd()
+{
+    clearTarget();
+
+    // Brotato ·ç¸ñ£º²¨´Î½áÊøÊ±£¬ÊÕ»ñÊôÐÔ×ª»¯Îª²ÄÁÏ
+    if (harvesting > 0)
+    {
+        addMaterial(harvesting);
+    }
+}
 
 // =========================
-// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// Íæ¼ÒÊôÐÔ×ÜÀÀ
 // =========================
 
 std::string Player::getPlayerStatsInfo() const

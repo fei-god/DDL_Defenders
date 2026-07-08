@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-// ÓÎÏ·¶ÔÏóÀàÐÍ£¬·½±ãºóÃæÇø·Ö Player¡¢Enemy¡¢Weapon¡¢Item µÈ
+// ï¿½ï¿½Ï·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Playerï¿½ï¿½Enemyï¿½ï¿½Weaponï¿½ï¿½Item ï¿½ï¿½
 enum class GameObjectType
 {
     Unknown,
@@ -19,8 +19,8 @@ enum class GameObjectType
     Effect
 };
 
-// ÓÎÏ·¶ÔÏóÕóÓª
-// ÓÃÓÚÅÐ¶ÏÍæ¼Ò¡¢µÐÈË¡¢×Óµ¯¡¢µôÂäÎïÖ®¼äµÄ¹ØÏµ
+// ï¿½ï¿½Ï·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Óª
+// ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½ï¿½ï¿½Ò¡ï¿½ï¿½ï¿½ï¿½Ë¡ï¿½ï¿½Óµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö®ï¿½ï¿½Ä¹ï¿½Ïµ
 enum class GameObjectCamp
 {
     Neutral,
@@ -36,10 +36,10 @@ public:
     GameObject();
     virtual ~GameObject();
 
-    // Cocos2d-x »ù´¡³õÊ¼»¯
+    // Cocos2d-x ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½
     virtual bool init() override;
 
-    // ×Ô¶¨Òå³õÊ¼»¯ÓÎÏ·¶ÔÏó
+    // ï¿½Ô¶ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½Ï·ï¿½ï¿½ï¿½ï¿½
     virtual bool initObject(
         const std::string& name,
         GameObjectType type,
@@ -47,7 +47,7 @@ public:
         const cocos2d::Vec2& startPosition
     );
 
-    // ´´½¨¶ÔÏó
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     static GameObject* create(
         const std::string& name,
         GameObjectType type,
@@ -55,11 +55,11 @@ public:
         const cocos2d::Vec2& startPosition
     );
 
-    // Ã¿Ö¡¸üÐÂ½Ó¿Ú£¬×ÓÀà¿ÉÒÔÖØÐ´
+    // Ã¿Ö¡ï¿½ï¿½ï¿½Â½Ó¿Ú£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´
     virtual void updateObject(float dt);
 
     // =========================
-    // »ù´¡Éí·ÝÐÅÏ¢
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
     // =========================
 
     int getObjectId() const;
@@ -77,8 +77,8 @@ public:
     bool isEnemyCampWith(const GameObject* other) const;
 
     // =========================
-    // ±êÇ©ÏµÍ³
-    // ÀýÈç£ºBoss¡¢Burnable¡¢Gun¡¢Melee¡¢Pickup
+    // ï¿½ï¿½Ç©ÏµÍ³
+    // ï¿½ï¿½ï¿½ç£ºBossï¿½ï¿½Burnableï¿½ï¿½Gunï¿½ï¿½Meleeï¿½ï¿½Pickup
     // =========================
 
     void addTag(const std::string& tag);
@@ -87,7 +87,7 @@ public:
     void clearTags();
 
     // =========================
-    // Í¼Æ¬ÓëÏÔÊ¾
+    // Í¼Æ¬ï¿½ï¿½ï¿½ï¿½Ê¾
     // =========================
 
     virtual bool setObjectImage(const std::string& imagePath);
@@ -96,11 +96,8 @@ public:
     void setObjectScale(float scale);
     float getObjectScale() const;
 
-    void setObjectSize(const cocos2d::Size& size);
-    cocos2d::Size getObjectSize() const;
-
     // =========================
-    // Î»ÖÃ¡¢·½Ïò¡¢ÒÆ¶¯
+    // Î»ï¿½Ã¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½
     // =========================
 
     virtual void setObjectPosition(const cocos2d::Vec2& position);
@@ -116,13 +113,9 @@ public:
     float getMoveSpeed() const;
 
     virtual void moveByVelocity(float dt);
-    virtual void moveInDirection(float dt);
-
-    void faceTo(const cocos2d::Vec2& targetPosition);
-    void faceToDirection(const cocos2d::Vec2& direction);
 
     // =========================
-    // Åö×²Óë·¶Î§ÅÐ¶Ï
+    // ï¿½ï¿½×²ï¿½ë·¶Î§ï¿½Ð¶ï¿½
     // =========================
 
     virtual cocos2d::Rect getCollisionBox() const;
@@ -130,7 +123,6 @@ public:
     void setCollisionRadius(float radius);
     float getCollisionRadius() const;
 
-    void setUseCircleCollision(bool useCircle);
     bool isUsingCircleCollision() const;
 
     void setCollisionEnabled(bool enabled);
@@ -143,20 +135,18 @@ public:
     float distanceToPoint(const cocos2d::Vec2& point) const;
 
     // =========================
-    // ÉúÃüÖÜÆÚ
-    // ÊÊºÏ Bullet¡¢Effect¡¢Trap µÈÁÙÊ±¶ÔÏó
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    // ï¿½Êºï¿½ Bulletï¿½ï¿½Effectï¿½ï¿½Trap ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½
     // =========================
 
     void setLifeTime(float time);
     float getLifeTime() const;
-    float getCurrentLifeTime() const;
-    void resetLifeTime();
 
     virtual void updateLifeTime(float dt);
     virtual bool isExpired() const;
 
     // =========================
-    // ¼¤»î¡¢¸üÐÂ¡¢½»»¥¡¢Ïú»Ù
+    // ï¿½ï¿½ï¿½î¡¢ï¿½ï¿½ï¿½Â¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     // =========================
 
     virtual void setActive(bool active);
@@ -165,21 +155,17 @@ public:
     void setUpdateEnabled(bool enabled);
     bool isUpdateEnabled() const;
 
-    void setInteractable(bool interactable);
-    bool isInteractable() const;
-
     void markForDestroy();
     bool isMarkedForDestroy() const;
 
     // =========================
-    // µØÍ¼±ß½ç
+    // ï¿½ï¿½Í¼ï¿½ß½ï¿½
     // =========================
 
     bool isOutOfBounds(const cocos2d::Rect& bounds) const;
-    void clampPositionInBounds(const cocos2d::Rect& bounds);
 
     // =========================
-    // µ÷ÊÔÐÅÏ¢
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
     // =========================
 
     virtual std::string getDebugInfo() const;
@@ -187,30 +173,29 @@ public:
 protected:
     static int nextObjectId;
 
-    int objectId;                   // ¶ÔÏóÎ¨Ò» ID
-    std::string objectName;         // ¶ÔÏóÃû³Æ
-    GameObjectType objectType;      // ¶ÔÏóÀàÐÍ
-    GameObjectCamp objectCamp;      // ¶ÔÏóÕóÓª
-    std::string imagePath;          // Í¼Æ¬Â·¾¶
+    int objectId;                   // ï¿½ï¿½ï¿½ï¿½Î¨Ò» ID
+    std::string objectName;         // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    GameObjectType objectType;      // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    GameObjectCamp objectCamp;      // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Óª
+    std::string imagePath;          // Í¼Æ¬Â·ï¿½ï¿½
 
-    bool isActive;                  // ÊÇ·ñ¼¤»î
-    bool updateEnabled;             // ÊÇ·ñÖ´ÐÐ updateObject
-    bool collisionEnabled;          // ÊÇ·ñ²ÎÓëÅö×²
-    bool interactable;              // ÊÇ·ñ¿É½»»¥
-    bool shouldDestroy;             // ÊÇ·ñµÈ´ýÏú»Ù
+    bool isActive;                  // ï¿½Ç·ñ¼¤»ï¿½
+    bool updateEnabled;             // ï¿½Ç·ï¿½Ö´ï¿½ï¿½ updateObject
+    bool collisionEnabled;          // ï¿½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×²
+    bool shouldDestroy;             // ï¿½Ç·ï¿½È´ï¿½ï¿½ï¿½ï¿½ï¿½
 
-    std::vector<std::string> tags;  // ±êÇ©ÁÐ±í
+    std::vector<std::string> tags;  // ï¿½ï¿½Ç©ï¿½Ð±ï¿½
 
-    cocos2d::Vec2 velocity;         // µ±Ç°ËÙ¶ÈÏòÁ¿
-    cocos2d::Vec2 direction;        // µ±Ç°·½Ïò
-    float moveSpeed;                // ÒÆ¶¯ËÙ¶È
+    cocos2d::Vec2 velocity;         // ï¿½ï¿½Ç°ï¿½Ù¶ï¿½ï¿½ï¿½ï¿½ï¿½
+    cocos2d::Vec2 direction;        // ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½
+    float moveSpeed;                // ï¿½Æ¶ï¿½ï¿½Ù¶ï¿½
 
-    float collisionRadius;          // Ô²ÐÎÅö×²°ë¾¶
-    bool useCircleCollision;        // ÊÇ·ñÊ¹ÓÃÔ²ÐÎÅö×²
+    float collisionRadius;          // Ô²ï¿½ï¿½ï¿½ï¿½×²ï¿½ë¾¶
+    bool useCircleCollision;        // ï¿½Ç·ï¿½Ê¹ï¿½ï¿½Ô²ï¿½ï¿½ï¿½ï¿½×²
 
-    float lifeTime;                 // ×î´óÉúÃüÖÜÆÚ
-    float currentLifeTime;          // µ±Ç°ÒÑ´æÔÚÊ±¼ä
-    bool hasLifeTimeLimit;          // ÊÇ·ñÆôÓÃÉúÃüÖÜÆÚÏÞÖÆ
+    float lifeTime;                 // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    float currentLifeTime;          // ï¿½ï¿½Ç°ï¿½Ñ´ï¿½ï¿½ï¿½Ê±ï¿½ï¿½
+    bool hasLifeTimeLimit;          // ï¿½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 };
 
 #endif

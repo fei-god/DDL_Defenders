@@ -56,7 +56,6 @@ endif()
 # add cross-platforms source files and header files 
 list(APPEND GAME_SOURCE
      Classes/Scenes/AppDelegate.cpp
-     Classes/Scenes/HelloWorldScene.cpp
      Classes/MainMenuScene.cpp
      Classes/GameScene.cpp
      Classes/GameOverScene.cpp
@@ -97,11 +96,11 @@ list(APPEND GAME_SOURCE
      # ��?
      Classes/Managers/SaveManager.cpp
      Classes/Managers/AudioManager.cpp
+     Classes/DeskUpgradeLayer.cpp
      )
 
 list(APPEND GAME_HEADER
      Classes/Scenes/AppDelegate.h
-     Classes/Scenes/HelloWorldScene.h
      Classes/MainMenuScene.h
      Classes/GameScene.h
      Classes/GameOverScene.h
@@ -145,6 +144,7 @@ list(APPEND GAME_HEADER
      Classes/Core/PlayerRecord.h
      Classes/Managers/SaveManager.h
      Classes/Managers/AudioManager.h
+     Classes/DeskUpgradeLayer.h
      )
 if(ANDROID)
     # change APP_NAME to the share library name for Android, it's value depend on AndroidManifest.xml

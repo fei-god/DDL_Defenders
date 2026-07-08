@@ -231,29 +231,9 @@ void AudioManager::playButtonClick()
     playEffectWithCooldown(SFX_BUTTON_CLICK, 80);
 }
 
-void AudioManager::playButtonHover()
-{
-    playEffectWithCooldown(SFX_BUTTON_HOVER, 120);
-}
-
-void AudioManager::playMenuOpen()
-{
-    playEffect(SFX_MENU_OPEN);
-}
-
-void AudioManager::playMenuClose()
-{
-    playEffect(SFX_MENU_CLOSE);
-}
-
 void AudioManager::playPause()
 {
     playEffect(SFX_PAUSE);
-}
-
-void AudioManager::playResume()
-{
-    playEffect(SFX_RESUME);
 }
 
 void AudioManager::playPlayerMove()
@@ -281,11 +261,6 @@ void AudioManager::playPlayerDie()
 void AudioManager::playPlayerLevelUp()
 {
     playEffect(SFX_LEVEL_UP);
-}
-
-void AudioManager::playPlayerRankUp()
-{
-    playEffect(SFX_RANK_UP);
 }
 
 void AudioManager::playKeyboardAttack()
@@ -326,41 +301,6 @@ void AudioManager::playEnemyDie()
     playEffectWithCooldown(SFX_ENEMY_DIE, 80);
 }
 
-void AudioManager::playSleepyMonsterSpawn()
-{
-    playEffectWithCooldown(SFX_SLEEPY_MONSTER, 200);
-}
-
-void AudioManager::playPhoneMonsterSpawn()
-{
-    playEffectWithCooldown(SFX_PHONE_MONSTER, 200);
-}
-
-void AudioManager::playDDLMonsterSpawn()
-{
-    playEffectWithCooldown(SFX_DDL_MONSTER, 200);
-}
-
-void AudioManager::playBossWarning()
-{
-    playEffect(SFX_BOSS_WARNING);
-}
-
-void AudioManager::playBossSpawn()
-{
-    playEffect(SFX_BOSS_SPAWN);
-}
-
-void AudioManager::playBossHit()
-{
-    playEffectWithCooldown(SFX_BOSS_HIT, 100);
-}
-
-void AudioManager::playBossDie()
-{
-    playEffect(SFX_BOSS_DIE);
-}
-
 void AudioManager::playGameStart()
 {
     playEffect(SFX_GAME_START);
@@ -374,26 +314,6 @@ void AudioManager::playGameOver()
 void AudioManager::playVictory()
 {
     playEffect(SFX_VICTORY);
-}
-
-void AudioManager::playProgressComplete()
-{
-    playEffect(SFX_PROGRESS_COMPLETE);
-}
-
-void AudioManager::playMoodFocus()
-{
-    playEffect(SFX_MOOD_FOCUS);
-}
-
-void AudioManager::playMoodIrritable()
-{
-    playEffect(SFX_MOOD_IRRITABLE);
-}
-
-void AudioManager::playMoodExhausted()
-{
-    playEffect(SFX_MOOD_EXHAUSTED);
 }
 
 void AudioManager::playBedEffect()

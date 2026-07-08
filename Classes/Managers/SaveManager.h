@@ -27,9 +27,6 @@ public:
     // and fill it with empty PlayerRecord slots.
     bool initSaveFile();
 
-    // Create or reset one player record.
-    bool createOrResetPlayer(int playerId, const char* playerName);
-
     // Read one player record randomly according to playerId.
     bool loadPlayerRecord(int playerId, PlayerRecord& outRecord);
 
@@ -46,12 +43,8 @@ public:
     // Load leaderboard records sorted by highScore from high to low.
     std::vector<PlayerRecord> loadLeaderboardByHighScore(int maxCount = 10);
 
-    // Load leaderboard records sorted by rankPoints from high to low.
-    std::vector<PlayerRecord> loadLeaderboardByRankPoints(int maxCount = 10);
-
     // Utility display functions.
     const char* getRankName(int rankLevel) const;
-    const char* getRankChineseName(int rankLevel) const;
 
     // Save file path getter.
     const std::string& getSaveFilePath() const;

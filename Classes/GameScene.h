@@ -77,8 +77,6 @@ private:
     void spawnRewardForEnemy(Enemy* enemy);
     void handleEndlessEnemyKilled(Enemy* enemy);
     int getScoreRewardForEnemy(Enemy* enemy) const;
-    void goToAfterBattle(int wave);
-    void applyWeaponMastery(Weapon* weapon);
     void applyWeaponMasteryEffects(Weapon* weapon);
     void applyEndlessGrowthToWeapon(Weapon* weapon, int weaponId);
 
@@ -105,8 +103,7 @@ private:
     // ==================== Pause V2 ====================
     void buildPauseStatsPanel(cocos2d::Node* parent, const cocos2d::Vec2& pos, float s);
     void buildPauseWeaponPanel(cocos2d::Node* parent, const cocos2d::Vec2& pos, float s);
-    void onPauseEquipWeapon(cocos2d::Ref* sender);
-    void onPauseUnequipWeapon(cocos2d::Ref* sender);
+
 
     // ==================== UI ====================
     cocos2d::LayerColor* _hpBarBg;
@@ -138,7 +135,7 @@ private:
     cocos2d::Label* _waveTimerLabel;
     std::vector<cocos2d::Node*> _weaponSlotNodes;
     std::vector<int> _lastWeaponSlotIds;
-    int _lastWeaponSlotIndex;
+
     float m_survivalTime;
 
     // ==================== World / Camera ====================
@@ -150,8 +147,14 @@ private:
     // ==================== Player ====================
     Player* m_player;
 
-    // Triangle visual that rotates toward mouse
-    cocos2d::DrawNode* _playerVisual;
+    // Character animation sprites (toggle every 0.25s)
+    cocos2d::Sprite* _characterSprite1;
+    cocos2d::Sprite* _characterSprite2;
+    // Walk animation sprites (toggle every 0.2s while moving)
+    cocos2d::Sprite* _characterWalkSprite1;
+    cocos2d::Sprite* _characterWalkSprite2;
+    float _characterAnimTimer;
+    bool _characterWasMoving;  // track idle/walk transition
 
     // Normalized direction the player is facing (single source of truth)
     cocos2d::Vec2 _playerDir;
@@ -221,9 +224,14 @@ private:
     cocos2d::Node* _levelIntroLayer;
     float _assignmentProgress;
     bool _nearDesk;
-    bool _nearPowerSocket;
+
     // Thesis Boss
     float _thesisProgress = 0.0f;
+
+    // Victory delay before scene transition
+    float _victoryDelayTimer = 0.0f;
+    bool _victoryDelayActive = false;
+    bool _goToMainMenu = false;  // story mode all 3 levels cleared
     // DDL Pressure (endless mode)
     float _ddlPressure = 0.0f;
     cocos2d::LayerColor* _vignetteLayer = nullptr;

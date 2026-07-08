@@ -30,14 +30,9 @@ public:
     // Retrieve a localised string by key. Returns "[key]" if not found.
     std::string getString(const std::string& key) const;
 
-    // Utility: format a string with one float argument (for survival time etc.)
+    // Format a string with one float argument (for survival time etc.)
     std::string getStringF(const std::string& key, float value) const;
 
-    // List of available language display names (localised in current language)
-    std::vector<std::string> getAvailableLanguageNames() const;
-
-    // Raw language enum values for cycling
-    static std::vector<Language> getAvailableLanguages();
 
     // Convert a key-code integer (stored in UserDefault) to the enum
     static Language intToLanguage(int idx);
