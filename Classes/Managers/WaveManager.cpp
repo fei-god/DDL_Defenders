@@ -278,7 +278,7 @@ void WaveManager::spawnEnemy()
             enemy->getObjectName() == "BossMonster";
 
         // Smaller monsters: more can fit on screen, less overwhelming
-        float targetSize = isBossEnemy ? 260.0f : 120.0f;
+        float targetSize = isBossEnemy ? 390.0f : 180.0f;
         Size enemySize = enemy->getContentSize();
         float targetScale = 1.0f;
         if (enemySize.width > 0.0f && enemySize.height > 0.0f)

@@ -1,0 +1,10 @@
+^D:\DDL_DEFENDERS-MAIN\DDL_DEFENDERS\BUILD2\CMAKEFILES\990D2483BBF54DE4EBE73AE446188FE0\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/DDL_Defenders-main/DDL_Defenders -BD:/DDL_Defenders-main/DDL_Defenders/build2 --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file D:/DDL_Defenders-main/DDL_Defenders/build2/DDL_Defenders.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
