@@ -3,6 +3,9 @@
 #define __SETTINGS_SCENE_H__
 
 #include "cocos2d.h"
+#include <functional>
+#include <string>
+#include <vector>
 
 class SettingsScene : public cocos2d::Scene
 {
@@ -24,6 +27,30 @@ private:
     void setEntry(Entry entry);
 
     void buildUI();
+    void createBackground();
+    cocos2d::Node* createMainPanel(const cocos2d::Size& size);
+    cocos2d::Label* createStyledLabel(const std::string& text, float fontSize,
+        const cocos2d::Color3B& color, bool bold = false);
+    cocos2d::Node* createTextWithBackground(const std::string& text, float fontSize,
+        const cocos2d::Size& minSize, const cocos2d::Color3B& textColor,
+        cocos2d::Label** outLabel = nullptr, bool highlighted = false,
+        bool useButtonFrame = false);
+    cocos2d::MenuItemSprite* createImageButton(const std::string& text,
+        const cocos2d::Size& size, float fontSize,
+        const std::function<void(cocos2d::Ref*)>& callback,
+        bool enabled = true);
+    cocos2d::Node* createButtonState(const std::string& text,
+        const cocos2d::Size& size, float fontSize,
+        const cocos2d::Color3B& textColor, bool selected, bool enabled);
+    void createSectionTitle(cocos2d::Node* parent, const std::string& text,
+        const cocos2d::Vec2& position, float width);
+    void createGraphicsSettings(cocos2d::Node* parent, cocos2d::Menu* menu,
+        float centerX, float topY, float panelW);
+    void createKeyBindingSettings(cocos2d::Node* parent, cocos2d::Menu* menu,
+        float centerX, float topY, float panelW);
+    void createLanguageSettings(cocos2d::Node* parent, cocos2d::Menu* menu,
+        float centerX, float topY, float panelW);
+    void resetUiPointers();
 
     // Resolution
     void onResolutionLeft(cocos2d::Ref* sender);
@@ -85,6 +112,8 @@ private:
     cocos2d::Label* _keyLabelDown;
     cocos2d::Label* _keyLabelLeft;
     cocos2d::Label* _keyLabelRight;
+    std::vector<cocos2d::Node*> _keyRowBackgrounds;
+    float _uiScale;
 };
 
 #endif // __SETTINGS_SCENE_H__
