@@ -77,29 +77,6 @@ bool EnvironmentZone::initZone(EnvironmentZoneType type, const Rect& bounds)
             addChild(sprite);
         }
     }
-    else
-    {
-        auto draw = DrawNode::create();
-        Vec2 verts[4] = {
-            Vec2(-bounds.size.width * 0.5f, -bounds.size.height * 0.5f),
-            Vec2(bounds.size.width * 0.5f, -bounds.size.height * 0.5f),
-            Vec2(bounds.size.width * 0.5f, bounds.size.height * 0.5f),
-            Vec2(-bounds.size.width * 0.5f, bounds.size.height * 0.5f)
-        };
-        draw->drawPolygon(verts, 4, color, 1.0f, Color4F(color.r, color.g, color.b, 0.8f));
-        addChild(draw);
-    }
-
-    // Bed and desk are represented by their scene art (or fallback outline),
-    // so do not cover those areas with debug-style English labels.
-    if (_zoneType != EnvironmentZoneType::Bed &&
-        _zoneType != EnvironmentZoneType::Desk)
-    {
-        auto label = Label::createWithSystemFont(labelText, "Arial", 16);
-        label->setColor(Color3B(230, 235, 240));
-        label->setPosition(Vec2::ZERO);
-        addChild(label);
-    }
 
     return true;
 }

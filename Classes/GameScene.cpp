@@ -103,6 +103,33 @@ namespace
         return root;
     }
 
+    Sprite* createFloatingInteractionArrow(float targetHeight)
+    {
+        std::string arrowPath = AssetPaths::resolve("highlight arrow.png");
+        if (arrowPath.empty())
+        {
+            return nullptr;
+        }
+
+        auto arrow = Sprite::create(arrowPath);
+        if (!arrow)
+        {
+            return nullptr;
+        }
+
+        Size arrowSize = arrow->getContentSize();
+        if (arrowSize.height > 0.0f)
+        {
+            arrow->setScale(targetHeight / arrowSize.height);
+        }
+        arrow->setOpacity(215);
+        arrow->runAction(RepeatForever::create(Sequence::create(
+            EaseSineInOut::create(MoveBy::create(0.55f, Vec2(0.0f, 10.0f))),
+            EaseSineInOut::create(MoveBy::create(0.55f, Vec2(0.0f, -10.0f))),
+            nullptr)));
+        return arrow;
+    }
+
     MenuItemSprite* createUiImageButton(const std::string& imagePath,
         const std::string& fallbackText,
         const Size& targetSize,
@@ -769,103 +796,131 @@ bool GameScene::init()
         }
     }
 
-    // --- HP bar ---
-    float hpBarWidth  = 220.0f * s;
-    float hpBarHeight = 18.0f * s;
-    float marginX = 18.0f * s;
-    float marginY = 44.0f * s;
+    _hpBarBg = nullptr;
+    _hpBarFill = nullptr;
+    _hudPanelBg = nullptr;
+    _moodLabel = nullptr;
+    _weaponIcon = nullptr;
+    _weaponLabel = nullptr;
+    _weaponEnergyBg = nullptr;
+    _weaponEnergyFill = nullptr;
+    _progressLabel = nullptr;
+    _taskLabel = nullptr;
+    _taskBarBg = nullptr;
+    _taskBarFill = nullptr;
+    _environmentLabel = nullptr;
+    _survivalTimeLabel = nullptr;
+    _endlessStatsLabel = nullptr;
+    _expBarBg = nullptr;
+    _expBarFill = nullptr;
+    _expLevelLabel = nullptr;
+    _expFractionLabel = nullptr;
+    _waveTimerLabel = nullptr;
+    _hpBarMaxWidth = 0.0f;
+    _weaponEnergyBarMaxWidth = 0.0f;
+    _taskBarMaxWidth = 0.0f;
+    _expBarMaxWidth = 0.0f;
 
-    float hpBarLeft = origin.x + marginX;
-    float hpBarTop  = origin.y + visibleSize.height - marginY;
+    if (!_isHubScene)
+    {
+        // --- HP bar ---
+        float hpBarWidth  = 220.0f * s;
+        float hpBarHeight = 18.0f * s;
+        float marginX = 18.0f * s;
+        float marginY = 44.0f * s;
 
-    _hudPanelBg = LayerColor::create(Color4B(11, 14, 22, 178), 352.0f * s, 184.0f * s);
-    _hudPanelBg->setPosition(Vec2(hpBarLeft - 10.0f * s, hpBarTop - 176.0f * s));
-    this->addChild(_hudPanelBg, 8);
+        float hpBarLeft = origin.x + marginX;
+        float hpBarTop  = origin.y + visibleSize.height - marginY;
 
-    auto hudAccent = LayerColor::create(Color4B(88, 196, 255, 185), 4.0f * s, 184.0f * s);
-    hudAccent->setPosition(_hudPanelBg->getPosition());
-    this->addChild(hudAccent, 9);
+        _hudPanelBg = LayerColor::create(Color4B(11, 14, 22, 178), 352.0f * s, 184.0f * s);
+        _hudPanelBg->setPosition(Vec2(hpBarLeft - 10.0f * s, hpBarTop - 176.0f * s));
+        this->addChild(_hudPanelBg, 8);
 
-    auto hpFrame = LayerColor::create(Color4B(100, 100, 110, 255), hpBarWidth + 4, hpBarHeight + 4);
-    hpFrame->setPosition(Vec2(hpBarLeft - 2, hpBarTop - hpBarHeight - 2));
-    this->addChild(hpFrame, 9);
+        auto hudAccent = LayerColor::create(Color4B(88, 196, 255, 185), 4.0f * s, 184.0f * s);
+        hudAccent->setPosition(_hudPanelBg->getPosition());
+        this->addChild(hudAccent, 9);
 
-    _hpBarBg = LayerColor::create(Color4B(40, 40, 50, 255), hpBarWidth, hpBarHeight);
-    _hpBarBg->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight));
-    this->addChild(_hpBarBg, 9);
+        auto hpFrame = LayerColor::create(Color4B(100, 100, 110, 255), hpBarWidth + 4, hpBarHeight + 4);
+        hpFrame->setPosition(Vec2(hpBarLeft - 2, hpBarTop - hpBarHeight - 2));
+        this->addChild(hpFrame, 9);
 
-    _hpBarFill = LayerColor::create(Color4B(50, 210, 50, 255), hpBarWidth, hpBarHeight);
-    _hpBarFill->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight));
-    this->addChild(_hpBarFill, 10);
-    _hpBarMaxWidth = hpBarWidth;
+        _hpBarBg = LayerColor::create(Color4B(40, 40, 50, 255), hpBarWidth, hpBarHeight);
+        _hpBarBg->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight));
+        this->addChild(_hpBarBg, 9);
 
-    auto hpLabel = Label::createWithSystemFont(textByLanguage("HP", u8"生命"), "Arial", 18.0f * s);
-    hpLabel->setColor(Color3B(200, 200, 210));
-    hpLabel->setAnchorPoint(Vec2(1.0f, 0.5f));
-    hpLabel->setPosition(Vec2(hpBarLeft - 8.0f * s, hpBarTop - hpBarHeight / 2));
-    this->addChild(hpLabel, 10);
+        _hpBarFill = LayerColor::create(Color4B(50, 210, 50, 255), hpBarWidth, hpBarHeight);
+        _hpBarFill->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight));
+        this->addChild(_hpBarFill, 10);
+        _hpBarMaxWidth = hpBarWidth;
 
-    // --- Mood label ---
-    _moodLabel = Label::createWithSystemFont(
-        textByLanguage("Mood: Normal", u8"情绪: 普通"), "Arial", 18.0f * s);
-    _moodLabel->setColor(Color3B(212, 224, 238));
-    _moodLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
-    _moodLabel->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight - 24.0f * s));
-    this->addChild(_moodLabel, 10);
+        auto hpLabel = Label::createWithSystemFont(textByLanguage("HP", u8"生命"), "Arial", 18.0f * s);
+        hpLabel->setColor(Color3B(200, 200, 210));
+        hpLabel->setAnchorPoint(Vec2(1.0f, 0.5f));
+        hpLabel->setPosition(Vec2(hpBarLeft - 8.0f * s, hpBarTop - hpBarHeight / 2));
+        this->addChild(hpLabel, 10);
 
-    _weaponIcon = Sprite::create();
-    _weaponIcon->setPosition(Vec2(hpBarLeft + 28.0f * s, hpBarTop - hpBarHeight - 55.0f * s));
-    this->addChild(_weaponIcon, 10);
+        // --- Mood label ---
+        _moodLabel = Label::createWithSystemFont(
+            textByLanguage("Mood: Normal", u8"情绪: 普通"), "Arial", 18.0f * s);
+        _moodLabel->setColor(Color3B(212, 224, 238));
+        _moodLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
+        _moodLabel->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight - 24.0f * s));
+        this->addChild(_moodLabel, 10);
 
-    _weaponLabel = Label::createWithSystemFont(
-        textByLanguage("Weapon: CoffeeGun", u8"武器: 咖啡枪"), "Arial", 18.0f * s);
-    _weaponLabel->setColor(Color3B(232, 238, 244));
-    _weaponLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
-    _weaponLabel->setPosition(Vec2(hpBarLeft + 64.0f * s, hpBarTop - hpBarHeight - 55.0f * s));
-    this->addChild(_weaponLabel, 10);
+        _weaponIcon = Sprite::create();
+        _weaponIcon->setPosition(Vec2(hpBarLeft + 28.0f * s, hpBarTop - hpBarHeight - 55.0f * s));
+        this->addChild(_weaponIcon, 10);
 
-    float weaponEnergyWidth = 112.0f * s;
-    float weaponEnergyHeight = 8.0f * s;
-    _weaponEnergyBg = LayerColor::create(Color4B(45, 45, 58, 255), weaponEnergyWidth, weaponEnergyHeight);
-    _weaponEnergyBg->setPosition(Vec2(hpBarLeft + 220.0f * s,
-        hpBarTop - hpBarHeight - 59.0f * s));
-    this->addChild(_weaponEnergyBg, 9);
+        _weaponLabel = Label::createWithSystemFont(
+            textByLanguage("Weapon: CoffeeGun", u8"武器: 咖啡枪"), "Arial", 18.0f * s);
+        _weaponLabel->setColor(Color3B(232, 238, 244));
+        _weaponLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
+        _weaponLabel->setPosition(Vec2(hpBarLeft + 64.0f * s, hpBarTop - hpBarHeight - 55.0f * s));
+        this->addChild(_weaponLabel, 10);
 
-    _weaponEnergyFill = LayerColor::create(Color4B(90, 190, 255, 255), weaponEnergyWidth, weaponEnergyHeight);
-    _weaponEnergyFill->setPosition(_weaponEnergyBg->getPosition());
-    this->addChild(_weaponEnergyFill, 10);
-    _weaponEnergyBarMaxWidth = weaponEnergyWidth;
+        float weaponEnergyWidth = 112.0f * s;
+        float weaponEnergyHeight = 8.0f * s;
+        _weaponEnergyBg = LayerColor::create(Color4B(45, 45, 58, 255), weaponEnergyWidth, weaponEnergyHeight);
+        _weaponEnergyBg->setPosition(Vec2(hpBarLeft + 220.0f * s,
+            hpBarTop - hpBarHeight - 59.0f * s));
+        this->addChild(_weaponEnergyBg, 9);
 
-    _progressLabel = Label::createWithSystemFont(
-        textByLanguage("Assignment: 0%", u8"作业进度: 0%"), "Arial", 18.0f * s);
-    _progressLabel->setColor(Color3B(246, 228, 137));
-    _progressLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
-    _progressLabel->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight - 82.0f * s));
-    this->addChild(_progressLabel, 10);
+        _weaponEnergyFill = LayerColor::create(Color4B(90, 190, 255, 255), weaponEnergyWidth, weaponEnergyHeight);
+        _weaponEnergyFill->setPosition(_weaponEnergyBg->getPosition());
+        this->addChild(_weaponEnergyFill, 10);
+        _weaponEnergyBarMaxWidth = weaponEnergyWidth;
 
-    _taskLabel = Label::createWithSystemFont(
-        textByLanguage("Desk: 0.00 / 0.00s", u8"书桌: 0.00 / 0.00秒"), "Arial", 16.0f * s);
-    _taskLabel->setColor(Color3B(172, 231, 255));
-    _taskLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
-    _taskLabel->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight - 106.0f * s));
-    this->addChild(_taskLabel, 10);
+        _progressLabel = Label::createWithSystemFont(
+            textByLanguage("Assignment: 0%", u8"作业进度: 0%"), "Arial", 18.0f * s);
+        _progressLabel->setColor(Color3B(246, 228, 137));
+        _progressLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
+        _progressLabel->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight - 82.0f * s));
+        this->addChild(_progressLabel, 10);
 
-    _taskBarMaxWidth = 222.0f * s;
-    float taskBarHeight = 8.0f * s;
-    _taskBarBg = LayerColor::create(Color4B(45, 45, 58, 255), _taskBarMaxWidth, taskBarHeight);
-    _taskBarBg->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight - 131.0f * s));
-    this->addChild(_taskBarBg, 9);
+        _taskLabel = Label::createWithSystemFont(
+            textByLanguage("Desk: 0.00 / 0.00s", u8"书桌: 0.00 / 0.00秒"), "Arial", 16.0f * s);
+        _taskLabel->setColor(Color3B(172, 231, 255));
+        _taskLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
+        _taskLabel->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight - 106.0f * s));
+        this->addChild(_taskLabel, 10);
 
-    _taskBarFill = LayerColor::create(Color4B(80, 205, 235, 255), _taskBarMaxWidth, taskBarHeight);
-    _taskBarFill->setPosition(_taskBarBg->getPosition());
-    this->addChild(_taskBarFill, 10);
+        _taskBarMaxWidth = 222.0f * s;
+        float taskBarHeight = 8.0f * s;
+        _taskBarBg = LayerColor::create(Color4B(45, 45, 58, 255), _taskBarMaxWidth, taskBarHeight);
+        _taskBarBg->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight - 131.0f * s));
+        this->addChild(_taskBarBg, 9);
 
-    _environmentLabel = Label::createWithSystemFont(
-        textByLanguage("Environment: None", u8"环境: 无"), "Arial", 16.0f * s);
-    _environmentLabel->setColor(Color3B(177, 221, 208));
-    _environmentLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
-    _environmentLabel->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight - 154.0f * s));
-    this->addChild(_environmentLabel, 10);
+        _taskBarFill = LayerColor::create(Color4B(80, 205, 235, 255), _taskBarMaxWidth, taskBarHeight);
+        _taskBarFill->setPosition(_taskBarBg->getPosition());
+        this->addChild(_taskBarFill, 10);
+
+        _environmentLabel = Label::createWithSystemFont(
+            textByLanguage("Environment: None", u8"环境: 无"), "Arial", 16.0f * s);
+        _environmentLabel->setColor(Color3B(177, 221, 208));
+        _environmentLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
+        _environmentLabel->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight - 154.0f * s));
+        this->addChild(_environmentLabel, 10);
+    }
 
     _weaponSlotNodes.clear();
     _lastWeaponSlotIds.clear();
@@ -882,54 +937,57 @@ bool GameScene::init()
         _weaponSlotNodes.push_back(slot);
     }
 
-    // --- Survival time ---
     m_survivalTime = 0.0f;
-    _survivalTimeLabel = Label::createWithSystemFont(
-        textByLanguage("Time: 0.0s", u8"时间: 0.0秒"), "Arial", 36.0f * s);
-    _survivalTimeLabel->setColor(Color3B(230, 230, 240));
-    _survivalTimeLabel->setPosition(Vec2(
-        origin.x + visibleSize.width / 2,
-        origin.y + visibleSize.height - 30.0f * s
-    ));
-    this->addChild(_survivalTimeLabel, 10);
+    if (!_isHubScene)
+    {
+        // --- Survival time ---
+        _survivalTimeLabel = Label::createWithSystemFont(
+            textByLanguage("Time: 0.0s", u8"时间: 0.0秒"), "Arial", 36.0f * s);
+        _survivalTimeLabel->setColor(Color3B(230, 230, 240));
+        _survivalTimeLabel->setPosition(Vec2(
+            origin.x + visibleSize.width / 2,
+            origin.y + visibleSize.height - 30.0f * s
+        ));
+        this->addChild(_survivalTimeLabel, 10);
 
-    _endlessStatsLabel = Label::createWithSystemFont("", "Arial", 18.0f * s);
-    _endlessStatsLabel->setColor(Color3B(160, 232, 255));
-    _endlessStatsLabel->setPosition(Vec2(
-        origin.x + visibleSize.width / 2,
-        origin.y + visibleSize.height - 62.0f * s
-    ));
-    _endlessStatsLabel->setVisible(_isEndlessMode);
-    this->addChild(_endlessStatsLabel, 10);
+        _endlessStatsLabel = Label::createWithSystemFont("", "Arial", 18.0f * s);
+        _endlessStatsLabel->setColor(Color3B(160, 232, 255));
+        _endlessStatsLabel->setPosition(Vec2(
+            origin.x + visibleSize.width / 2,
+            origin.y + visibleSize.height - 62.0f * s
+        ));
+        _endlessStatsLabel->setVisible(_isEndlessMode);
+        this->addChild(_endlessStatsLabel, 10);
 
-    // --- EXP bar ---
-    _expBarMaxWidth = 200.0f * s;
-    float expBarY = origin.y + visibleSize.height - 58.0f * s;
-    _expBarBg = LayerColor::create(Color4B(40, 40, 55, 200), _expBarMaxWidth, 14.0f * s);
-    _expBarBg->setPosition(Vec2(origin.x + visibleSize.width / 2 - _expBarMaxWidth / 2, expBarY));
-    this->addChild(_expBarBg, 10);
+        // --- EXP bar ---
+        _expBarMaxWidth = 200.0f * s;
+        float expBarY = origin.y + visibleSize.height - 58.0f * s;
+        _expBarBg = LayerColor::create(Color4B(40, 40, 55, 200), _expBarMaxWidth, 14.0f * s);
+        _expBarBg->setPosition(Vec2(origin.x + visibleSize.width / 2 - _expBarMaxWidth / 2, expBarY));
+        this->addChild(_expBarBg, 10);
 
-    _expBarFill = LayerColor::create(Color4B(80, 200, 120, 255), _expBarMaxWidth * 0.5f, 14.0f * s);
-    _expBarFill->setPosition(Vec2(0, 0));
-    _expBarBg->addChild(_expBarFill);
+        _expBarFill = LayerColor::create(Color4B(80, 200, 120, 255), _expBarMaxWidth * 0.5f, 14.0f * s);
+        _expBarFill->setPosition(Vec2(0, 0));
+        _expBarBg->addChild(_expBarFill);
 
-    _expLevelLabel = Label::createWithSystemFont("Lv.1", "Arial", 16.0f * s);
-    _expLevelLabel->setColor(Color3B(200, 220, 100));
-    _expLevelLabel->setAnchorPoint(Vec2(0, 0.5f));
-    _expLevelLabel->setPosition(Vec2(origin.x + visibleSize.width / 2 + _expBarMaxWidth / 2 + 8.0f * s, expBarY + 7.0f * s));
-    this->addChild(_expLevelLabel, 10);
+        _expLevelLabel = Label::createWithSystemFont("Lv.1", "Arial", 16.0f * s);
+        _expLevelLabel->setColor(Color3B(200, 220, 100));
+        _expLevelLabel->setAnchorPoint(Vec2(0, 0.5f));
+        _expLevelLabel->setPosition(Vec2(origin.x + visibleSize.width / 2 + _expBarMaxWidth / 2 + 8.0f * s, expBarY + 7.0f * s));
+        this->addChild(_expLevelLabel, 10);
 
-    _expFractionLabel = Label::createWithSystemFont("0/100 EXP", "Arial", 11.0f * s);
-    _expFractionLabel->setColor(Color3B(180, 180, 200));
-    _expFractionLabel->setPosition(Vec2(origin.x + visibleSize.width / 2, expBarY - 18.0f * s));
-    this->addChild(_expFractionLabel, 10);
+        _expFractionLabel = Label::createWithSystemFont("0/100 EXP", "Arial", 11.0f * s);
+        _expFractionLabel->setColor(Color3B(180, 180, 200));
+        _expFractionLabel->setPosition(Vec2(origin.x + visibleSize.width / 2, expBarY - 18.0f * s));
+        this->addChild(_expFractionLabel, 10);
 
-    // --- Wave timer ---
-    _waveTimerLabel = Label::createWithSystemFont("", "Arial", 20.0f * s);
-    _waveTimerLabel->setColor(Color3B(255, 200, 100));
-    _waveTimerLabel->setPosition(Vec2(origin.x + visibleSize.width / 2, expBarY - 38.0f * s));
-    _waveTimerLabel->setVisible(false);
-    this->addChild(_waveTimerLabel, 10);
+        // --- Wave timer ---
+        _waveTimerLabel = Label::createWithSystemFont("", "Arial", 20.0f * s);
+        _waveTimerLabel->setColor(Color3B(255, 200, 100));
+        _waveTimerLabel->setPosition(Vec2(origin.x + visibleSize.width / 2, expBarY - 38.0f * s));
+        _waveTimerLabel->setVisible(false);
+        this->addChild(_waveTimerLabel, 10);
+    }
 
     _topHintLabel = Label::createWithSystemFont(
         defaultControlHint(),
@@ -959,25 +1017,27 @@ bool GameScene::init()
     loadKeyBindings();
     initEnvironmentZones();
 
-    // --- Hub visual markers (world-space, relative to world center) ---
+    // --- Hub interaction hint (screen-space, visible near door) ---
     if (_isHubScene)
     {
         float hcx = _worldSize.width * 0.5f;
         float hcy = _worldSize.height * 0.5f;
-        auto makeMarker = [&](float x, float y, float w, float h, const Color4F& c) {
-            auto d = DrawNode::create();
-            Vec2 verts[4] = {Vec2(x, y), Vec2(x+w, y), Vec2(x+w, y+h), Vec2(x, y+h)};
-            d->drawPolygon(verts, 4, Color4F(0,0,0,0), 2.0f, c);
-            _worldLayer->addChild(d, 5);
+        const Vec2 hubArrowPositions[] = {
+            Vec2(hcx - 540.0f, hcy + 280.0f),
+            Vec2(hcx + 410.0f, hcy + 250.0f),
+            Vec2(hcx - 40.0f, hcy - 340.0f)
         };
-        // Bed: left side of dorm (green)
-        makeMarker(hcx - 650, hcy + 200, 220, 160, Color4F(0.2f, 0.8f, 0.3f, 0.6f));
-        // Desk: right side of dorm (blue)
-        makeMarker(hcx + 700, hcy + 250, 260, 200, Color4F(0.3f, 0.5f, 0.9f, 0.6f));
-        // Door: bottom center of dorm (yellow)
-        makeMarker(hcx - 150, hcy - 450, 300, 180, Color4F(0.9f, 0.8f, 0.2f, 0.6f));
 
-        // "[E]" hint label (screen-space, visible near door)
+        for (const auto& position : hubArrowPositions)
+        {
+            auto arrow = createFloatingInteractionArrow(172.0f * s);
+            if (arrow)
+            {
+                arrow->setPosition(position);
+                (_worldLayer ? _worldLayer : this)->addChild(arrow, 8);
+            }
+        }
+
         _hubHintLabel = Label::createWithSystemFont("", "Arial", 22.0f);
         _hubHintLabel->setColor(Color3B(255, 240, 140));
         _hubHintLabel->setVisible(false);

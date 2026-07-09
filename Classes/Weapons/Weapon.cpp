@@ -8,6 +8,35 @@ USING_NS_CC;
 
 namespace
 {
+    Vec2 getGripAnchorForWeapon(const std::string& weaponName, bool facingLeft)
+    {
+        Vec2 anchor(0.25f, 0.30f);
+
+        if (weaponName == "CoffeeGun" || weaponName == "CoffeeLaser")
+        {
+            anchor = Vec2(0.30f, 0.17f);
+        }
+        else if (weaponName == "KeyboardWave")
+        {
+            anchor = Vec2(0.12f, 0.20f);
+        }
+        else if (weaponName == "DeskLampLaser")
+        {
+            anchor = Vec2(0.24f, 0.22f);
+        }
+        else if (weaponName == "CoffeeBlast")
+        {
+            anchor = Vec2(0.50f, 0.50f);
+        }
+
+        if (facingLeft)
+        {
+            anchor.x = 1.0f - anchor.x;
+        }
+
+        return anchor;
+    }
+
     void faceWeaponWithoutUpsideDown(Weapon* weapon, const Vec2& direction)
     {
         if (weapon == nullptr || direction.isZero())
@@ -112,10 +141,11 @@ void Weapon::updateCooldown(float dt)
             ? _aimDirection.getNormalized()
             : Vec2(1, 0);
         bool offHand = (_handSlot % 2) == 1;
-        float facingSign = displayDir.x < -0.05f ? -1.0f : 1.0f;
-        float handX = offHand ? -48.0f : 50.0f;
-        float handY = offHand ? -28.0f : -24.0f;
-        Vec2 displayOffset(handX * facingSign, handY + displayDir.y * 5.0f);
+        bool facingLeft = displayDir.x < -0.05f;
+        float facingSign = facingLeft ? -1.0f : 1.0f;
+        float handX = offHand ? -29.0f : 29.0f;
+        float handY = offHand ? -48.0f : -47.0f;
+        Vec2 displayOffset(handX * facingSign, handY + displayDir.y * 3.0f);
         if (getParent() == _owner)
         {
             setObjectPosition(displayOffset);
@@ -124,7 +154,7 @@ void Weapon::updateCooldown(float dt)
         {
             setObjectPosition(_owner->getObjectPosition() + displayOffset);
         }
-        setAnchorPoint(Vec2(0.24f, 0.50f));
+        setAnchorPoint(getGripAnchorForWeapon(getWeaponName(), facingLeft));
         setLocalZOrder(offHand ? 5 : 6);
         faceWeaponWithoutUpsideDown(this, displayDir);
     }

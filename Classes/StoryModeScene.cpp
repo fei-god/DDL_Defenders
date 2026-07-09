@@ -14,6 +14,55 @@ USING_NS_CC;
 
 namespace
 {
+    void drawChamfer(DrawNode* draw, float x, float y, float w, float h,
+        float cut, const Color4F& color)
+    {
+        Vec2 points[8] = {
+            Vec2(x + cut, y),
+            Vec2(x + w - cut, y),
+            Vec2(x + w, y + cut),
+            Vec2(x + w, y + h - cut),
+            Vec2(x + w - cut, y + h),
+            Vec2(x + cut, y + h),
+            Vec2(x, y + h - cut),
+            Vec2(x, y + cut)
+        };
+        draw->drawSolidPoly(points, 8, color);
+    }
+
+    Node* createStoryFrame(const Size& size, bool selected = false, bool disabled = false)
+    {
+        auto root = Node::create();
+        root->setContentSize(size);
+
+        float w = size.width;
+        float h = size.height;
+        float cut = std::min(h * 0.13f, 16.0f);
+
+        auto body = DrawNode::create();
+        Color4F shadow = disabled ? Color4F(0.03f, 0.025f, 0.02f, 0.70f) : Color4F(0.02f, 0.015f, 0.01f, 0.88f);
+        Color4F outerGold = disabled ? Color4F(0.43f, 0.35f, 0.24f, 0.78f)
+            : (selected ? Color4F(1.00f, 0.73f, 0.28f, 1.0f) : Color4F(0.74f, 0.55f, 0.32f, 1.0f));
+        Color4F brightGold = disabled ? Color4F(0.56f, 0.49f, 0.39f, 0.62f)
+            : (selected ? Color4F(1.00f, 0.86f, 0.50f, 1.0f) : Color4F(0.94f, 0.72f, 0.42f, 0.95f));
+        Color4F darkGold = disabled ? Color4F(0.18f, 0.16f, 0.13f, 0.88f) : Color4F(0.19f, 0.13f, 0.08f, 0.95f);
+        Color4F fillBottom = disabled ? Color4F(0.06f, 0.075f, 0.10f, 0.94f)
+            : (selected ? Color4F(0.06f, 0.15f, 0.27f, 0.98f) : Color4F(0.045f, 0.075f, 0.115f, 0.98f));
+        Color4F fillTop = disabled ? Color4F(0.10f, 0.12f, 0.15f, 0.84f)
+            : (selected ? Color4F(0.12f, 0.25f, 0.40f, 0.96f) : Color4F(0.09f, 0.15f, 0.23f, 0.94f));
+
+        drawChamfer(body, 0.0f, -4.0f, w, h, cut, shadow);
+        drawChamfer(body, 0.0f, 0.0f, w, h, cut, darkGold);
+        drawChamfer(body, 3.0f, 3.0f, w - 6.0f, h - 6.0f, std::max(3.0f, cut - 3.0f), outerGold);
+        drawChamfer(body, 7.0f, 7.0f, w - 14.0f, h - 14.0f, std::max(2.0f, cut - 7.0f), darkGold);
+        drawChamfer(body, 10.0f, 10.0f, w - 20.0f, h - 20.0f, std::max(2.0f, cut - 10.0f), fillBottom);
+        drawChamfer(body, 12.0f, h * 0.52f, w - 24.0f, h * 0.30f, std::max(2.0f, cut - 12.0f), fillTop);
+        drawChamfer(body, 16.0f, h - 17.0f, w - 32.0f, 2.0f, 1.0f,
+            disabled ? Color4F(0.55f, 0.48f, 0.36f, 0.24f) : Color4F(1.0f, 0.86f, 0.55f, 0.36f));
+        root->addChild(body);
+        return root;
+    }
+
     Node* createUiPanel(const Size& size, const Color4B& fill)
     {
         auto root = Node::create();
@@ -24,9 +73,9 @@ namespace
 
         auto border = DrawNode::create();
         border->drawRect(Vec2::ZERO, Vec2(size.width, size.height),
-            Color4F(0.20f, 0.56f, 0.95f, 0.95f));
+            Color4F(0.74f, 0.55f, 0.32f, 0.95f));
         border->drawRect(Vec2(5.0f, 5.0f), Vec2(size.width - 5.0f, size.height - 5.0f),
-            Color4F(0.62f, 0.86f, 1.0f, 0.55f));
+            Color4F(1.0f, 0.82f, 0.46f, 0.42f));
         root->addChild(border);
 
         return root;
@@ -39,60 +88,15 @@ namespace
         const ccMenuCallback& callback)
     {
         auto buildState = [&](bool selected, bool disabled) {
-            auto root = Node::create();
-            root->setContentSize(size);
+            auto root = createStoryFrame(size, selected, disabled);
 
-            float w = size.width;
-            float h = size.height;
-            float cut = std::min(h * 0.18f, 14.0f);
-
-            auto drawChamfer = [](DrawNode* draw, float x, float y, float w, float h,
-                float cut, const Color4F& color)
-            {
-                Vec2 points[8] = {
-                    Vec2(x + cut, y),
-                    Vec2(x + w - cut, y),
-                    Vec2(x + w, y + cut),
-                    Vec2(x + w, y + h - cut),
-                    Vec2(x + w - cut, y + h),
-                    Vec2(x + cut, y + h),
-                    Vec2(x, y + h - cut),
-                    Vec2(x, y + cut)
-                };
-                draw->drawSolidPoly(points, 8, color);
-            };
-
-            auto body = DrawNode::create();
-            Color4F shadow = disabled ? Color4F(0.03f, 0.04f, 0.06f, 0.72f) : Color4F(0.01f, 0.04f, 0.09f, 0.88f);
-            Color4F shell = disabled ? Color4F(0.20f, 0.23f, 0.30f, 0.95f) : Color4F(0.02f, 0.20f, 0.40f, 1.0f);
-            Color4F rim = disabled ? Color4F(0.43f, 0.46f, 0.54f, 0.82f) : Color4F(0.15f, 0.58f, 0.98f, 1.0f);
-            Color4F innerShell = disabled ? Color4F(0.08f, 0.10f, 0.14f, 0.96f) : Color4F(0.01f, 0.08f, 0.18f, 1.0f);
-            Color4F fillTop = disabled ? Color4F(0.13f, 0.15f, 0.19f, 0.78f)
-                : (selected ? Color4F(0.10f, 0.36f, 0.58f, 0.98f) : Color4F(0.07f, 0.27f, 0.48f, 0.96f));
-            Color4F fillBottom = disabled ? Color4F(0.08f, 0.09f, 0.12f, 0.82f)
-                : (selected ? Color4F(0.02f, 0.14f, 0.28f, 0.98f) : Color4F(0.01f, 0.10f, 0.22f, 0.98f));
-
-            drawChamfer(body, 0.0f, -3.0f, w, h, cut, shadow);
-            drawChamfer(body, 0.0f, 0.0f, w, h, cut, shell);
-            drawChamfer(body, 3.0f, 3.0f, w - 6.0f, h - 6.0f, std::max(2.0f, cut - 3.0f), rim);
-            drawChamfer(body, 6.0f, 6.0f, w - 12.0f, h - 12.0f, std::max(2.0f, cut - 6.0f), innerShell);
-            drawChamfer(body, 8.0f, 8.0f, w - 16.0f, h - 16.0f, std::max(2.0f, cut - 8.0f), fillBottom);
-            drawChamfer(body, 10.0f, h * 0.52f, w - 20.0f, h * 0.27f, std::max(2.0f, cut - 10.0f),
-                Color4F(fillTop.r + 0.03f, fillTop.g + 0.05f, fillTop.b + 0.06f, fillTop.a));
-            drawChamfer(body, 11.0f, h - 12.0f, w - 22.0f, 2.0f, 1.0f,
-                disabled ? Color4F(0.55f, 0.56f, 0.60f, 0.20f) : Color4F(0.78f, 0.93f, 1.0f, 0.35f));
-            root->addChild(body);
-
-            auto label = Label::createWithSystemFont(text, "Arial", fontSize);
-            label->setColor(disabled ? Color3B(95, 95, 105) : textColor);
+            auto label = Label::createWithSystemFont(text, "SimSun", fontSize);
+            label->setColor(disabled ? Color3B(130, 122, 110) : textColor);
             label->enableBold();
-            label->enableItalics();
-            label->enableOutline(disabled ? Color4B(20, 22, 28, 180) : Color4B(5, 18, 36, 230),
-                std::max(2, static_cast<int>(fontSize * 0.11f)));
-            label->enableShadow(Color4B(0, 0, 0, 220), Size(2.5f, -2.5f), 1);
-            label->setSkewX(-8.0f);
-            label->setScale(1.08f);
-            label->setPosition(Vec2(size.width * 0.5f, size.height * 0.54f));
+            label->enableOutline(disabled ? Color4B(24, 22, 19, 200) : Color4B(43, 29, 15, 230),
+                std::max(2, static_cast<int>(fontSize * 0.075f)));
+            label->enableShadow(Color4B(0, 0, 0, 210), Size(2.0f, -2.0f), 1);
+            label->setPosition(Vec2(size.width * 0.5f, size.height * 0.53f));
             root->addChild(label);
             return root;
         };
@@ -100,7 +104,7 @@ namespace
         auto normal = buildState(false, false);
         auto selected = buildState(true, false);
         auto disabled = buildState(false, true);
-        selected->setScale(0.97f);
+        selected->setScale(0.98f);
         return MenuItemSprite::create(normal, selected, disabled, callback);
     }
 }
@@ -367,19 +371,20 @@ void StoryModeScene::showMainView(float s)
     const std::string modeTitle = _isEndlessMode
         ? (english ? "Endless Mode" : u8"无尽模式")
         : lm->getString("story_mode");
-    auto title = Label::createWithSystemFont(modeTitle, "Arial", 44.0f * s);
-    title->setColor(Color3B(220, 220, 100));
-    title->enableOutline(Color4B(20, 18, 8, 220), std::max(1, static_cast<int>(3.0f * s)));
+    auto title = Label::createWithSystemFont(modeTitle, "SimSun", 44.0f * s);
+    title->setColor(Color3B(236, 210, 160));
+    title->enableBold();
+    title->enableOutline(Color4B(43, 29, 15, 230), std::max(1, static_cast<int>(3.0f * s)));
     title->enableShadow(Color4B(0, 0, 0, 200), Size(3.0f * s, -3.0f * s), 1);
-    title->setPosition(Vec2(cx, cy + 135.0f * s));
+    title->setPosition(Vec2(cx, cy + 154.0f * s));
     _currentView->addChild(title);
 
-    Size bigBtnSize(400.0f * s, 56.0f * s);
-    auto newGameItem = createStoryButton(lm->getString("new_game"), bigBtnSize, 28.0f * s,
-        Color3B(235, 245, 255), CC_CALLBACK_1(StoryModeScene::onNewGameClicked, this));
+    Size bigBtnSize(390.0f * s, 78.0f * s);
+    auto newGameItem = createStoryButton(lm->getString("new_game"), bigBtnSize, 36.0f * s,
+        Color3B(238, 215, 172), CC_CALLBACK_1(StoryModeScene::onNewGameClicked, this));
 
-    auto loadGameItem = createStoryButton(lm->getString("load_game"), bigBtnSize, 28.0f * s,
-        Color3B(235, 245, 255), CC_CALLBACK_1(StoryModeScene::onLoadGameClicked, this));
+    auto loadGameItem = createStoryButton(lm->getString("load_game"), bigBtnSize, 36.0f * s,
+        Color3B(238, 215, 172), CC_CALLBACK_1(StoryModeScene::onLoadGameClicked, this));
 
     // Check if any saves exist
     auto saves = loadAllSaves(_isEndlessMode);
@@ -388,12 +393,12 @@ void StoryModeScene::showMainView(float s)
         loadGameItem->setEnabled(false);
     }
 
-    auto backItem = createStoryButton(lm->getString("back_to_title"), bigBtnSize, 26.0f * s,
-        Color3B(235, 245, 255), CC_CALLBACK_1(StoryModeScene::onBackClicked, this));
+    auto backItem = createStoryButton(lm->getString("back_to_title"), bigBtnSize, 36.0f * s,
+        Color3B(238, 215, 172), CC_CALLBACK_1(StoryModeScene::onBackClicked, this));
 
     auto menu = Menu::create(newGameItem, loadGameItem, backItem, nullptr);
-    menu->setPosition(Vec2(cx, cy - 28.0f * s));
-    menu->alignItemsVerticallyWithPadding(24.0f * s);
+    menu->setPosition(Vec2(cx, cy - 36.0f * s));
+    menu->alignItemsVerticallyWithPadding(34.0f * s);
     _currentView->addChild(menu);
 }
 
@@ -414,15 +419,18 @@ void StoryModeScene::showLoadView(float s)
     _currentView = Node::create();
     this->addChild(_currentView, 1);
 
-    Size panelSize(std::max(360.0f * s, std::min(700.0f * s, visibleSize.width - 80.0f * s)),
+    Size panelSize(std::max(420.0f * s, std::min(760.0f * s, visibleSize.width - 80.0f * s)),
         std::max(360.0f * s, visibleSize.height - 110.0f * s));
-    auto panel = createUiPanel(panelSize, Color4B(15, 25, 42, 220));
+    auto panel = createUiPanel(panelSize, Color4B(8, 15, 26, 220));
     panel->setPosition(Vec2(cx - panelSize.width * 0.5f,
         origin.y + 70.0f * s));
     _currentView->addChild(panel);
 
-    auto title = Label::createWithSystemFont(lm->getString("load_game"), "Arial", 38.0f * s);
-    title->setColor(Color3B(220, 200, 100));
+    auto title = Label::createWithSystemFont(lm->getString("load_game"), "SimSun", 44.0f * s);
+    title->setColor(Color3B(236, 210, 160));
+    title->enableBold();
+    title->enableOutline(Color4B(43, 29, 15, 230), std::max(1, static_cast<int>(3.0f * s)));
+    title->enableShadow(Color4B(0, 0, 0, 200), Size(3.0f * s, -3.0f * s), 1);
     title->setPosition(Vec2(cx, origin.y + visibleSize.height - 58.0f * s));
     _currentView->addChild(title);
 
@@ -430,18 +438,21 @@ void StoryModeScene::showLoadView(float s)
 
     if (saves.empty())
     {
-        auto noData = Label::createWithSystemFont(lm->getString("no_saves"), "Arial", 24.0f * s);
-        noData->setColor(Color3B(140, 140, 160));
+        auto noData = Label::createWithSystemFont(lm->getString("no_saves"), "SimSun", 32.0f * s);
+        noData->setColor(Color3B(130, 122, 110));
+        noData->enableBold();
+        noData->enableOutline(Color4B(24, 22, 19, 200), std::max(1, static_cast<int>(2.0f * s)));
+        noData->enableShadow(Color4B(0, 0, 0, 200), Size(2.0f * s, -2.0f * s), 1);
         noData->setPosition(Vec2(cx, origin.y + visibleSize.height * 0.5f));
         _currentView->addChild(noData);
     }
     else
     {
-        float cardW = panelSize.width - 54.0f * s;
-        float cardH = 70.0f * s;
-        float gap = 12.0f * s;
-        float startY = origin.y + visibleSize.height - 125.0f * s;
-        int maxVisible = 7;
+        float cardW = panelSize.width - 70.0f * s;
+        float cardH = 78.0f * s;
+        float gap = 10.0f * s;
+        float startY = origin.y + visibleSize.height - 128.0f * s;
+        int maxVisible = std::min(5, static_cast<int>((panelSize.height - 120.0f * s) / (cardH + gap)));
         int totalToShow = std::min(static_cast<int>(saves.size()), maxVisible);
 
         for (int i = 0; i < totalToShow; ++i)
@@ -449,24 +460,19 @@ void StoryModeScene::showLoadView(float s)
             const auto& save = saves[i];
             float cardY = startY - i * (cardH + gap);
 
-            // Card background
-            auto cardBg = LayerColor::create(Color4B(28, 42, 64, 225), cardW, cardH);
-            cardBg->setPosition(Vec2(cx - cardW * 0.5f, cardY - cardH * 0.5f));
-            _currentView->addChild(cardBg);
-
-            auto cardBorder = DrawNode::create();
-            cardBorder->drawRect(Vec2(cx - cardW * 0.5f, cardY - cardH * 0.5f),
-                Vec2(cx + cardW * 0.5f, cardY + cardH * 0.5f),
-                Color4F(0.18f, 0.50f, 0.86f, 0.65f));
-            _currentView->addChild(cardBorder);
+            auto cardFrame = createStoryFrame(Size(cardW, cardH), false, false);
+            cardFrame->setPosition(Vec2(cx - cardW * 0.5f, cardY - cardH * 0.5f));
+            _currentView->addChild(cardFrame);
 
             // Type label
             const char* typeKey = (save.type == 0) ? "auto_save" : "manual_save";
-            Color3B typeColor = (save.type == 0) ? Color3B(100, 180, 220) : Color3B(130, 220, 130);
-            auto typeLabel = Label::createWithSystemFont(lm->getString(typeKey), "Arial", 18.0f * s);
-            typeLabel->setColor(typeColor);
+            auto typeLabel = Label::createWithSystemFont(lm->getString(typeKey), "SimSun", 26.0f * s);
+            typeLabel->setColor(Color3B(238, 215, 172));
+            typeLabel->enableBold();
+            typeLabel->enableOutline(Color4B(43, 29, 15, 220), std::max(1, static_cast<int>(2.0f * s)));
+            typeLabel->enableShadow(Color4B(0, 0, 0, 200), Size(2.0f * s, -2.0f * s), 1);
             typeLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
-            typeLabel->setPosition(Vec2(cx - cardW * 0.5f + 20.0f * s, cardY + 16.0f * s));
+            typeLabel->setPosition(Vec2(cx - cardW * 0.5f + 34.0f * s, cardY + 17.0f * s));
             _currentView->addChild(typeLabel);
 
             // Level + time info
@@ -475,15 +481,18 @@ void StoryModeScene::showLoadView(float s)
                 lm->getString("level_info_fmt").c_str(), save.level);
             char infoBuf[128];
             snprintf(infoBuf, sizeof(infoBuf), "%s  |  %s", levelBuf, save.timestamp.c_str());
-            auto infoLabel = Label::createWithSystemFont(infoBuf, "Arial", 16.0f * s);
-            infoLabel->setColor(Color3B(160, 160, 180));
+            auto infoLabel = Label::createWithSystemFont(infoBuf, "SimSun", 20.0f * s);
+            infoLabel->setColor(Color3B(210, 202, 188));
+            infoLabel->enableBold();
+            infoLabel->enableOutline(Color4B(25, 20, 16, 180), std::max(1, static_cast<int>(1.5f * s)));
+            infoLabel->enableShadow(Color4B(0, 0, 0, 180), Size(1.5f * s, -1.5f * s), 1);
             infoLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
-            infoLabel->setPosition(Vec2(cx - cardW * 0.5f + 20.0f * s, cardY - 16.0f * s));
+            infoLabel->setPosition(Vec2(cx - cardW * 0.5f + 34.0f * s, cardY - 17.0f * s));
             _currentView->addChild(infoLabel);
 
             // Load button (right side)
-            auto loadBtn = createStoryButton(lm->getString("load"), Size(78.0f * s, 34.0f * s),
-                18.0f * s, Color3B(220, 245, 235), CC_CALLBACK_1(StoryModeScene::onSaveLoadClicked, this));
+            auto loadBtn = createStoryButton(lm->getString("load"), Size(124.0f * s, 46.0f * s),
+                24.0f * s, Color3B(238, 215, 172), CC_CALLBACK_1(StoryModeScene::onSaveLoadClicked, this));
             loadBtn->setTag(i);  // display index
 
             // Delete button (only for manual saves)
@@ -492,24 +501,24 @@ void StoryModeScene::showLoadView(float s)
 
             if (save.type == 1)  // manual save can be deleted
             {
-                auto delBtn = createStoryButton("X", Size(36.0f * s, 34.0f * s),
-                    18.0f * s, Color3B(255, 160, 140), CC_CALLBACK_1(StoryModeScene::onSaveDeleteClicked, this));
+                auto delBtn = createStoryButton("X", Size(46.0f * s, 46.0f * s),
+                    24.0f * s, Color3B(255, 160, 140), CC_CALLBACK_1(StoryModeScene::onSaveDeleteClicked, this));
                 delBtn->setTag(i);
                 btnItems.pushBack(delBtn);
             }
 
             auto btnMenu = Menu::createWithArray(btnItems);
-            btnMenu->setPosition(Vec2(cx + cardW * 0.5f - 50.0f * s, cardY));
-            btnMenu->alignItemsHorizontallyWithPadding(16.0f * s);
+            btnMenu->setPosition(Vec2(cx + cardW * 0.5f - 76.0f * s, cardY));
+            btnMenu->alignItemsHorizontallyWithPadding(12.0f * s);
             _currentView->addChild(btnMenu);
         }
     }
 
     // Back button
-    auto backItem = createStoryButton(lm->getString("back"), Size(220.0f * s, 42.0f * s),
-        21.0f * s, Color3B(220, 230, 245), CC_CALLBACK_1(StoryModeScene::onLoadBackClicked, this));
+    auto backItem = createStoryButton(lm->getString("back"), Size(390.0f * s, 78.0f * s),
+        36.0f * s, Color3B(238, 215, 172), CC_CALLBACK_1(StoryModeScene::onLoadBackClicked, this));
     auto backMenu = Menu::create(backItem, nullptr);
-    backMenu->setPosition(Vec2(cx, origin.y + 38.0f * s));
+    backMenu->setPosition(Vec2(cx, origin.y + 45.0f * s));
     _currentView->addChild(backMenu);
 }
 
