@@ -376,40 +376,100 @@ void Enemy::playAttackEffect()
 
 void Enemy::playHitEffect()
 {
-    // White flash with tint
-    this->setColor(Color3B(255, 255, 255));
-    auto restoreColor = CallFunc::create([this]() {
-        this->setColor(Color3B(255, 255, 255));
+    // ── Layer 1: Red tint flash ──
+    // Remember original color and flash red → back to white
+    Color3B originalColor = this->getColor();
+    this->setColor(Color3B(255, 100, 80));  // instant red-orange flash
+    auto restoreColor = CallFunc::create([this, originalColor]() {
+        if (this != nullptr && this->isObjectActive()) {
+            this->setColor(originalColor);
+        }
     });
-    auto delay = DelayTime::create(0.06f);
-    auto seq = Sequence::create(delay, restoreColor, nullptr);
-    this->runAction(seq);
+    auto flashDelay = DelayTime::create(0.05f);
+    auto flashSeq = Sequence::create(flashDelay, restoreColor, nullptr);
+    this->runAction(flashSeq);
 
-    // Hit sparks burst
-    auto sparkNode = DrawNode::create();
-    sparkNode->setPosition(Vec2::ZERO);
-    for (int i = 0; i < 8; i++)
+    // ── Layer 2: Expanding shockwave ring ──
+    auto shockwave = DrawNode::create();
+    shockwave->setPosition(Vec2::ZERO);
+    // Outer glow ring
+    shockwave->drawCircle(Vec2::ZERO, 12.0f, 0, 24, false,
+        Color4F(1.0f, 0.85f, 0.3f, 0.7f));
+    // Inner bright ring
+    shockwave->drawCircle(Vec2::ZERO, 8.0f, 0, 20, false,
+        Color4F(1.0f, 1.0f, 1.0f, 0.9f));
+    this->addChild(shockwave, 199);
+
+    auto expandRing = ScaleTo::create(0.25f, 3.5f);
+    auto fadeRing = FadeOut::create(0.25f);
+    auto removeRing = RemoveSelf::create();
+    shockwave->runAction(Sequence::create(
+        Spawn::create(expandRing, fadeRing, nullptr),
+        removeRing, nullptr));
+
+    // ── Layer 3: Multi-layered hit particles ──
+    auto particleNode = DrawNode::create();
+    particleNode->setPosition(Vec2::ZERO);
+
+    // Inner layer: white-hot core sparks (fast, short-lived)
+    for (int i = 0; i < 10; i++)
     {
-        float angle = (i * 2.0f * M_PI) / 8 + (rand() % 100) / 500.0f;
-        float r = 8.0f + (rand() % 15);
+        float angle = (i * 2.0f * M_PI) / 10 + (rand() % 60 - 30) * M_PI / 180.0f;
+        float r = 10.0f + (rand() % 12);
         Vec2 pt = Vec2(cosf(angle), sinf(angle)) * r;
-        sparkNode->drawDot(pt, 3.0f + (rand() % 4),
-            Color4F(1.0f, 0.9f, 0.5f, 0.9f));
+        float size = 2.5f + (rand() % 4);
+        particleNode->drawDot(pt, size,
+            Color4F(1.0f, 1.0f, 1.0f, 1.0f));
     }
-    this->addChild(sparkNode, 200);
 
-    auto fadeSparks = FadeOut::create(0.2f);
-    auto removeSparks = RemoveSelf::create();
-    auto moveOut = MoveBy::create(0.2f, Vec2(0, 8));
-    sparkNode->runAction(Sequence::create(
-        Spawn::create(fadeSparks, moveOut, nullptr),
-        removeSparks, nullptr));
+    // Outer layer: orange/yellow sparks (slower, wider spread)
+    for (int i = 0; i < 14; i++)
+    {
+        float angle = (i * 2.0f * M_PI) / 14 + (rand() % 50 - 25) * M_PI / 180.0f;
+        float r = 16.0f + (rand() % 20);
+        Vec2 pt = Vec2(cosf(angle), sinf(angle)) * r;
+        float size = 3.0f + (rand() % 5);
+        float brightness = 0.6f + (rand() % 40) / 100.0f;
+        particleNode->drawDot(pt, size,
+            Color4F(1.0f, 0.7f + brightness * 0.3f, 0.1f + brightness * 0.2f, 0.85f));
+    }
 
-    // Knockback squash
+    // Extra debris particles (tiny, random angles)
+    for (int i = 0; i < 6; i++)
+    {
+        float angle = CCRANDOM_0_1() * 2.0f * M_PI;
+        float r = 20.0f + (rand() % 25);
+        Vec2 pt = Vec2(cosf(angle), sinf(angle)) * r;
+        particleNode->drawDot(pt, 1.5f + (rand() % 3),
+            Color4F(1.0f, 0.85f, 0.4f, 0.7f));
+    }
+
+    this->addChild(particleNode, 200);
+
+    // Particles fly outward and fade
+    auto scaleUp = ScaleTo::create(0.22f, 1.6f);
+    auto fadeOut = FadeOut::create(0.22f);
+    auto removeParticles = RemoveSelf::create();
+    particleNode->runAction(Sequence::create(
+        Spawn::create(scaleUp, fadeOut, nullptr),
+        removeParticles, nullptr));
+
+    // ── Layer 4: Position jitter / screen shake ──
+    Vec2 originalPos = this->getPosition();
+    auto jitterRight = MoveTo::create(0.015f, originalPos + Vec2(3, 1));
+    auto jitterLeft = MoveTo::create(0.015f, originalPos + Vec2(-3, -1));
+    auto jitterUp = MoveTo::create(0.015f, originalPos + Vec2(1, 2));
+    auto jitterDown = MoveTo::create(0.015f, originalPos + Vec2(-1, -2));
+    auto settlePos = MoveTo::create(0.04f, originalPos);
+    auto jitterSeq = Sequence::create(
+        jitterRight, jitterLeft, jitterUp, jitterDown, settlePos, nullptr);
+    this->runAction(jitterSeq);
+
+    // ── Layer 5: Knockback squash & stretch ──
     float curScale = getScale();
-    auto squash = ScaleTo::create(0.04f, curScale * 0.85f);
-    auto bounce = ScaleTo::create(0.08f, curScale * 1.05f);
-    auto settle = ScaleTo::create(0.1f, curScale);
+    auto squash = ScaleTo::create(0.03f, curScale * 0.82f);
+    auto bounce = ScaleTo::create(0.07f, curScale * 1.08f);
+    auto settle = ScaleTo::create(0.10f, curScale);
     this->runAction(Sequence::create(squash, bounce, settle, nullptr));
 }
 

@@ -760,19 +760,30 @@ bool Role::isSlowed() const
 
 void Role::flashWhenHit()
 {
-    // ���ܻ���˸������Ͷ���ϵͳǿ��
-    this->setOpacity(120);
+    // Hit flash: white flash -> red tint -> restore original color
+    Color3B originalColor = this->getColor();
 
-    auto delay = DelayTime::create(0.08f);
-    auto recover = CallFunc::create([this]()
-        {
-            if (this != nullptr && this->isObjectActive())
-            {
-                this->setOpacity(255);
-            }
-        });
+    // Step 1: instant white flash
+    this->setColor(Color3B(255, 255, 255));
 
-    this->runAction(Sequence::create(delay, recover, nullptr));
+    // Step 2: shift to red tint after brief delay
+    auto redShift = CallFunc::create([this]() {
+        if (this != nullptr && this->isObjectActive()) {
+            this->setColor(Color3B(255, 120, 100));
+        }
+    });
+
+    // Step 3: restore original color
+    auto restoreColor = CallFunc::create([this, originalColor]() {
+        if (this != nullptr && this->isObjectActive()) {
+            this->setColor(originalColor);
+        }
+    });
+
+    auto delay1 = DelayTime::create(0.03f);
+    auto delay2 = DelayTime::create(0.05f);
+    auto seq = Sequence::create(delay1, redShift, delay2, restoreColor, nullptr);
+    this->runAction(seq);
 }
 
 // =========================
