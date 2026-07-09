@@ -32,6 +32,7 @@ public:
         cocos2d::Node* bulletLayer
     );
     void bindBulletPool(BulletPool* bulletPool);
+    void setHandSlot(int handSlot);
 
     // 每帧更新武器冷却，冷却结束后不自动开火（由GameScene控制）。
     void updateCooldown(float dt);
@@ -92,6 +93,7 @@ protected:
     float _energyCost;
     float _energyRecoverPerSecond;
     int _projectileCountBonus;
+    int _handSlot;
 
     float _bulletSpeed;                    // 子弹速度
 	string _bulletImagePath;               //子弹图片路径

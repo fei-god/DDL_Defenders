@@ -12,6 +12,9 @@ public:
     virtual void fire() override;
 
 private:
+    bool hasEnemyInBlastRange() const;
+    void playBlastEffect(const cocos2d::Vec2& center);
+
     float _radius;
 };
 
