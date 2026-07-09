@@ -18,6 +18,8 @@
 #include "platform/CCImage.h"
 #include "renderer/CCTextureCache.h"
 #include "base/CCUserDefault.h"
+#include "base/CCEventListenerTouch.h"
+#include "ui/UIScrollView.h"
 #include <new>
 #include <cmath>
 #include <algorithm>
@@ -114,6 +116,132 @@ namespace
         selected->setScale(0.96f);
         selected->setOpacity(220);
         return MenuItemSprite::create(normal, selected, callback);
+    }
+
+    Sprite* createFittedSprite(const std::string& imagePath, const Size& bounds)
+    {
+        std::string resolved = AssetPaths::resolve(imagePath);
+        auto sprite = resolved.empty() ? nullptr : Sprite::create(resolved);
+        if (!sprite)
+            return nullptr;
+
+        Size imageSize = sprite->getContentSize();
+        if (imageSize.width > 0.0f && imageSize.height > 0.0f)
+        {
+            sprite->setScale(std::min(bounds.width / imageSize.width,
+                bounds.height / imageSize.height));
+        }
+        sprite->setPosition(Vec2(bounds.width * 0.5f, bounds.height * 0.5f));
+        return sprite;
+    }
+
+    LayerColor* createPausePanel(const Size& size)
+    {
+        auto panel = LayerColor::create(Color4B(5, 14, 28, 178), size.width, size.height);
+        auto topLine = LayerColor::create(Color4B(178, 139, 72, 150), size.width, 2.0f);
+        topLine->setPosition(Vec2(0.0f, size.height - 2.0f));
+        panel->addChild(topLine, 1);
+        auto bottomLine = LayerColor::create(Color4B(48, 69, 94, 110), size.width, 1.0f);
+        panel->addChild(bottomLine, 1);
+        return panel;
+    }
+
+    Node* createPauseSectionTitle(const std::string& text, const Size& size, float fontSize)
+    {
+        auto root = Node::create();
+        root->setContentSize(size);
+        auto bg = LayerColor::create(Color4B(18, 33, 54, 218), size.width, size.height);
+        root->addChild(bg, 0);
+        auto line = LayerColor::create(Color4B(203, 158, 78, 180), size.width, 2.0f);
+        line->setPosition(Vec2(0.0f, size.height - 2.0f));
+        root->addChild(line, 1);
+        auto label = Label::createWithSystemFont(text, "Arial", fontSize);
+        label->setColor(Color3B(236, 219, 169));
+        label->enableOutline(Color4B(18, 20, 28, 180), 1);
+        label->setPosition(Vec2(size.width * 0.5f, size.height * 0.52f));
+        root->addChild(label, 2);
+        return root;
+    }
+
+    Node* createPauseInfoRow(const std::string& name, const std::string& value,
+        const Size& size, float fontSize)
+    {
+        auto root = Node::create();
+        root->setContentSize(size);
+        auto bg = LayerColor::create(Color4B(15, 28, 46, 188), size.width, size.height);
+        root->addChild(bg, 0);
+        auto accent = LayerColor::create(Color4B(177, 138, 74, 92), 3.0f, size.height);
+        root->addChild(accent, 1);
+
+        auto nameLabel = Label::createWithSystemFont(name, "Arial", fontSize);
+        nameLabel->setColor(Color3B(205, 216, 226));
+        nameLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
+        nameLabel->setPosition(Vec2(14.0f, size.height * 0.52f));
+        root->addChild(nameLabel, 2);
+
+        auto valueLabel = Label::createWithSystemFont(value, "Arial", fontSize);
+        valueLabel->setColor(Color3B(246, 218, 142));
+        valueLabel->setAnchorPoint(Vec2(1.0f, 0.5f));
+        valueLabel->setPosition(Vec2(size.width - 14.0f, size.height * 0.52f));
+        root->addChild(valueLabel, 2);
+        return root;
+    }
+
+    Node* createPauseItemRow(const std::string& slotText, const std::string& name,
+        const std::string& imagePath, const Size& size, float iconSize, float fontSize)
+    {
+        auto root = Node::create();
+        root->setContentSize(size);
+        auto bg = LayerColor::create(Color4B(16, 30, 48, 190), size.width, size.height);
+        root->addChild(bg, 0);
+
+        auto iconBg = LayerColor::create(Color4B(5, 12, 22, 170), iconSize, iconSize);
+        iconBg->setPosition(Vec2(10.0f, (size.height - iconSize) * 0.5f));
+        root->addChild(iconBg, 1);
+
+        auto icon = createFittedSprite(imagePath, Size(iconSize - 8.0f, iconSize - 8.0f));
+        if (icon)
+        {
+            icon->setPosition(Vec2(10.0f + iconSize * 0.5f, size.height * 0.5f));
+            root->addChild(icon, 2);
+        }
+
+        auto slot = Label::createWithSystemFont(slotText, "Arial", fontSize);
+        slot->setColor(Color3B(237, 202, 123));
+        slot->setAnchorPoint(Vec2(0.0f, 0.5f));
+        slot->setPosition(Vec2(20.0f + iconSize, size.height * 0.52f));
+        root->addChild(slot, 2);
+
+        auto nameLabel = Label::createWithSystemFont(name, "Arial", fontSize);
+        nameLabel->setColor(Color3B(218, 226, 236));
+        nameLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
+        nameLabel->setPosition(Vec2(72.0f + iconSize, size.height * 0.52f));
+        root->addChild(nameLabel, 2);
+        return root;
+    }
+
+    Node* createPauseActionButton(const std::string& imagePath, const std::string& text,
+        const Size& iconBounds, float fontSize, const ccMenuCallback& callback)
+    {
+        auto root = Node::create();
+        root->setContentSize(Size(iconBounds.width, iconBounds.height + fontSize + 18.0f));
+
+        auto normal = createUiImageOrLabel(imagePath, text, iconBounds, fontSize, Color3B(235, 220, 178));
+        auto selected = createUiImageOrLabel(imagePath, text, iconBounds, fontSize, Color3B(255, 238, 190));
+        selected->setScale(0.95f);
+        auto item = MenuItemSprite::create(normal, selected, callback);
+        item->setPosition(Vec2(iconBounds.width * 0.5f,
+            root->getContentSize().height - iconBounds.height * 0.5f));
+        auto menu = Menu::create(item, nullptr);
+        menu->setPosition(Vec2::ZERO);
+        root->addChild(menu, 2);
+
+        auto label = Label::createWithSystemFont(text, "Arial", fontSize);
+        label->setColor(Color3B(226, 218, 198));
+        label->enableOutline(Color4B(10, 13, 20, 180), 1);
+        label->setPosition(Vec2(iconBounds.width * 0.5f, fontSize * 0.52f));
+        root->addChild(label, 3);
+        return root;
     }
 
     bool isChineseUi()
@@ -3262,111 +3390,146 @@ void GameScene::showPauseMenu()
     auto* lm = LanguageManager::getInstance();
     auto visibleSize = Director::getInstance()->getVisibleSize();
     Vec2 origin = Director::getInstance()->getVisibleOrigin();
-    auto winSize = Director::getInstance()->getWinSize();
-    float cx = origin.x + visibleSize.width / 2;
-    // Unified scale factor (same as SettingsScene)
-    float s = std::min(winSize.height / 760.0f, winSize.width / 960.0f);
-    s = std::max(0.72f, s);
+    const float cx = origin.x + visibleSize.width * 0.5f;
+    const float cy = origin.y + visibleSize.height * 0.5f;
+    float s = std::min(visibleSize.width / 1920.0f, visibleSize.height / 1080.0f);
+    s = std::max(0.70f, std::min(s, 2.0f));
 
-    // Semi-transparent overlay
-    _pauseLayer = LayerColor::create(Color4B(0, 0, 0, 180), winSize.width, winSize.height);
-    _pauseLayer->setPosition(Vec2::ZERO);
+    _pauseLayer = LayerColor::create(Color4B(0, 5, 15, 150),
+        visibleSize.width, visibleSize.height);
+    _pauseLayer->setPosition(origin);
     this->addChild(_pauseLayer, 100);
 
-    // Title
-    float titleY = origin.y + visibleSize.height - 36.0f * s;
-    auto titleLabel = Label::createWithSystemFont(
-        lm->getString("game_paused"), "Arial", 36.0f * s);
-    titleLabel->setColor(Color3B(220, 220, 240));
-    titleLabel->setPosition(Vec2(cx, titleY));
-    _pauseLayer->addChild(titleLabel);
+    auto swallow = EventListenerTouchOneByOne::create();
+    swallow->setSwallowTouches(true);
+    swallow->onTouchBegan = [](Touch*, Event*) { return true; };
+    _eventDispatcher->addEventListenerWithSceneGraphPriority(swallow, _pauseLayer);
 
-    // --- Left panel: Player stats ---
-    float panelTopY = titleY - 48.0f * s;
-    buildPauseStatsPanel(_pauseLayer,
-        Vec2(origin.x + visibleSize.width * 0.06f, panelTopY), s);
+    const float panelW = visibleSize.width * 0.84f;
+    const float panelH = visibleSize.height * 0.72f;
+    const float gap = panelW * 0.04f;
+    const float leftW = panelW * 0.35f;
+    const float rightW = panelW - leftW - gap;
+    const float contentBottom = origin.y + visibleSize.height * 0.18f;
+    const float contentLeft = cx - panelW * 0.5f;
 
-    // --- Right panel: Weapons + Backpack ---
-    buildPauseWeaponPanel(_pauseLayer,
-        Vec2(origin.x + visibleSize.width * 0.52f, panelTopY), s);
+    auto content = Node::create();
+    content->setContentSize(Size(panelW, panelH));
+    content->setPosition(Vec2(contentLeft, contentBottom));
+    _pauseLayer->addChild(content, 20);
 
-    // --- Bottom buttons ---
-    Size buttonSize(180.0f * s, 44.0f * s);
-    auto resumeItem = createUiImageButton("art/ui/pause_resume.png", lm->getString("resume"),
-        buttonSize, 22.0f * s, Color3B(100, 220, 100),
-        CC_CALLBACK_1(GameScene::onPauseResumeClicked, this));
-    auto restartItem = createUiImageButton("art/ui/pause_restart.png", lm->getString("restart"),
-        buttonSize, 22.0f * s, Color3B(220, 200, 100),
-        CC_CALLBACK_1(GameScene::onPauseRestartClicked, this));
-    auto titleItem = createUiImageButton("art/ui/pause_back_to_menu.png", lm->getString("back_to_title"),
-        buttonSize, 22.0f * s, Color3B(200, 140, 120),
-        CC_CALLBACK_1(GameScene::onPauseTitleClicked, this));
-    auto settingsItem = createUiImageButton("art/ui/pause_settings.png", lm->getString("settings"),
-        buttonSize, 22.0f * s, Color3B(160, 180, 220),
-        CC_CALLBACK_1(GameScene::onPauseSettingsClicked, this));
+    buildPauseStatsPanel(content, Vec2(0.0f, 0.0f), s);
+    buildPauseWeaponPanel(content, Vec2(leftW + gap, 0.0f), s);
 
-    Vector<MenuItem*> pauseItems;
-    pauseItems.pushBack(resumeItem);
-    pauseItems.pushBack(restartItem);
-    if (!_isEndlessMode)
+    const Size titleBounds(460.0f * s, 118.0f * s);
+    auto titleSprite = createFittedSprite("art/ui/pause_title.png", titleBounds);
+    if (titleSprite)
     {
-        auto saveItem = createUiImageButton("art/ui/pause_save.png",
-            lm->getString("save_game"), buttonSize, 22.0f * s, Color3B(100, 180, 240),
-            CC_CALLBACK_1(GameScene::onPauseSaveClicked, this));
-        if (saveItem) pauseItems.pushBack(saveItem);
+        auto titleNode = Node::create();
+        titleNode->setContentSize(titleBounds);
+        titleNode->addChild(titleSprite);
+        titleNode->setPosition(Vec2(cx - titleBounds.width * 0.5f,
+            contentBottom + panelH - titleBounds.height * 0.46f));
+        _pauseLayer->addChild(titleNode, 50);
     }
-    pauseItems.pushBack(settingsItem);
-    pauseItems.pushBack(titleItem);
+    else
+    {
+        auto titleLabel = Label::createWithSystemFont(
+            lm->getString("game_paused"), "Arial", 46.0f * s);
+        titleLabel->setColor(Color3B(238, 230, 210));
+        titleLabel->setPosition(Vec2(cx, contentBottom + panelH + 16.0f * s));
+        _pauseLayer->addChild(titleLabel, 50);
+    }
 
-    auto menu = Menu::createWithArray(pauseItems);
-    menu->setPosition(Vec2(cx, origin.y + 55.0f * s));
-    menu->alignItemsHorizontallyWithPadding(8.0f * s);
-    _pauseLayer->addChild(menu);
+    const Size iconBounds(112.0f * s, 78.0f * s);
+    const float buttonY = origin.y + visibleSize.height * 0.055f;
+    const float buttonGap = 34.0f * s;
+    const std::vector<Node*> buttons = {
+        createPauseActionButton("art/ui/pause_resume.png", lm->getString("resume"),
+            iconBounds, 18.0f * s, CC_CALLBACK_1(GameScene::onPauseResumeClicked, this)),
+        createPauseActionButton("art/ui/pause_restart.png", lm->getString("restart"),
+            iconBounds, 18.0f * s, CC_CALLBACK_1(GameScene::onPauseRestartClicked, this)),
+        createPauseActionButton("art/ui/pause_save.png", lm->getString("save_game"),
+            iconBounds, 18.0f * s, CC_CALLBACK_1(GameScene::onPauseSaveClicked, this)),
+        createPauseActionButton("art/ui/pause_settings.png", lm->getString("settings"),
+            iconBounds, 18.0f * s, CC_CALLBACK_1(GameScene::onPauseSettingsClicked, this)),
+        createPauseActionButton("art/ui/pause_back_to_menu.png", lm->getString("back_to_title"),
+            iconBounds, 18.0f * s, CC_CALLBACK_1(GameScene::onPauseTitleClicked, this))
+    };
+
+    const float totalButtonsW = buttons.size() * iconBounds.width +
+        (buttons.size() - 1) * buttonGap;
+    float x = cx - totalButtonsW * 0.5f;
+    for (auto* button : buttons)
+    {
+        button->setPosition(Vec2(x, buttonY));
+        _pauseLayer->addChild(button, 60);
+        x += iconBounds.width + buttonGap;
+    }
 }
 
 void GameScene::buildPauseStatsPanel(Node* parent, const Vec2& pos, float s)
 {
     auto* lm = LanguageManager::getInstance();
-    float y = pos.y;
+    const Size contentSize = parent->getContentSize();
+    const float panelW = contentSize.width * 0.35f;
+    const float panelH = contentSize.height;
+    const float pad = 22.0f * s;
 
-    auto header = Label::createWithSystemFont(
-        lm->getString("player_stats"), "Arial", 22.0f * s);
-    header->setColor(Color3B(255, 220, 100));
-    header->setAnchorPoint(Vec2(0, 0.5f));
-    header->setPosition(Vec2(pos.x, y));
-    parent->addChild(header);
-    y -= 34.0f * s;
+    auto panel = createPausePanel(Size(panelW, panelH));
+    panel->setPosition(pos);
+    parent->addChild(panel, 20);
 
+    const Size portraitBounds(panelW - pad * 2.0f, panelH * 0.34f);
+    auto portraitBox = LayerColor::create(Color4B(8, 18, 33, 190),
+        portraitBounds.width, portraitBounds.height);
+    portraitBox->setPosition(Vec2(pos.x + pad, pos.y + panelH - portraitBounds.height - pad));
+    parent->addChild(portraitBox, 21);
+
+    std::string portraitPath = m_player ? getMoodPlayerImagePath(m_player->getCurrentMood()) : "";
+    if (portraitPath.empty())
+        portraitPath = AssetPaths::resolve("art/characters/character1.png");
+    auto portrait = createFittedSprite(portraitPath, Size(portraitBounds.width * 0.92f,
+        portraitBounds.height * 0.92f));
+    if (portrait)
+    {
+        portrait->setPosition(Vec2(pos.x + panelW * 0.5f,
+            portraitBox->getPositionY() + portraitBounds.height * 0.5f));
+        parent->addChild(portrait, 30);
+    }
+
+    const Size titleSize(panelW - pad * 2.0f, 46.0f * s);
+    auto title = createPauseSectionTitle(textByLanguage("Character Stats", u8"角色属性"),
+        titleSize, 22.0f * s);
+    title->setPosition(Vec2(pos.x + pad,
+        portraitBox->getPositionY() - 18.0f * s - titleSize.height));
+    parent->addChild(title, 30);
+
+    std::vector<std::pair<std::string, std::string>> rows;
     if (m_player)
     {
-        char buf[64];
-        auto addLine = [&](const std::string& text) {
-            auto line = Label::createWithSystemFont(text, "Arial", 18.0f * s);
-            line->setColor(Color3B(200, 210, 230));
-            line->setAnchorPoint(Vec2(0, 0.5f));
-            line->setPosition(Vec2(pos.x + 4.0f * s, y));
-            parent->addChild(line);
-            y -= 26.0f * s;
-        };
+        rows.push_back({ lm->getString("stat_level"), "Lv." + std::to_string(m_player->getLevel()) });
+        rows.push_back({ lm->getString("stat_hp"), std::to_string((int)m_player->getHp()) + " / " +
+            std::to_string((int)m_player->getMaxHp()) });
+        rows.push_back({ lm->getString("stat_atk"), std::to_string((!_weapons.empty() && _weapons[0])
+            ? _weapons[0]->getModifiedAttackPower() : 0) });
+        rows.push_back({ lm->getString("stat_spd"), std::to_string((int)m_player->getMoveSpeed()) });
+        rows.push_back({ textByLanguage("Upgrade Points", u8"升级点数"),
+            std::to_string(m_player->getUpgradePoints()) });
+        rows.push_back({ textByLanguage("Mood", u8"情绪"), moodNameForUi(m_player->getCurrentMood()) });
+        rows.push_back({ textByLanguage("Environment", u8"环境"),
+            textByLanguage("None", u8"无") });
+    }
 
-        snprintf(buf, sizeof(buf), "%s: %d", lm->getString("stat_level").c_str(), m_player->getLevel());
-        addLine(buf);
-
-        snprintf(buf, sizeof(buf), "%s: %d / %d", lm->getString("stat_hp").c_str(),
-            (int)m_player->getHp(), (int)m_player->getMaxHp());
-        addLine(buf);
-
-        snprintf(buf, sizeof(buf), "%s: %d", lm->getString("stat_atk").c_str(),
-            (!_weapons.empty() && _weapons[0]) ? _weapons[0]->getModifiedAttackPower() : 0);
-        addLine(buf);
-
-        snprintf(buf, sizeof(buf), "%s: %d", lm->getString("stat_spd").c_str(),
-            (int)m_player->getMoveSpeed());
-        addLine(buf);
-
-        snprintf(buf, sizeof(buf), "%s: %d", lm->getString("upgrade_points_fmt").c_str(),
-            m_player->getUpgradePoints());
-        addLine(buf);
+    const float rowH = 38.0f * s;
+    float y = title->getPositionY() - 16.0f * s - rowH;
+    for (const auto& row : rows)
+    {
+        auto rowNode = createPauseInfoRow(row.first, row.second,
+            Size(panelW - pad * 2.0f, rowH), 16.0f * s);
+        rowNode->setPosition(Vec2(pos.x + pad, y));
+        parent->addChild(rowNode, 30);
+        y -= rowH + 8.0f * s;
     }
 }
 
@@ -3374,94 +3537,80 @@ void GameScene::buildPauseWeaponPanel(Node* parent, const Vec2& pos, float s)
 {
     auto* lm = LanguageManager::getInstance();
     auto options = getWeaponOptions();
-    float cardW = 240.0f * s;
-    float cardH = 34.0f * s;
-    float iconSz = 28.0f * s;
-    float y = pos.y;
+    const Size contentSize = parent->getContentSize();
+    const float leftW = contentSize.width * 0.35f;
+    const float gap = contentSize.width * 0.04f;
+    const float panelW = contentSize.width - leftW - gap;
+    const float panelH = contentSize.height;
+    const float pad = 22.0f * s;
+    const float rowH = 50.0f * s;
+    const float iconSz = 34.0f * s;
 
-    auto makeIcon = [&](const std::string& imgPath) -> Sprite* {
-        if (imgPath.empty()) return nullptr;
-        auto sp = Sprite::create(imgPath);
-        if (!sp) return nullptr;
-        Size sz = sp->getContentSize();
-        if (sz.width <= 0 || sz.height <= 0) return nullptr;
-        sp->setScale(std::min(iconSz / sz.width, iconSz / sz.height));
-        return sp;
+    auto panel = createPausePanel(Size(panelW, panelH));
+    panel->setPosition(pos);
+    parent->addChild(panel, 20);
+
+    auto itemInfo = [&](int weaponId, std::string& name, std::string& imgPath) {
+        name = textByLanguage("Unequipped", u8"未装备");
+        imgPath.clear();
+        for (const auto& opt : options)
+        {
+            if (opt.id == weaponId)
+            {
+                name = opt.name;
+                imgPath = opt.imagePath;
+                return;
+            }
+        }
     };
 
-    auto eqHeader = Label::createWithSystemFont(
-        lm->getString("equipped"), "Arial", 20.0f * s);
-    eqHeader->setColor(Color3B(160, 220, 255));
-    eqHeader->setAnchorPoint(Vec2(0, 0.5f));
-    eqHeader->setPosition(Vec2(pos.x, y));
-    parent->addChild(eqHeader);
-    y -= 30.0f * s;
+    const Size titleSize(panelW - pad * 2.0f, 44.0f * s);
+    float yTop = pos.y + panelH - pad;
+    auto eqTitle = createPauseSectionTitle(lm->getString("equipped"),
+        titleSize, 22.0f * s);
+    eqTitle->setPosition(Vec2(pos.x + pad, yTop - titleSize.height));
+    parent->addChild(eqTitle, 30);
 
     for (int i = 0; i < 2; ++i)
     {
         int weaponId = (i < (int)_weaponLoadoutIds.size()) ? _weaponLoadoutIds[i] : -1;
-        std::string name = "--";
+        std::string name;
         std::string imgPath;
-        for (const auto& opt : options) { if (opt.id == weaponId) { name = opt.name; imgPath = opt.imagePath; break; } }
-
-        auto bg = LayerColor::create(Color4B(20, 30, 50, 200), cardW, cardH);
-        bg->setPosition(Vec2(pos.x, y - cardH * 0.5f));
-        parent->addChild(bg, 0);
-
-        // Weapon icon
-        auto sprite = makeIcon(imgPath);
-        if (sprite)
-        {
-            sprite->setPosition(Vec2(pos.x + iconSz * 0.5f, y));
-            parent->addChild(sprite, 2);
-        }
-
-        char buf[64];
-        snprintf(buf, sizeof(buf), "[%d] %s", i + 1, name.c_str());
-        auto label = Label::createWithSystemFont(buf, "Arial", 15.0f * s);
-        label->setColor(Color3B(210, 220, 240));
-        label->setAnchorPoint(Vec2(0, 0.5f));
-        label->setPosition(Vec2(pos.x + iconSz + 6.0f * s, y));
-        parent->addChild(label);
-
-        y -= cardH + 5.0f * s;
+        itemInfo(weaponId, name, imgPath);
+        auto row = createPauseItemRow("[" + std::to_string(i + 1) + "]", name, imgPath,
+            Size(panelW - pad * 2.0f, rowH), iconSz, 16.0f * s);
+        row->setPosition(Vec2(pos.x + pad,
+            eqTitle->getPositionY() - 14.0f * s - (i + 1) * rowH - i * 8.0f * s));
+        parent->addChild(row, 30);
     }
 
-    y -= 6.0f * s;
-    auto bpHeader = Label::createWithSystemFont(
-        lm->getString("backpack"), "Arial", 18.0f * s);
-    bpHeader->setColor(Color3B(160, 220, 160));
-    bpHeader->setAnchorPoint(Vec2(0, 0.5f));
-    bpHeader->setPosition(Vec2(pos.x, y));
-    parent->addChild(bpHeader);
-    y -= 28.0f * s;
+    const float backpackTitleY = pos.y + panelH * 0.54f;
+    auto bpTitle = createPauseSectionTitle(lm->getString("backpack"),
+        titleSize, 22.0f * s);
+    bpTitle->setPosition(Vec2(pos.x + pad, backpackTitleY));
+    parent->addChild(bpTitle, 30);
 
-    for (int i = 0; i < 4; ++i)
+    const float scrollH = backpackTitleY - pos.y - pad - 14.0f * s;
+    auto scroll = ui::ScrollView::create();
+    scroll->setDirection(ui::ScrollView::Direction::VERTICAL);
+    scroll->setBounceEnabled(true);
+    scroll->setContentSize(Size(panelW - pad * 2.0f, scrollH));
+    scroll->setInnerContainerSize(Size(panelW - pad * 2.0f,
+        std::max(scrollH, (rowH + 8.0f * s) * 4.0f)));
+    scroll->setPosition(Vec2(pos.x + pad, pos.y + pad));
+    parent->addChild(scroll, 30);
+
+    const Size innerSize = scroll->getInnerContainerSize();
+    for (int i = 0; i < std::max(4, (int)_backpackWeaponIds.size()); ++i)
     {
         int weaponId = (i < (int)_backpackWeaponIds.size()) ? _backpackWeaponIds[i] : -1;
-        std::string name = "--";
+        std::string name;
         std::string imgPath;
-        for (const auto& opt : options) { if (opt.id == weaponId) { name = opt.name; imgPath = opt.imagePath; break; } }
-
-        auto bg = LayerColor::create(Color4B(30, 40, 30, 180), cardW, cardH);
-        bg->setPosition(Vec2(pos.x, y - cardH * 0.5f));
-        parent->addChild(bg, 0);
-
-        // Weapon icon
-        auto sprite = makeIcon(imgPath);
-        if (sprite)
-        {
-            sprite->setPosition(Vec2(pos.x + iconSz * 0.5f, y));
-            parent->addChild(sprite, 2);
-        }
-
-        auto label = Label::createWithSystemFont(name, "Arial", 14.0f * s);
-        label->setColor(Color3B(180, 200, 180));
-        label->setAnchorPoint(Vec2(0, 0.5f));
-        label->setPosition(Vec2(pos.x + iconSz + 6.0f * s, y));
-        parent->addChild(label);
-
-        y -= cardH + 5.0f * s;
+        itemInfo(weaponId, name, imgPath);
+        auto row = createPauseItemRow("", name, imgPath,
+            Size(panelW - pad * 2.0f, rowH), iconSz, 16.0f * s);
+        row->setPosition(Vec2(0.0f, innerSize.height - (i + 1) * rowH - i * 8.0f * s));
+        scroll->addChild(row);
     }
 }
 
