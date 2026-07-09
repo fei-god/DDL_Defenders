@@ -122,6 +122,78 @@ namespace
             LanguageManager::Language::SIMPLIFIED_CHINESE;
     }
 
+    bool hasWeaponId(const std::vector<int>& ids, int weaponId)
+    {
+        return std::find(ids.begin(), ids.end(), weaponId) != ids.end();
+    }
+
+    void pushUniqueWeapon(std::vector<int>& ids, int weaponId, int maxCount = -1)
+    {
+        if (weaponId < 0 || weaponId > 6 || hasWeaponId(ids, weaponId))
+        {
+            return;
+        }
+        if (maxCount >= 0 && static_cast<int>(ids.size()) >= maxCount)
+        {
+            return;
+        }
+        ids.push_back(weaponId);
+    }
+
+    void normalizeWeaponLists(std::vector<int>& equipped, std::vector<int>& backpack)
+    {
+        std::vector<int> oldEquipped = equipped;
+        std::vector<int> oldBackpack = backpack;
+        equipped.clear();
+
+        for (int weaponId : oldEquipped)
+        {
+            pushUniqueWeapon(equipped, weaponId, 2);
+        }
+        for (int weaponId : oldBackpack)
+        {
+            pushUniqueWeapon(equipped, weaponId, 2);
+        }
+        if (equipped.empty() && oldBackpack.empty())
+        {
+            equipped = { 0, 1 };
+        }
+        while (static_cast<int>(equipped.size()) < 2)
+        {
+            for (int weaponId = 0; weaponId <= 6; ++weaponId)
+            {
+                if (!hasWeaponId(equipped, weaponId))
+                {
+                    equipped.push_back(weaponId);
+                    break;
+                }
+            }
+        }
+
+        backpack.clear();
+        for (int weaponId : oldBackpack)
+        {
+            if (!hasWeaponId(equipped, weaponId))
+            {
+                pushUniqueWeapon(backpack, weaponId, 4);
+            }
+        }
+        for (int weaponId : oldEquipped)
+        {
+            if (!hasWeaponId(equipped, weaponId))
+            {
+                pushUniqueWeapon(backpack, weaponId, 4);
+            }
+        }
+        for (int weaponId = 0; weaponId <= 6; ++weaponId)
+        {
+            if (!hasWeaponId(equipped, weaponId))
+            {
+                pushUniqueWeapon(backpack, weaponId, 4);
+            }
+        }
+    }
+
     std::string textByLanguage(const std::string& english, const std::string& chinese)
     {
         return isChineseUi() ? chinese : english;
@@ -442,6 +514,7 @@ bool GameScene::init()
     // Default on first launch only — respect user's empty choice
     if (_weaponLoadoutIds.empty() && _backpackWeaponIds.empty())
         _weaponLoadoutIds = {0, 1};
+    normalizeWeaponLists(_weaponLoadoutIds, _backpackWeaponIds);
 
     _levelIntroLayer = nullptr;
     _levelIntroActive = false;
@@ -2152,6 +2225,7 @@ void GameScene::rebuildWeaponLoadout()
         Weapon* weapon = createWeaponById(_weaponLoadoutIds[i]);
         if (weapon)
         {
+            weapon->setHandSlot(i);
             applyEndlessGrowthToWeapon(weapon, _weaponLoadoutIds[i]);
             if (m_player)
             {
@@ -2992,7 +3066,7 @@ void GameScene::showDeskPanel()
     deskLayer->setUpgradePoints(m_player ? m_player->getUpgradePoints() : 0);
 
     // Weapon equip/unequip → update real loadout & player visuals
-    deskLayer->setOnWeaponChanged([this](int s1, int s2) {
+    deskLayer->setOnWeaponChanged([this, deskLayer](int s1, int s2) {
         // Remove old weapons (use _weapons — guaranteed to track all weapons)
         for (auto* w : _weapons) {
             if (w) w->removeFromParentAndCleanup(true);
@@ -3003,15 +3077,20 @@ void GameScene::showDeskPanel()
         _weaponLoadoutIds.clear();
         _backpackWeaponIds.clear();
         if (s1 >= 0) _weaponLoadoutIds.push_back(s1);
-        if (s2 >= 0) _weaponLoadoutIds.push_back(s2);
-        for (int i = 0; i < 6; i++) {
+        if (s2 >= 0 && s2 != s1) _weaponLoadoutIds.push_back(s2);
+        for (int i = 0; i <= 6; i++) {
             if (i != s1 && i != s2) _backpackWeaponIds.push_back(i);
         }
+        normalizeWeaponLists(_weaponLoadoutIds, _backpackWeaponIds);
 
         // Create weapon nodes for each equipped slot
+        deskLayer->setEquippedWeapons(
+            _weaponLoadoutIds.size() > 0 ? _weaponLoadoutIds[0] : -1,
+            _weaponLoadoutIds.size() > 1 ? _weaponLoadoutIds[1] : -1);
         for (int wid : _weaponLoadoutIds) {
             Weapon* weapon = createWeaponById(wid);
             if (weapon && m_player) {
+                weapon->setHandSlot(static_cast<int>(_weapons.size()));
                 float parentScale = m_player->getScale();
                 if (parentScale > 0.001f)
                     weapon->setScale(weapon->getScale() / parentScale);
@@ -3388,6 +3467,7 @@ void GameScene::buildPauseWeaponPanel(Node* parent, const Vec2& pos, float s)
 
 void GameScene::applyWeaponLoadout()
 {
+    normalizeWeaponLists(_weaponLoadoutIds, _backpackWeaponIds);
     auto ud = UserDefault::getInstance();
     for (int i = 0; i < 2; ++i)
     {

@@ -40,6 +40,7 @@ Weapon::Weapon()
     , _energyCost(20.0f)
     , _energyRecoverPerSecond(18.0f)
     , _projectileCountBonus(0)
+    , _handSlot(0)
     , _bulletSpeed(500.0f)
     , _bulletImagePath("")
     , _aimDirection(Vec2(1, 0))
@@ -49,6 +50,11 @@ Weapon::Weapon()
 void Weapon::bindBulletPool(BulletPool* bulletPool)
 {
     _bulletPool = bulletPool;
+}
+
+void Weapon::setHandSlot(int handSlot)
+{
+    _handSlot = std::max(0, handSlot);
 }
 
 Weapon::~Weapon()
@@ -105,8 +111,11 @@ void Weapon::updateCooldown(float dt)
         Vec2 displayDir = _aimDirection.lengthSquared() > 0.0001f
             ? _aimDirection.getNormalized()
             : Vec2(1, 0);
-        Vec2 side(-displayDir.y, displayDir.x);
-        Vec2 displayOffset = displayDir * 20.0f + side * 4.0f + Vec2(0.0f, -8.0f);
+        bool offHand = (_handSlot % 2) == 1;
+        float facingSign = displayDir.x < -0.05f ? -1.0f : 1.0f;
+        float handX = offHand ? -48.0f : 50.0f;
+        float handY = offHand ? -28.0f : -24.0f;
+        Vec2 displayOffset(handX * facingSign, handY + displayDir.y * 5.0f);
         if (getParent() == _owner)
         {
             setObjectPosition(displayOffset);
@@ -115,6 +124,8 @@ void Weapon::updateCooldown(float dt)
         {
             setObjectPosition(_owner->getObjectPosition() + displayOffset);
         }
+        setAnchorPoint(Vec2(0.24f, 0.50f));
+        setLocalZOrder(offHand ? 5 : 6);
         faceWeaponWithoutUpsideDown(this, displayDir);
     }
 
