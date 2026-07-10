@@ -8,6 +8,121 @@ USING_NS_CC;
 
 int GameObject::nextObjectId = 1;
 
+namespace
+{
+    constexpr unsigned char COLLISION_ALPHA_THRESHOLD = 8;
+
+    bool isVisiblePixel(const unsigned char* data,
+        ssize_t dataLen,
+        int index,
+        cocos2d::backend::PixelFormat format)
+    {
+        if (data == nullptr || index < 0)
+        {
+            return false;
+        }
+
+        switch (format)
+        {
+        case cocos2d::backend::PixelFormat::RGBA8888:
+        case cocos2d::backend::PixelFormat::BGRA8888:
+        {
+            ssize_t offset = static_cast<ssize_t>(index) * 4 + 3;
+            return offset < dataLen && data[offset] > COLLISION_ALPHA_THRESHOLD;
+        }
+        case cocos2d::backend::PixelFormat::A8:
+        {
+            ssize_t offset = static_cast<ssize_t>(index);
+            return offset < dataLen && data[offset] > COLLISION_ALPHA_THRESHOLD;
+        }
+        case cocos2d::backend::PixelFormat::AI88:
+        {
+            ssize_t offset = static_cast<ssize_t>(index) * 2 + 1;
+            return offset < dataLen && data[offset] > COLLISION_ALPHA_THRESHOLD;
+        }
+        case cocos2d::backend::PixelFormat::RGB5A1:
+        {
+            ssize_t offset = static_cast<ssize_t>(index) * 2;
+            if (offset + 1 >= dataLen) return false;
+            unsigned short pixel = static_cast<unsigned short>(data[offset])
+                | (static_cast<unsigned short>(data[offset + 1]) << 8);
+            return (pixel & 0x0001) != 0;
+        }
+        case cocos2d::backend::PixelFormat::RGBA4444:
+        {
+            ssize_t offset = static_cast<ssize_t>(index) * 2;
+            if (offset + 1 >= dataLen) return false;
+            unsigned short pixel = static_cast<unsigned short>(data[offset])
+                | (static_cast<unsigned short>(data[offset + 1]) << 8);
+            unsigned char alpha = static_cast<unsigned char>((pixel & 0x000F) * 17);
+            return alpha > COLLISION_ALPHA_THRESHOLD;
+        }
+        default:
+            return true;
+        }
+    }
+
+    Rect calculateAlphaCollisionBox(const std::string& imagePath, const Size& textureSize)
+    {
+        if (imagePath.empty() || textureSize.width <= 0.0f || textureSize.height <= 0.0f)
+        {
+            return Rect(0, 0, textureSize.width, textureSize.height);
+        }
+
+        Image image;
+        if (!image.initWithImageFile(imagePath) || !image.hasAlpha())
+        {
+            return Rect(0, 0, textureSize.width, textureSize.height);
+        }
+
+        unsigned char* data = image.getData();
+        int width = image.getWidth();
+        int height = image.getHeight();
+        if (data == nullptr || width <= 0 || height <= 0)
+        {
+            return Rect(0, 0, textureSize.width, textureSize.height);
+        }
+
+        int minX = width;
+        int minY = height;
+        int maxX = -1;
+        int maxY = -1;
+        auto format = image.getPixelFormat();
+        ssize_t dataLen = image.getDataLen();
+
+        for (int y = 0; y < height; ++y)
+        {
+            for (int x = 0; x < width; ++x)
+            {
+                int index = y * width + x;
+                if (!isVisiblePixel(data, dataLen, index, format))
+                {
+                    continue;
+                }
+
+                minX = std::min(minX, x);
+                minY = std::min(minY, y);
+                maxX = std::max(maxX, x);
+                maxY = std::max(maxY, y);
+            }
+        }
+
+        if (maxX < minX || maxY < minY)
+        {
+            return Rect(0, 0, textureSize.width, textureSize.height);
+        }
+
+        float scaleX = textureSize.width / static_cast<float>(width);
+        float scaleY = textureSize.height / static_cast<float>(height);
+        float localX = static_cast<float>(minX) * scaleX;
+        float localY = static_cast<float>(height - 1 - maxY) * scaleY;
+        float localW = static_cast<float>(maxX - minX + 1) * scaleX;
+        float localH = static_cast<float>(maxY - minY + 1) * scaleY;
+
+        return Rect(localX, localY, localW, localH);
+    }
+}
+
 GameObject::GameObject()
     : objectId(nextObjectId++)
     , objectName("")
@@ -23,6 +138,8 @@ GameObject::GameObject()
     , moveSpeed(0.0f)
     , collisionRadius(20.0f)
     , useCircleCollision(true)
+    , collisionLocalBox(Rect::ZERO)
+    , hasCollisionLocalBox(false)
     , lifeTime(0.0f)
     , currentLifeTime(0.0f)
     , hasLifeTimeLimit(false)
@@ -247,11 +364,12 @@ bool GameObject::setObjectImage(const std::string& imagePath)
 
     Size textureSize = texture->getContentSize();
     this->setTextureRect(Rect(0, 0, textureSize.width, textureSize.height));
+    setCollisionLocalBox(calculateAlphaCollisionBox(imagePath, textureSize));
 
-    // Ĭ�ϰ���ײ�뾶����ΪͼƬ�϶̱ߵ�һ��
-    if (textureSize.width > 0 && textureSize.height > 0)
+    Rect localBox = getCollisionLocalBox();
+    if (localBox.size.width > 0 && localBox.size.height > 0)
     {
-        collisionRadius = std::min(textureSize.width, textureSize.height) * 0.5f;
+        collisionRadius = std::min(localBox.size.width, localBox.size.height) * 0.5f;
     }
 
     return true;
@@ -352,7 +470,41 @@ void GameObject::moveByVelocity(float dt)
 
 Rect GameObject::getCollisionBox() const
 {
-    return this->getBoundingBox();
+    if (!hasCollisionLocalBox)
+    {
+        return this->getBoundingBox();
+    }
+
+    return RectApplyAffineTransform(collisionLocalBox, this->getNodeToParentAffineTransform());
+}
+
+void GameObject::setCollisionLocalBox(const Rect& box)
+{
+    if (box.size.width <= 0.0f || box.size.height <= 0.0f)
+    {
+        clearCollisionLocalBox();
+        return;
+    }
+
+    collisionLocalBox = box;
+    hasCollisionLocalBox = true;
+}
+
+void GameObject::clearCollisionLocalBox()
+{
+    collisionLocalBox = Rect::ZERO;
+    hasCollisionLocalBox = false;
+}
+
+Rect GameObject::getCollisionLocalBox() const
+{
+    if (hasCollisionLocalBox)
+    {
+        return collisionLocalBox;
+    }
+
+    Size size = getContentSize();
+    return Rect(0, 0, size.width, size.height);
 }
 
 void GameObject::setCollisionRadius(float radius)

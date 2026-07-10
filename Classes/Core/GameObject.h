@@ -120,6 +120,10 @@ public:
 
     virtual cocos2d::Rect getCollisionBox() const;
 
+    void setCollisionLocalBox(const cocos2d::Rect& box);
+    void clearCollisionLocalBox();
+    cocos2d::Rect getCollisionLocalBox() const;
+
     void setCollisionRadius(float radius);
     float getCollisionRadius() const;
 
@@ -192,6 +196,9 @@ protected:
 
     float collisionRadius;          // Բ����ײ�뾶
     bool useCircleCollision;        // �Ƿ�ʹ��Բ����ײ
+
+    cocos2d::Rect collisionLocalBox;
+    bool hasCollisionLocalBox;
 
     float lifeTime;                 // �����������
     float currentLifeTime;          // ��ǰ�Ѵ���ʱ��

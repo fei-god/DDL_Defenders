@@ -119,14 +119,7 @@ int Enemy::getHitsToDieForPlayer(Player* player) const
 
 cocos2d::Rect Enemy::getCollisionBox() const
 {
-    cocos2d::Rect box = GameObject::getCollisionBox();
-    // 模型已放大3倍 → getBoundingBox是原来的3倍
-    // 碰撞箱缩小到原来的1/4 → factor = 1/12
-    float factor = 1.0f / 12.0f;
-    cocos2d::Size newSize(box.size.width * factor, box.size.height * factor);
-    float dx = (box.size.width - newSize.width) * 0.5f;
-    float dy = (box.size.height - newSize.height) * 0.5f;
-    return cocos2d::Rect(box.origin.x + dx, box.origin.y + dy, newSize.width, newSize.height);
+    return GameObject::getCollisionBox();
 }
 
 void Enemy::takeDamage(int damage)

@@ -2,13 +2,63 @@
 #include "DamageCalculator.h"
 #include "AudioManager.h"
 #include <algorithm>
+#include <cmath>
+#include <unordered_map>
+#include <vector>
+
+namespace
+{
+    constexpr float COLLISION_GRID_CELL_SIZE = 128.0f;
+
+    long long gridKey(int x, int y)
+    {
+        return (static_cast<long long>(x) << 32)
+            ^ static_cast<unsigned int>(y);
+    }
+
+    int cellIndex(float value)
+    {
+        return static_cast<int>(std::floor(value / COLLISION_GRID_CELL_SIZE));
+    }
+
+    bool isEnemyCollisionCandidate(Enemy* enemy)
+    {
+        return enemy != nullptr &&
+            enemy->isObjectActive() &&
+            !enemy->isDead();
+    }
+}
 
 void CollisionManager::checkBulletEnemyCollision(
     std::vector<Bullet*>& bullets,
     std::vector<Enemy*>& enemies
 )
 {
-    // 遍历当前场景中的所有子弹
+    std::unordered_map<long long, std::vector<Enemy*>> enemyGrid;
+    enemyGrid.reserve(enemies.size() * 2 + 1);
+
+    for (Enemy* enemy : enemies)
+    {
+        if (!isEnemyCollisionCandidate(enemy))
+        {
+            continue;
+        }
+
+        cocos2d::Rect box = enemy->getCollisionBox();
+        int minCellX = cellIndex(box.getMinX());
+        int maxCellX = cellIndex(box.getMaxX());
+        int minCellY = cellIndex(box.getMinY());
+        int maxCellY = cellIndex(box.getMaxY());
+
+        for (int y = minCellY; y <= maxCellY; ++y)
+        {
+            for (int x = minCellX; x <= maxCellX; ++x)
+            {
+                enemyGrid[gridKey(x, y)].push_back(enemy);
+            }
+        }
+    }
+
     for (Bullet* bullet : bullets)
     {
         if (bullet == nullptr)
@@ -16,80 +66,80 @@ void CollisionManager::checkBulletEnemyCollision(
             continue;
         }
 
-        // 如果子弹已经失效，就不再参与碰撞检测
         if (!bullet->isObjectActive() || bullet->isExpired())
         {
             continue;
         }
 
-        // 一颗子弹需要依次检测它是否打中了某个敌人
-        for (Enemy* enemy : enemies)
+        cocos2d::Rect bulletBox = bullet->getCollisionBox();
+        int minCellX = cellIndex(bulletBox.getMinX());
+        int maxCellX = cellIndex(bulletBox.getMaxX());
+        int minCellY = cellIndex(bulletBox.getMinY());
+        int maxCellY = cellIndex(bulletBox.getMaxY());
+        std::vector<Enemy*> candidates;
+
+        for (int y = minCellY; y <= maxCellY; ++y)
         {
-            if (enemy == nullptr)
+            for (int x = minCellX; x <= maxCellX; ++x)
+            {
+                auto found = enemyGrid.find(gridKey(x, y));
+                if (found == enemyGrid.end())
+                {
+                    continue;
+                }
+
+                for (Enemy* enemy : found->second)
+                {
+                    if (std::find(candidates.begin(), candidates.end(), enemy) == candidates.end())
+                    {
+                        candidates.push_back(enemy);
+                    }
+                }
+            }
+        }
+
+        for (Enemy* enemy : candidates)
+        {
+            if (!isEnemyCollisionCandidate(enemy))
             {
                 continue;
             }
 
-            // 非激活敌人不参与碰撞检测
-            if (!enemy->isObjectActive())
-            {
-                continue;
-            }
-
-            // 已死亡敌人不参与碰撞检测
-            if (enemy->isDead())
-            {
-                continue;
-            }
-
-            // CoffeeLaser是穿透子弹，可能连续多帧和同一个敌人重叠。
-            // 如果不记录已命中的敌人，就会一帧扣一次血，伤害会异常高。
             if (bullet->hasHitObject(enemy))
             {
                 continue;
             }
 
-            // getCollisionBox()返回对象的矩形碰撞盒。
-            // intersectsRect()判断两个矩形是否有重叠。
-            bool isCollide = bullet->getCollisionBox().intersectsRect(enemy->getCollisionBox());
-
-            if (isCollide)
+            if (!bulletBox.intersectsRect(enemy->getCollisionBox()))
             {
-                // 这里defense传0，是因为Role::takeDamage()里面已经会扣一次防御。
-                // 如果这里再传enemy->getDefense()，就会出现防御被扣两次的问题。
-                int finalDamage = DamageCalculator::calculateFinalDamage(
-                    bullet->getDamage(),
-                    0,
-                    1.0f
-                );
+                continue;
+            }
 
-                // 敌人受到伤害
-                bool wasAlive = enemy->isRoleAlive();
-                enemy->takeDamage(finalDamage);
-                if (wasAlive)
-                {
-                    if (enemy->isDead()) AudioManager::getInstance()->playEnemyDie();
-                    else AudioManager::getInstance()->playEnemyHit();
-                }
+            int finalDamage = DamageCalculator::calculateFinalDamage(
+                bullet->getDamage(),
+                0,
+                1.0f
+            );
 
-                // 记录这个子弹已经打中过这个敌人
-                bullet->recordHitObject(enemy);
+            bool wasAlive = enemy->isRoleAlive();
+            enemy->takeDamage(finalDamage);
+            if (wasAlive)
+            {
+                if (enemy->isDead()) AudioManager::getInstance()->playEnemyDie();
+                else AudioManager::getInstance()->playEnemyHit();
+            }
 
-                // 普通子弹命中后失效，穿透子弹不会失效
-                bullet->markHit();
+            bullet->recordHitObject(enemy);
+            bullet->markHit();
 
-                // 如果敌人死亡，设置为非激活状态
-                // Role::takeDamage()内部已经会调用die()，这里不需要再手动die()
-                if (enemy->isDead())
-                {
-                    enemy->setActive(false);
-                }
+            if (enemy->isDead())
+            {
+                enemy->setActive(false);
+            }
 
-                // 如果不是穿透子弹，命中一个敌人后就停止检测其他敌人
-                if (!bullet->isPiercing())
-                {
-                    break;
-                }
+            if (!bullet->isPiercing())
+            {
+                break;
             }
         }
     }
@@ -108,8 +158,6 @@ void CollisionManager::clearInactiveBullets(std::vector<Bullet*>& bullets)
                     return true;
                 }
 
-                // 子弹命中、超时、飞出屏幕后，会变成expired或者inactive。
-                // 这些子弹必须从父节点中移除，否则场景里的对象会越来越多。
                 if (bullet->isExpired() || !bullet->isObjectActive())
                 {
                     bullet->removeFromParent();

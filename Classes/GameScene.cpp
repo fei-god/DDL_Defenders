@@ -586,6 +586,22 @@ bool GameScene::init()
         _worldLayer->addChild(m_player, 100);
         m_player->setLocalZOrder(100);
         applySpriteFit(m_player, 306.0f, 306.0f);
+        {
+            const float sourceSize = 1254.0f;
+            const Rect playerAlphaUnion(357.0f, 18.0f, 691.0f, 1019.0f);
+            Size playerContent = m_player->getContentSize();
+            float fitScale = std::min(playerContent.width / sourceSize,
+                playerContent.height / sourceSize);
+            float fittedWidth = sourceSize * fitScale;
+            float fittedHeight = sourceSize * fitScale;
+            float offsetX = (playerContent.width - fittedWidth) * 0.5f;
+            float offsetY = (playerContent.height - fittedHeight) * 0.5f;
+            m_player->setCollisionLocalBox(Rect(
+                offsetX + playerAlphaUnion.origin.x * fitScale,
+                offsetY + playerAlphaUnion.origin.y * fitScale,
+                playerAlphaUnion.size.width * fitScale,
+                playerAlphaUnion.size.height * fitScale));
+        }
 
         // Character animation sprites (replaces the triangle)
         _characterAnimTimer = 0.0f;
@@ -2225,11 +2241,7 @@ void GameScene::updateEnemyPlayerContact(float dt)
         _enemyContactDamageCooldown -= dt;
     }
 
-    Rect playerBox = m_player->getBoundingBox();
-    playerBox.origin.x += playerBox.size.width * 0.12f;
-    playerBox.origin.y += playerBox.size.height * 0.12f;
-    playerBox.size.width *= 0.76f;
-    playerBox.size.height *= 0.76f;
+    Rect playerBox = m_player->getCollisionBox();
 
     // Check if player is near world boundary (cornered)
     float margin = 55.0f;
@@ -2245,11 +2257,7 @@ void GameScene::updateEnemyPlayerContact(float dt)
             continue;
         }
 
-        Rect enemyBox = enemy->getBoundingBox();
-        enemyBox.origin.x += enemyBox.size.width * 0.08f;
-        enemyBox.origin.y += enemyBox.size.height * 0.08f;
-        enemyBox.size.width *= 0.84f;
-        enemyBox.size.height *= 0.84f;
+        Rect enemyBox = enemy->getCollisionBox();
 
         if (!playerBox.intersectsRect(enemyBox))
         {
@@ -2321,7 +2329,7 @@ void GameScene::updateEnemyPlayerContact(float dt)
         {
             if (!enemy || !enemy->isRoleAlive() || !enemy->isObjectActive())
                 continue;
-            if (playerBox.intersectsRect(enemy->getBoundingBox()))
+            if (playerBox.intersectsRect(enemy->getCollisionBox()))
             {
                 escapeDir += (playerPos - enemy->getPosition());
             }
@@ -2533,7 +2541,7 @@ void GameScene::updateEnvironmentEffects(float dt)
 
     _nearDesk = false;
     std::string effectText = textByLanguage("Environment: None", u8"环境: 无");
-    Rect playerBox = m_player->getBoundingBox();
+    Rect playerBox = m_player->getCollisionBox();
 
     for (auto* zone : _environmentZones)
     {
@@ -2906,7 +2914,7 @@ void GameScene::updateRewards(float dt)
         _rewardSpawnTimer = 11.0f + CCRANDOM_0_1() * 7.0f;
     }
 
-    Rect playerBox = m_player->getBoundingBox();
+    Rect playerBox = m_player->getCollisionBox();
     for (auto it = _rewardPickups.begin(); it != _rewardPickups.end(); )
     {
         Node* node = it->node;
