@@ -853,25 +853,10 @@ bool GameScene::init()
     if (!_isHubScene)
     {
         // --- HP bar ---
-        const float panelWidth = 380.0f * s;
-        const float panelLeft = std::max(origin.x + 2.0f * s, origin.x + 8.0f * s - 18.0f * s);
+        const float panelLeft = origin.x + 18.0f * s;
         const float panelTop = std::min(origin.y + visibleSize.height - 2.0f * s,
             origin.y + visibleSize.height - 18.0f * s + 18.0f * s);
-
-        auto hudPanelSprite = Sprite::create(AssetPaths::resolve("art/ui/equipment_panel.png"));
-        const float panelHeight = (hudPanelSprite && hudPanelSprite->getContentSize().width > 0.0f)
-            ? panelWidth * hudPanelSprite->getContentSize().height / hudPanelSprite->getContentSize().width
-            : panelWidth * 1024.0f / 1536.0f;
         const float contentLeft = panelLeft + 36.0f * s;
-        const float contentRight = panelLeft + panelWidth - 36.0f * s;
-        if (hudPanelSprite)
-        {
-            hudPanelSprite->setScale(panelWidth / hudPanelSprite->getContentSize().width);
-            hudPanelSprite->setOpacity(156);
-            hudPanelSprite->setPosition(Vec2(panelLeft + panelWidth * 0.5f,
-                panelTop - panelHeight * 0.5f));
-            this->addChild(hudPanelSprite, 8);
-        }
 
         float hpBarWidth  = 210.0f * s;
         float hpBarHeight = 16.0f * s;
@@ -906,34 +891,11 @@ bool GameScene::init()
         _moodLabel->setPosition(Vec2(contentLeft, panelTop - 75.0f * s));
         this->addChild(_moodLabel, 10);
 
-        _weaponIcon = Sprite::create();
-        _weaponIcon->setPosition(Vec2(contentLeft + 28.0f * s, panelTop - 108.0f * s));
-        this->addChild(_weaponIcon, 10);
-
-        _weaponLabel = Label::createWithSystemFont(
-            textByLanguage("Weapon: CoffeeGun", u8"武器: 咖啡枪"), "Arial", 18.0f * s);
-        _weaponLabel->setColor(Color3B(232, 238, 244));
-        _weaponLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
-        _weaponLabel->setPosition(Vec2(contentLeft + 64.0f * s, panelTop - 108.0f * s));
-        this->addChild(_weaponLabel, 10);
-
-        float weaponEnergyWidth = 230.0f * s;
-        float weaponEnergyHeight = 8.0f * s;
-        _weaponEnergyBg = LayerColor::create(Color4B(45, 45, 58, 255), weaponEnergyWidth, weaponEnergyHeight);
-        _weaponEnergyBg->setPosition(Vec2(contentLeft + 64.0f * s,
-            panelTop - 132.0f * s));
-        this->addChild(_weaponEnergyBg, 9);
-
-        _weaponEnergyFill = LayerColor::create(Color4B(90, 190, 255, 255), weaponEnergyWidth, weaponEnergyHeight);
-        _weaponEnergyFill->setPosition(_weaponEnergyBg->getPosition());
-        this->addChild(_weaponEnergyFill, 10);
-        _weaponEnergyBarMaxWidth = weaponEnergyWidth;
-
         _environmentLabel = Label::createWithSystemFont(
             textByLanguage("Environment: None", u8"环境: 无"), "Arial", 16.0f * s);
         _environmentLabel->setColor(Color3B(177, 221, 208));
         _environmentLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
-        _environmentLabel->setPosition(Vec2(contentLeft, panelTop - 162.0f * s));
+        _environmentLabel->setPosition(Vec2(contentLeft, panelTop - 104.0f * s));
         this->addChild(_environmentLabel, 10);
     }
 
@@ -955,52 +917,51 @@ bool GameScene::init()
     m_survivalTime = 0.0f;
     if (!_isHubScene)
     {
+        const float centerX = origin.x + visibleSize.width * 0.5f;
         const float topPanelTop = origin.y + visibleSize.height - 70.0f * s;
+        const float expRowCenterY = topPanelTop - 8.0f * s;
 
         // --- Survival time ---
         _survivalTimeLabel = Label::createWithSystemFont(
             textByLanguage("Time: 0.0s", u8"时间: 0.0秒"), "Arial Black", 34.0f * s);
         _survivalTimeLabel->setColor(Color3B(225, 46, 44));
-        _survivalTimeLabel->setPosition(Vec2(
-            origin.x + visibleSize.width / 2,
-            origin.y + visibleSize.height - 34.0f * s
-        ));
+        _survivalTimeLabel->setPosition(Vec2(centerX,
+            origin.y + visibleSize.height - 34.0f * s));
         this->addChild(_survivalTimeLabel, 12);
 
         _endlessStatsLabel = Label::createWithSystemFont("", "Arial", 17.0f * s);
         _endlessStatsLabel->setColor(Color3B(255, 205, 105));
-        _endlessStatsLabel->setPosition(Vec2(
-            origin.x + visibleSize.width / 2 - 24.0f * s,
-            topPanelTop - 24.0f * s
-        ));
+        _endlessStatsLabel->setPosition(Vec2(centerX, expRowCenterY - 26.0f * s));
         _endlessStatsLabel->setVisible(_isEndlessMode);
         this->addChild(_endlessStatsLabel, 12);
 
         _expLevelLabel = Label::createWithSystemFont("Lv.1", "Arial", 17.0f * s);
         _expLevelLabel->setColor(Color3B(205, 228, 105));
-        _expLevelLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
-        _expLevelLabel->setPosition(Vec2(origin.x + visibleSize.width / 2 + 128.0f * s,
-            topPanelTop - 24.0f * s));
-        this->addChild(_expLevelLabel, 12);
+        _expLevelLabel->setAnchorPoint(Vec2(1.0f, 0.5f));
 
         _expBarMaxWidth = 220.0f * s;
-        float expBarY = topPanelTop - 48.0f * s;
-        _expBarBg = LayerColor::create(Color4B(38, 40, 56, 220), _expBarMaxWidth, 9.0f * s);
-        _expBarBg->setPosition(Vec2(origin.x + visibleSize.width / 2 - _expBarMaxWidth / 2, expBarY));
+        const float expBarHeight = 9.0f * s;
+        const float expBarLeft = centerX - _expBarMaxWidth * 0.5f;
+        _expLevelLabel->setPosition(Vec2(expBarLeft - 12.0f * s, expRowCenterY));
+        this->addChild(_expLevelLabel, 12);
+
+        float expBarY = expRowCenterY - expBarHeight * 0.5f;
+        _expBarBg = LayerColor::create(Color4B(38, 40, 56, 220), _expBarMaxWidth, expBarHeight);
+        _expBarBg->setPosition(Vec2(expBarLeft, expBarY));
         this->addChild(_expBarBg, 12);
 
-        _expBarFill = LayerColor::create(Color4B(80, 200, 120, 255), _expBarMaxWidth * 0.5f, 9.0f * s);
+        _expBarFill = LayerColor::create(Color4B(80, 200, 120, 255), _expBarMaxWidth * 0.5f, expBarHeight);
         _expBarFill->setPosition(Vec2(0, 0));
         _expBarBg->addChild(_expBarFill);
 
         _expFractionLabel = Label::createWithSystemFont("0/100 EXP", "Arial", 12.0f * s);
         _expFractionLabel->setColor(Color3B(190, 194, 210));
-        _expFractionLabel->setPosition(Vec2(origin.x + visibleSize.width / 2, topPanelTop - 67.0f * s));
+        _expFractionLabel->setPosition(Vec2(centerX, expRowCenterY - 48.0f * s));
         this->addChild(_expFractionLabel, 12);
 
         _waveTimerLabel = Label::createWithSystemFont("", "Arial", 17.0f * s);
         _waveTimerLabel->setColor(Color3B(255, 205, 112));
-        _waveTimerLabel->setPosition(Vec2(origin.x + visibleSize.width / 2, topPanelTop - 92.0f * s));
+        _waveTimerLabel->setPosition(Vec2(centerX, expRowCenterY - 72.0f * s));
         _waveTimerLabel->setVisible(false);
         this->addChild(_waveTimerLabel, 12);
     }
