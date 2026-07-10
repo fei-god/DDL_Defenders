@@ -197,6 +197,13 @@ namespace
         auto root = Node::create();
         root->setContentSize(size);
 
+        auto bg = createFittedSprite("art/ui/pause/block.png", size);
+        if (bg)
+        {
+            bg->setOpacity(232);
+            root->addChild(bg, 0);
+        }
+
         const float rowFontSize = fontSize * 1.5f;
         auto nameLabel = Label::createWithSystemFont(name, PAUSE_UI_FONT, rowFontSize);
         nameLabel->setColor(Color3B(205, 216, 226));
@@ -219,6 +226,13 @@ namespace
     {
         auto root = Node::create();
         root->setContentSize(size);
+
+        auto bg = createFittedSprite("art/ui/pause/block.png", size);
+        if (bg)
+        {
+            bg->setOpacity(232);
+            root->addChild(bg, 0);
+        }
 
         const bool hasIcon = !imagePath.empty();
         if (hasIcon)
@@ -3458,7 +3472,7 @@ void GameScene::showPauseMenu()
     this->addChild(_pauseLayer, 100);
 
     auto swallow = EventListenerTouchOneByOne::create();
-    swallow->setSwallowTouches(true);
+    swallow->setSwallowTouches(false);
     swallow->onTouchBegan = [](Touch*, Event*) { return true; };
     _eventDispatcher->addEventListenerWithSceneGraphPriority(swallow, _pauseLayer);
 
@@ -3577,17 +3591,36 @@ void GameScene::buildPauseStatsPanel(Node* parent, const Vec2& pos, float s)
             textByLanguage("None", u8"无") });
     }
 
-    const float contentTop = boxH * 0.64f;
-    const float contentBottom = boxH * 0.18f;
-    const float rowStep = rows.empty() ? 0.0f : (contentTop - contentBottom) / rows.size();
-    const float rowH = std::max(28.0f * s, rowStep * 0.88f);
+    const float contentTop = boxH * 0.76f;
+    const float contentBottom = boxH * 0.10f;
+    const float rowW = panelW * 0.76f;
+    const float rowH = rowW * 46.0f / 380.0f;
+    const float rowGap = 10.0f * s;
+    const float scrollH = std::max(rowH * 3.2f, contentTop - contentBottom);
+    const float scrollX = (panelW - rowW) * 0.5f;
+    const float innerH = std::max(scrollH,
+        static_cast<float>(rows.size()) * (rowH + rowGap) + rowGap);
+
+    auto scrollBox = LayerColor::create(Color4B(0, 0, 0, 1), rowW, scrollH);
+    scrollBox->setPosition(Vec2(scrollX, contentBottom));
+    box->addChild(scrollBox, 3);
+
+    auto scroll = ui::ScrollView::create();
+    scroll->setDirection(ui::ScrollView::Direction::VERTICAL);
+    scroll->setBounceEnabled(true);
+    scroll->setTouchEnabled(true);
+    scroll->setContentSize(Size(rowW, scrollH));
+    scroll->setInnerContainerSize(Size(rowW, innerH));
+    scroll->setPosition(Vec2(scrollX, contentBottom));
+    box->addChild(scroll, 4);
+
     for (int i = 0; i < static_cast<int>(rows.size()); ++i)
     {
         const auto& row = rows[i];
         auto rowNode = createPauseInfoRow(row.first, row.second,
-            Size(panelW - pad * 2.0f, rowH), 16.0f * s);
-        rowNode->setPosition(Vec2(pad, contentTop - (i + 1) * rowStep + (rowStep - rowH) * 0.5f));
-        box->addChild(rowNode, 4);
+            Size(rowW, rowH), 15.0f * s);
+        rowNode->setPosition(Vec2(0.0f, innerH - rowGap - (i + 1) * rowH - i * rowGap));
+        scroll->addChild(rowNode);
     }
 }
 
