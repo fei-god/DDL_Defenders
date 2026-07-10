@@ -12,7 +12,7 @@
 	"artifacts" : 
 	[
 		{
-			"path" : "lib/Debug/cocos2d.lib"
+			"path" : "lib/Release/cocos2d.lib"
 		}
 	],
 	"backtrace" : 1,
@@ -78,12 +78,6 @@
 			{
 				"command" : 4,
 				"file" : 1,
-				"line" : 85,
-				"parent" : 5
-			},
-			{
-				"command" : 4,
-				"file" : 1,
 				"line" : 96,
 				"parent" : 5
 			},
@@ -107,7 +101,7 @@
 			"compileCommandFragments" : 
 			[
 				{
-					"fragment" : "/DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1"
+					"fragment" : "/DWIN32 /D_WINDOWS /W3 /GR /EHsc /MD /O2 /Ob2 /DNDEBUG"
 				},
 				{
 					"fragment" : "/Yuprecheader.h /FIprecheader.h"
@@ -124,62 +118,58 @@
 					"define" : "CC_STATIC"
 				},
 				{
-					"backtrace" : 7,
-					"define" : "COCOS2D_DEBUG=1"
-				},
-				{
 					"backtrace" : 2,
 					"define" : "LWS_WITH_LIBUV"
 				},
 				{
-					"backtrace" : 8,
+					"backtrace" : 7,
 					"define" : "UNICODE"
 				},
 				{
-					"backtrace" : 8,
+					"backtrace" : 7,
 					"define" : "WIN32"
 				},
 				{
-					"backtrace" : 8,
+					"backtrace" : 7,
 					"define" : "_CRT_SECURE_NO_WARNINGS"
 				},
 				{
-					"backtrace" : 8,
+					"backtrace" : 7,
 					"define" : "_SCL_SECURE_NO_WARNINGS"
 				},
 				{
-					"backtrace" : 8,
+					"backtrace" : 7,
 					"define" : "_UNICODE"
 				},
 				{
-					"backtrace" : 8,
+					"backtrace" : 7,
 					"define" : "_WIN32"
 				},
 				{
-					"backtrace" : 8,
+					"backtrace" : 7,
 					"define" : "_WINDOWS"
 				}
 			],
 			"includes" : 
 			[
 				{
-					"backtrace" : 9,
+					"backtrace" : 8,
 					"path" : "D:/DDL_defenders/cocos2d"
 				},
 				{
-					"backtrace" : 9,
+					"backtrace" : 8,
 					"path" : "D:/DDL_defenders/cocos2d/cocos"
 				},
 				{
-					"backtrace" : 9,
+					"backtrace" : 8,
 					"path" : "D:/DDL_defenders/cocos2d/extensions"
 				},
 				{
-					"backtrace" : 9,
+					"backtrace" : 8,
 					"path" : "D:/DDL_defenders/cocos2d/cocos/platform"
 				},
 				{
-					"backtrace" : 9,
+					"backtrace" : 8,
 					"path" : "D:/DDL_defenders/cocos2d/cocos/editor-support"
 				},
 				{
@@ -857,7 +847,7 @@
 			"compileCommandFragments" : 
 			[
 				{
-					"fragment" : "/DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1"
+					"fragment" : "/DWIN32 /D_WINDOWS /W3 /GR /EHsc /MD /O2 /Ob2 /DNDEBUG"
 				},
 				{
 					"fragment" : "/Yuprecheader.h /FIprecheader.h"
@@ -877,62 +867,58 @@
 					"define" : "CC_STATIC"
 				},
 				{
-					"backtrace" : 7,
-					"define" : "COCOS2D_DEBUG=1"
-				},
-				{
 					"backtrace" : 2,
 					"define" : "LWS_WITH_LIBUV"
 				},
 				{
-					"backtrace" : 8,
+					"backtrace" : 7,
 					"define" : "UNICODE"
 				},
 				{
-					"backtrace" : 8,
+					"backtrace" : 7,
 					"define" : "WIN32"
 				},
 				{
-					"backtrace" : 8,
+					"backtrace" : 7,
 					"define" : "_CRT_SECURE_NO_WARNINGS"
 				},
 				{
-					"backtrace" : 8,
+					"backtrace" : 7,
 					"define" : "_SCL_SECURE_NO_WARNINGS"
 				},
 				{
-					"backtrace" : 8,
+					"backtrace" : 7,
 					"define" : "_UNICODE"
 				},
 				{
-					"backtrace" : 8,
+					"backtrace" : 7,
 					"define" : "_WIN32"
 				},
 				{
-					"backtrace" : 8,
+					"backtrace" : 7,
 					"define" : "_WINDOWS"
 				}
 			],
 			"includes" : 
 			[
 				{
-					"backtrace" : 9,
+					"backtrace" : 8,
 					"path" : "D:/DDL_defenders/cocos2d"
 				},
 				{
-					"backtrace" : 9,
+					"backtrace" : 8,
 					"path" : "D:/DDL_defenders/cocos2d/cocos"
 				},
 				{
-					"backtrace" : 9,
+					"backtrace" : 8,
 					"path" : "D:/DDL_defenders/cocos2d/extensions"
 				},
 				{
-					"backtrace" : 9,
+					"backtrace" : 8,
 					"path" : "D:/DDL_defenders/cocos2d/cocos/platform"
 				},
 				{
-					"backtrace" : 9,
+					"backtrace" : 8,
 					"path" : "D:/DDL_defenders/cocos2d/cocos/editor-support"
 				},
 				{
@@ -1090,19 +1076,11 @@
 	[
 		{
 			"backtrace" : 2,
+			"id" : "ext_convertUTF::@205c2f0e44a3b06b9b59"
+		},
+		{
+			"backtrace" : 2,
 			"id" : "external::@62470bbe2074d04a1904"
-		},
-		{
-			"backtrace" : 2,
-			"id" : "ext_recast::@49aedbc985f97720d891"
-		},
-		{
-			"backtrace" : 2,
-			"id" : "ext_tinyxml2::@fd6ab661f4ee25a21ef0"
-		},
-		{
-			"backtrace" : 2,
-			"id" : "ext_edtaa3func::@f3d42e550923b89477b0"
 		},
 		{
 			"backtrace" : 2,
@@ -1110,15 +1088,11 @@
 		},
 		{
 			"backtrace" : 2,
-			"id" : "ext_clipper::@33abc919e86db66c28b8"
+			"id" : "ext_tinyxml2::@fd6ab661f4ee25a21ef0"
 		},
 		{
 			"backtrace" : 2,
-			"id" : "ext_convertUTF::@205c2f0e44a3b06b9b59"
-		},
-		{
-			"backtrace" : 2,
-			"id" : "ext_poly2tri::@ce0bfd23a4070be0c5de"
+			"id" : "ext_recast::@49aedbc985f97720d891"
 		},
 		{
 			"backtrace" : 2,
@@ -1126,7 +1100,19 @@
 		},
 		{
 			"backtrace" : 2,
+			"id" : "ext_clipper::@33abc919e86db66c28b8"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "ext_edtaa3func::@f3d42e550923b89477b0"
+		},
+		{
+			"backtrace" : 2,
 			"id" : "ext_md5::@82bef7d6fa8c2aa61808"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "ext_poly2tri::@ce0bfd23a4070be0c5de"
 		},
 		{
 			"backtrace" : 2,
@@ -8655,7 +8641,7 @@
 			"sourceGroupIndex" : 59
 		},
 		{
-			"backtrace" : 10,
+			"backtrace" : 9,
 			"compileGroupIndex" : 1,
 			"path" : "cocos2d/cocos/precheader.cpp",
 			"sourceGroupIndex" : 0

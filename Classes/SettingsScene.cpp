@@ -1,5 +1,6 @@
 #include "SettingsScene.h"
 #include "MainMenuScene.h"
+#include "Managers/AudioManager.h"
 #include "Managers/LanguageManager.h"
 #include "Core/AssetPaths.h"
 #include "base/CCDirector.h"
@@ -792,7 +793,10 @@ MenuItemSprite* SettingsScene::createImageButton(const std::string& text,
     selected->setScale(0.96f);
 
     auto item = MenuItemSprite::create(normal, selected, disabled,
-        [callback](Ref* sender) { if (callback) callback(sender); });
+        [callback](Ref* sender) {
+            AudioManager::getInstance()->playButtonClick();
+            if (callback) callback(sender);
+        });
     item->setContentSize(size);
     item->setEnabled(enabled);
     return item;

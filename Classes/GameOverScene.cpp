@@ -1,15 +1,70 @@
 ﻿#include "GameOverScene.h"
 #include "GameScene.h"
 #include "MainMenuScene.h"
-#include "Managers/LanguageManager.h"
 #include "Managers/SaveManager.h"
 #include "Managers/AudioManager.h"
-#include "base/CCUserDefault.h"
+#include "Core/AssetPaths.h"
+#include <algorithm>
 #include <cstring>
 #include <new>
-#include <sstream>
 
 USING_NS_CC;
+
+namespace
+{
+    Rect addFinalImage(Node* parent, const std::string& imagePath)
+    {
+        auto director = Director::getInstance();
+        const Size visibleSize = director->getVisibleSize();
+        const Vec2 origin = director->getVisibleOrigin();
+
+        auto backdrop = LayerColor::create(Color4B::BLACK, visibleSize.width, visibleSize.height);
+        backdrop->setPosition(origin);
+        backdrop->setOpacity(0);
+        parent->addChild(backdrop, -2);
+        backdrop->runAction(FadeTo::create(0.45f, 255));
+
+        auto bg = Sprite::create(AssetPaths::resolve(imagePath));
+        if (!bg)
+        {
+            return Rect(origin.x, origin.y, visibleSize.width, visibleSize.height);
+        }
+
+        const Size imageSize = bg->getContentSize();
+        const float scale = std::min(visibleSize.width / imageSize.width,
+            visibleSize.height / imageSize.height);
+        const Size displayedSize(imageSize.width * scale, imageSize.height * scale);
+
+        bg->setScale(scale);
+        bg->setPosition(origin + Vec2(visibleSize.width * 0.5f, visibleSize.height * 0.5f));
+        bg->setOpacity(0);
+        parent->addChild(bg, -1);
+        bg->runAction(FadeIn::create(0.85f));
+
+        return Rect(bg->getPositionX() - displayedSize.width * 0.5f,
+            bg->getPositionY() - displayedSize.height * 0.5f,
+            displayedSize.width,
+            displayedSize.height);
+    }
+
+    MenuItemSprite* createImageHotspot(const Rect& imageRect,
+        const Rect& normalizedRect,
+        const ccMenuCallback& callback)
+    {
+        const Size size(imageRect.size.width * normalizedRect.size.width,
+            imageRect.size.height * normalizedRect.size.height);
+        auto normal = Node::create();
+        normal->setContentSize(size);
+        auto selected = Node::create();
+        selected->setContentSize(size);
+
+        auto item = MenuItemSprite::create(normal, selected, callback);
+        item->setPosition(Vec2(
+            imageRect.origin.x + imageRect.size.width * (normalizedRect.origin.x + normalizedRect.size.width * 0.5f),
+            imageRect.origin.y + imageRect.size.height * (normalizedRect.origin.y + normalizedRect.size.height * 0.5f)));
+        return item;
+    }
+}
 
 Scene* GameOverScene::createScene(float survivalTime)
 {
@@ -62,77 +117,15 @@ bool GameOverScene::init()
     data.result = static_cast<int>(GameResult::Lose);
     SaveManager::getInstance()->updatePlayerAfterGame(data);
 
-    auto* lm = LanguageManager::getInstance();
-    auto visibleSize = Director::getInstance()->getVisibleSize();
-    Vec2 origin = Director::getInstance()->getVisibleOrigin();
-    auto winSize = Director::getInstance()->getWinSize();
-    float s = winSize.height / 640.0f;
-
-    auto bg = LayerColor::create(Color4B(30, 20, 25, 255), winSize.width, winSize.height);
-    bg->setPosition(Vec2::ZERO);
-    this->addChild(bg, -1);
-
-    auto title = Label::createWithSystemFont(lm->getString("gameover_title"), "Arial", 56.0f * s);
-    title->setColor(Color3B(220, 60, 60));
-    title->setPosition(Vec2(origin.x + visibleSize.width / 2, origin.y + visibleSize.height * 0.72f));
-    this->addChild(title, 1);
-
-    std::string timeStr = lm->getStringF("survival_time_fmt", _survivalTime);
-    auto timeLabel = Label::createWithSystemFont(timeStr, "Arial", 28.0f * s);
-    timeLabel->setColor(Color3B(200, 200, 210));
-    timeLabel->setPosition(Vec2(origin.x + visibleSize.width / 2, origin.y + visibleSize.height * 0.58f));
-    this->addChild(timeLabel, 1);
-
-    bool endlessMode = UserDefault::getInstance()->getIntegerForKey("selected_game_mode", 0) == 1;
-    char resultBuf[180];
-    if (endlessMode)
-    {
-        snprintf(resultBuf, sizeof(resultBuf), "Kills: %d  Completed DDL: %d  Score: %d",
-            _kills, _progress, _score);
-    }
-    else
-    {
-        snprintf(resultBuf, sizeof(resultBuf), "Kills: %d  Progress: %d%%  Score: %d",
-            _kills, _progress, _score);
-    }
-    auto resultLabel = Label::createWithSystemFont(resultBuf, "Arial", 24.0f * s);
-    resultLabel->setColor(Color3B(210, 210, 220));
-    resultLabel->setPosition(Vec2(origin.x + visibleSize.width / 2, origin.y + visibleSize.height * 0.51f));
-    this->addChild(resultLabel, 1);
-
-    auto records = SaveManager::getInstance()->loadLeaderboardByHighScore(5);
-    float rowY = origin.y + visibleSize.height * 0.44f;
-    int rank = 1;
-    for (const auto& record : records)
-    {
-        std::ostringstream oss;
-        oss << rank << ". " << record.playerName << " Score " << record.highScore
-            << " Progress " << record.bestProgress << "%";
-        auto row = Label::createWithSystemFont(oss.str(), "Arial", 18.0f * s);
-        row->setColor(Color3B(190, 195, 205));
-        row->setPosition(Vec2(origin.x + visibleSize.width / 2, rowY));
-        this->addChild(row, 1);
-        rowY -= 24.0f * s;
-        ++rank;
-    }
-
-    auto restartLabel = Label::createWithSystemFont(lm->getString("restart"), "Arial", 34.0f * s);
-    restartLabel->setColor(Color3B(100, 220, 100));
-    auto restartItem = MenuItemLabel::create(restartLabel,
+    const Rect imageRect = addFinalImage(this, "art/ui/final_fail.jpg");
+    auto titleItem = createImageHotspot(imageRect, Rect(0.07f, 0.07f, 0.39f, 0.20f),
+        CC_CALLBACK_1(GameOverScene::onTitleClicked, this));
+    auto restartItem = createImageHotspot(imageRect, Rect(0.54f, 0.07f, 0.39f, 0.20f),
         CC_CALLBACK_1(GameOverScene::onRestartClicked, this));
 
-    auto titleLabel = Label::createWithSystemFont(lm->getString("back_to_title"), "Arial", 34.0f * s);
-    titleLabel->setColor(Color3B(200, 180, 120));
-    auto titleItem = MenuItemLabel::create(titleLabel,
-        CC_CALLBACK_1(GameOverScene::onTitleClicked, this));
-
-    if (restartItem && titleItem)
-    {
-        auto menu = Menu::create(restartItem, titleItem, nullptr);
-        menu->setPosition(Vec2(origin.x + visibleSize.width / 2, origin.y + visibleSize.height * 0.20f));
-        menu->alignItemsVerticallyWithPadding(28.0f * s);
-        this->addChild(menu, 2);
-    }
+    auto menu = Menu::create(titleItem, restartItem, nullptr);
+    menu->setPosition(Vec2::ZERO);
+    this->addChild(menu, 2);
 
     return true;
 }

@@ -3,6 +3,7 @@
 #include "MainMenuScene.h"
 #include "SettingsScene.h"
 #include "StoryModeScene.h"
+#include "VictoryScene.h"
 #include "DeskUpgradeLayer.h"
 
 #include "Weapons/CoffeeGun.h"
@@ -29,6 +30,8 @@ USING_NS_CC;
 
 namespace
 {
+    constexpr const char* PAUSE_UI_FONT = "Bahnschrift SemiBold";
+
     std::string localizedButtonImagePath(const std::string& imagePath)
     {
         if (LanguageManager::getInstance()->getLanguage() !=
@@ -177,14 +180,12 @@ namespace
     {
         auto root = Node::create();
         root->setContentSize(size);
-        auto bg = LayerColor::create(Color4B(18, 33, 54, 218), size.width, size.height);
-        root->addChild(bg, 0);
-        auto line = LayerColor::create(Color4B(203, 158, 78, 180), size.width, 2.0f);
-        line->setPosition(Vec2(0.0f, size.height - 2.0f));
-        root->addChild(line, 1);
-        auto label = Label::createWithSystemFont(text, "Arial", fontSize);
+        auto bg = createFittedSprite("art/ui/pause/block.png", size);
+        if (bg)
+            root->addChild(bg, 0);
+        auto label = Label::createWithSystemFont(text, PAUSE_UI_FONT, fontSize);
         label->setColor(Color3B(236, 219, 169));
-        label->enableOutline(Color4B(18, 20, 28, 180), 1);
+        label->enableOutline(Color4B(18, 20, 28, 220), 1);
         label->setPosition(Vec2(size.width * 0.5f, size.height * 0.52f));
         root->addChild(label, 2);
         return root;
@@ -195,21 +196,20 @@ namespace
     {
         auto root = Node::create();
         root->setContentSize(size);
-        auto bg = LayerColor::create(Color4B(15, 28, 46, 188), size.width, size.height);
-        root->addChild(bg, 0);
-        auto accent = LayerColor::create(Color4B(177, 138, 74, 92), 3.0f, size.height);
-        root->addChild(accent, 1);
 
-        auto nameLabel = Label::createWithSystemFont(name, "Arial", fontSize);
+        const float rowFontSize = fontSize * 1.5f;
+        auto nameLabel = Label::createWithSystemFont(name, PAUSE_UI_FONT, rowFontSize);
         nameLabel->setColor(Color3B(205, 216, 226));
+        nameLabel->enableOutline(Color4B(8, 10, 16, 180), 1);
         nameLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
-        nameLabel->setPosition(Vec2(14.0f, size.height * 0.52f));
+        nameLabel->setPosition(Vec2(size.width * 0.14f, size.height * 0.52f));
         root->addChild(nameLabel, 2);
 
-        auto valueLabel = Label::createWithSystemFont(value, "Arial", fontSize);
+        auto valueLabel = Label::createWithSystemFont(value, PAUSE_UI_FONT, rowFontSize);
         valueLabel->setColor(Color3B(246, 218, 142));
+        valueLabel->enableOutline(Color4B(8, 10, 16, 180), 1);
         valueLabel->setAnchorPoint(Vec2(1.0f, 0.5f));
-        valueLabel->setPosition(Vec2(size.width - 14.0f, size.height * 0.52f));
+        valueLabel->setPosition(Vec2(size.width * 0.86f, size.height * 0.52f));
         root->addChild(valueLabel, 2);
         return root;
     }
@@ -219,30 +219,39 @@ namespace
     {
         auto root = Node::create();
         root->setContentSize(size);
-        auto bg = LayerColor::create(Color4B(16, 30, 48, 190), size.width, size.height);
-        root->addChild(bg, 0);
 
-        auto iconBg = LayerColor::create(Color4B(5, 12, 22, 170), iconSize, iconSize);
-        iconBg->setPosition(Vec2(10.0f, (size.height - iconSize) * 0.5f));
-        root->addChild(iconBg, 1);
-
-        auto icon = createFittedSprite(imagePath, Size(iconSize - 8.0f, iconSize - 8.0f));
-        if (icon)
+        const bool hasIcon = !imagePath.empty();
+        if (hasIcon)
         {
-            icon->setPosition(Vec2(10.0f + iconSize * 0.5f, size.height * 0.5f));
-            root->addChild(icon, 2);
+            auto iconBg = LayerColor::create(Color4B(5, 12, 22, 170), iconSize, iconSize);
+            iconBg->setPosition(Vec2(size.width * 0.10f, (size.height - iconSize) * 0.5f));
+            root->addChild(iconBg, 1);
+
+            auto icon = createFittedSprite(imagePath, Size(iconSize - 8.0f, iconSize - 8.0f));
+            if (icon)
+            {
+                icon->setPosition(Vec2(size.width * 0.10f + iconSize * 0.5f, size.height * 0.5f));
+                root->addChild(icon, 2);
+            }
         }
 
-        auto slot = Label::createWithSystemFont(slotText, "Arial", fontSize);
+        const float rowFontSize = fontSize * 1.5f;
+        auto slot = Label::createWithSystemFont(slotText, PAUSE_UI_FONT, rowFontSize);
         slot->setColor(Color3B(237, 202, 123));
+        slot->enableOutline(Color4B(8, 10, 16, 180), 1);
         slot->setAnchorPoint(Vec2(0.0f, 0.5f));
-        slot->setPosition(Vec2(20.0f + iconSize, size.height * 0.52f));
+        slot->setPosition(Vec2(hasIcon ? size.width * 0.14f + iconSize : size.width * 0.12f,
+            size.height * 0.52f));
         root->addChild(slot, 2);
 
-        auto nameLabel = Label::createWithSystemFont(name, "Arial", fontSize);
+        auto nameLabel = Label::createWithSystemFont(name, PAUSE_UI_FONT, rowFontSize);
         nameLabel->setColor(Color3B(218, 226, 236));
+        nameLabel->enableOutline(Color4B(8, 10, 16, 180), 1);
         nameLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
-        nameLabel->setPosition(Vec2(72.0f + iconSize, size.height * 0.52f));
+        const float nameX = hasIcon
+            ? (slotText.empty() ? size.width * 0.16f + iconSize : size.width * 0.30f + iconSize)
+            : size.width * 0.18f;
+        nameLabel->setPosition(Vec2(nameX, size.height * 0.52f));
         root->addChild(nameLabel, 2);
         return root;
     }
@@ -256,16 +265,20 @@ namespace
         auto normal = createUiImageOrLabel(imagePath, text, iconBounds, fontSize, Color3B(235, 220, 178));
         auto selected = createUiImageOrLabel(imagePath, text, iconBounds, fontSize, Color3B(255, 238, 190));
         selected->setScale(0.95f);
-        auto item = MenuItemSprite::create(normal, selected, callback);
+        auto item = MenuItemSprite::create(normal, selected,
+            [callback](Ref* sender) {
+                AudioManager::getInstance()->playButtonClick();
+                if (callback) callback(sender);
+            });
         item->setPosition(Vec2(iconBounds.width * 0.5f,
             root->getContentSize().height - iconBounds.height * 0.5f));
         auto menu = Menu::create(item, nullptr);
         menu->setPosition(Vec2::ZERO);
         root->addChild(menu, 2);
 
-        auto label = Label::createWithSystemFont(text, "Arial", fontSize);
+        auto label = Label::createWithSystemFont(text, PAUSE_UI_FONT, fontSize);
         label->setColor(Color3B(226, 218, 198));
-        label->enableOutline(Color4B(10, 13, 20, 180), 1);
+        label->enableOutline(Color4B(10, 13, 20, 220), 1);
         label->setPosition(Vec2(iconBounds.width * 0.5f, fontSize * 0.52f));
         root->addChild(label, 3);
         return root;
@@ -840,21 +853,31 @@ bool GameScene::init()
     if (!_isHubScene)
     {
         // --- HP bar ---
-        float hpBarWidth  = 220.0f * s;
-        float hpBarHeight = 18.0f * s;
-        float marginX = 18.0f * s;
-        float marginY = 44.0f * s;
+        const float panelWidth = 380.0f * s;
+        const float panelLeft = std::max(origin.x + 2.0f * s, origin.x + 8.0f * s - 18.0f * s);
+        const float panelTop = std::min(origin.y + visibleSize.height - 2.0f * s,
+            origin.y + visibleSize.height - 18.0f * s + 18.0f * s);
 
-        float hpBarLeft = origin.x + marginX;
-        float hpBarTop  = origin.y + visibleSize.height - marginY;
+        auto hudPanelSprite = Sprite::create(AssetPaths::resolve("art/ui/equipment_panel.png"));
+        const float panelHeight = (hudPanelSprite && hudPanelSprite->getContentSize().width > 0.0f)
+            ? panelWidth * hudPanelSprite->getContentSize().height / hudPanelSprite->getContentSize().width
+            : panelWidth * 1024.0f / 1536.0f;
+        const float contentLeft = panelLeft + 36.0f * s;
+        const float contentRight = panelLeft + panelWidth - 36.0f * s;
+        if (hudPanelSprite)
+        {
+            hudPanelSprite->setScale(panelWidth / hudPanelSprite->getContentSize().width);
+            hudPanelSprite->setOpacity(156);
+            hudPanelSprite->setPosition(Vec2(panelLeft + panelWidth * 0.5f,
+                panelTop - panelHeight * 0.5f));
+            this->addChild(hudPanelSprite, 8);
+        }
 
-        _hudPanelBg = LayerColor::create(Color4B(11, 14, 22, 178), 352.0f * s, 184.0f * s);
-        _hudPanelBg->setPosition(Vec2(hpBarLeft - 10.0f * s, hpBarTop - 176.0f * s));
-        this->addChild(_hudPanelBg, 8);
+        float hpBarWidth  = 210.0f * s;
+        float hpBarHeight = 16.0f * s;
 
-        auto hudAccent = LayerColor::create(Color4B(88, 196, 255, 185), 4.0f * s, 184.0f * s);
-        hudAccent->setPosition(_hudPanelBg->getPosition());
-        this->addChild(hudAccent, 9);
+        float hpBarLeft = contentLeft + 48.0f * s;
+        float hpBarTop  = panelTop - 35.0f * s;
 
         auto hpFrame = LayerColor::create(Color4B(100, 100, 110, 255), hpBarWidth + 4, hpBarHeight + 4);
         hpFrame->setPosition(Vec2(hpBarLeft - 2, hpBarTop - hpBarHeight - 2));
@@ -880,25 +903,25 @@ bool GameScene::init()
             textByLanguage("Mood: Normal", u8"情绪: 普通"), "Arial", 18.0f * s);
         _moodLabel->setColor(Color3B(212, 224, 238));
         _moodLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
-        _moodLabel->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight - 24.0f * s));
+        _moodLabel->setPosition(Vec2(contentLeft, panelTop - 75.0f * s));
         this->addChild(_moodLabel, 10);
 
         _weaponIcon = Sprite::create();
-        _weaponIcon->setPosition(Vec2(hpBarLeft + 28.0f * s, hpBarTop - hpBarHeight - 55.0f * s));
+        _weaponIcon->setPosition(Vec2(contentLeft + 28.0f * s, panelTop - 108.0f * s));
         this->addChild(_weaponIcon, 10);
 
         _weaponLabel = Label::createWithSystemFont(
             textByLanguage("Weapon: CoffeeGun", u8"武器: 咖啡枪"), "Arial", 18.0f * s);
         _weaponLabel->setColor(Color3B(232, 238, 244));
         _weaponLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
-        _weaponLabel->setPosition(Vec2(hpBarLeft + 64.0f * s, hpBarTop - hpBarHeight - 55.0f * s));
+        _weaponLabel->setPosition(Vec2(contentLeft + 64.0f * s, panelTop - 108.0f * s));
         this->addChild(_weaponLabel, 10);
 
-        float weaponEnergyWidth = 112.0f * s;
+        float weaponEnergyWidth = 230.0f * s;
         float weaponEnergyHeight = 8.0f * s;
         _weaponEnergyBg = LayerColor::create(Color4B(45, 45, 58, 255), weaponEnergyWidth, weaponEnergyHeight);
-        _weaponEnergyBg->setPosition(Vec2(hpBarLeft + 220.0f * s,
-            hpBarTop - hpBarHeight - 59.0f * s));
+        _weaponEnergyBg->setPosition(Vec2(contentLeft + 64.0f * s,
+            panelTop - 132.0f * s));
         this->addChild(_weaponEnergyBg, 9);
 
         _weaponEnergyFill = LayerColor::create(Color4B(90, 190, 255, 255), weaponEnergyWidth, weaponEnergyHeight);
@@ -906,35 +929,11 @@ bool GameScene::init()
         this->addChild(_weaponEnergyFill, 10);
         _weaponEnergyBarMaxWidth = weaponEnergyWidth;
 
-        _progressLabel = Label::createWithSystemFont(
-            textByLanguage("Assignment: 0%", u8"作业进度: 0%"), "Arial", 18.0f * s);
-        _progressLabel->setColor(Color3B(246, 228, 137));
-        _progressLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
-        _progressLabel->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight - 82.0f * s));
-        this->addChild(_progressLabel, 10);
-
-        _taskLabel = Label::createWithSystemFont(
-            textByLanguage("Desk: 0.00 / 0.00s", u8"书桌: 0.00 / 0.00秒"), "Arial", 16.0f * s);
-        _taskLabel->setColor(Color3B(172, 231, 255));
-        _taskLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
-        _taskLabel->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight - 106.0f * s));
-        this->addChild(_taskLabel, 10);
-
-        _taskBarMaxWidth = 222.0f * s;
-        float taskBarHeight = 8.0f * s;
-        _taskBarBg = LayerColor::create(Color4B(45, 45, 58, 255), _taskBarMaxWidth, taskBarHeight);
-        _taskBarBg->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight - 131.0f * s));
-        this->addChild(_taskBarBg, 9);
-
-        _taskBarFill = LayerColor::create(Color4B(80, 205, 235, 255), _taskBarMaxWidth, taskBarHeight);
-        _taskBarFill->setPosition(_taskBarBg->getPosition());
-        this->addChild(_taskBarFill, 10);
-
         _environmentLabel = Label::createWithSystemFont(
             textByLanguage("Environment: None", u8"环境: 无"), "Arial", 16.0f * s);
         _environmentLabel->setColor(Color3B(177, 221, 208));
         _environmentLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
-        _environmentLabel->setPosition(Vec2(hpBarLeft, hpBarTop - hpBarHeight - 154.0f * s));
+        _environmentLabel->setPosition(Vec2(contentLeft, panelTop - 162.0f * s));
         this->addChild(_environmentLabel, 10);
     }
 
@@ -956,53 +955,54 @@ bool GameScene::init()
     m_survivalTime = 0.0f;
     if (!_isHubScene)
     {
+        const float topPanelTop = origin.y + visibleSize.height - 70.0f * s;
+
         // --- Survival time ---
         _survivalTimeLabel = Label::createWithSystemFont(
-            textByLanguage("Time: 0.0s", u8"时间: 0.0秒"), "Arial", 36.0f * s);
-        _survivalTimeLabel->setColor(Color3B(230, 230, 240));
+            textByLanguage("Time: 0.0s", u8"时间: 0.0秒"), "Arial Black", 34.0f * s);
+        _survivalTimeLabel->setColor(Color3B(225, 46, 44));
         _survivalTimeLabel->setPosition(Vec2(
             origin.x + visibleSize.width / 2,
-            origin.y + visibleSize.height - 30.0f * s
+            origin.y + visibleSize.height - 34.0f * s
         ));
-        this->addChild(_survivalTimeLabel, 10);
+        this->addChild(_survivalTimeLabel, 12);
 
-        _endlessStatsLabel = Label::createWithSystemFont("", "Arial", 18.0f * s);
-        _endlessStatsLabel->setColor(Color3B(160, 232, 255));
+        _endlessStatsLabel = Label::createWithSystemFont("", "Arial", 17.0f * s);
+        _endlessStatsLabel->setColor(Color3B(255, 205, 105));
         _endlessStatsLabel->setPosition(Vec2(
-            origin.x + visibleSize.width / 2,
-            origin.y + visibleSize.height - 62.0f * s
+            origin.x + visibleSize.width / 2 - 24.0f * s,
+            topPanelTop - 24.0f * s
         ));
         _endlessStatsLabel->setVisible(_isEndlessMode);
-        this->addChild(_endlessStatsLabel, 10);
+        this->addChild(_endlessStatsLabel, 12);
 
-        // --- EXP bar ---
-        _expBarMaxWidth = 200.0f * s;
-        float expBarY = origin.y + visibleSize.height - 58.0f * s;
-        _expBarBg = LayerColor::create(Color4B(40, 40, 55, 200), _expBarMaxWidth, 14.0f * s);
+        _expLevelLabel = Label::createWithSystemFont("Lv.1", "Arial", 17.0f * s);
+        _expLevelLabel->setColor(Color3B(205, 228, 105));
+        _expLevelLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
+        _expLevelLabel->setPosition(Vec2(origin.x + visibleSize.width / 2 + 128.0f * s,
+            topPanelTop - 24.0f * s));
+        this->addChild(_expLevelLabel, 12);
+
+        _expBarMaxWidth = 220.0f * s;
+        float expBarY = topPanelTop - 48.0f * s;
+        _expBarBg = LayerColor::create(Color4B(38, 40, 56, 220), _expBarMaxWidth, 9.0f * s);
         _expBarBg->setPosition(Vec2(origin.x + visibleSize.width / 2 - _expBarMaxWidth / 2, expBarY));
-        this->addChild(_expBarBg, 10);
+        this->addChild(_expBarBg, 12);
 
-        _expBarFill = LayerColor::create(Color4B(80, 200, 120, 255), _expBarMaxWidth * 0.5f, 14.0f * s);
+        _expBarFill = LayerColor::create(Color4B(80, 200, 120, 255), _expBarMaxWidth * 0.5f, 9.0f * s);
         _expBarFill->setPosition(Vec2(0, 0));
         _expBarBg->addChild(_expBarFill);
 
-        _expLevelLabel = Label::createWithSystemFont("Lv.1", "Arial", 16.0f * s);
-        _expLevelLabel->setColor(Color3B(200, 220, 100));
-        _expLevelLabel->setAnchorPoint(Vec2(0, 0.5f));
-        _expLevelLabel->setPosition(Vec2(origin.x + visibleSize.width / 2 + _expBarMaxWidth / 2 + 8.0f * s, expBarY + 7.0f * s));
-        this->addChild(_expLevelLabel, 10);
+        _expFractionLabel = Label::createWithSystemFont("0/100 EXP", "Arial", 12.0f * s);
+        _expFractionLabel->setColor(Color3B(190, 194, 210));
+        _expFractionLabel->setPosition(Vec2(origin.x + visibleSize.width / 2, topPanelTop - 67.0f * s));
+        this->addChild(_expFractionLabel, 12);
 
-        _expFractionLabel = Label::createWithSystemFont("0/100 EXP", "Arial", 11.0f * s);
-        _expFractionLabel->setColor(Color3B(180, 180, 200));
-        _expFractionLabel->setPosition(Vec2(origin.x + visibleSize.width / 2, expBarY - 18.0f * s));
-        this->addChild(_expFractionLabel, 10);
-
-        // --- Wave timer ---
-        _waveTimerLabel = Label::createWithSystemFont("", "Arial", 20.0f * s);
-        _waveTimerLabel->setColor(Color3B(255, 200, 100));
-        _waveTimerLabel->setPosition(Vec2(origin.x + visibleSize.width / 2, expBarY - 38.0f * s));
+        _waveTimerLabel = Label::createWithSystemFont("", "Arial", 17.0f * s);
+        _waveTimerLabel->setColor(Color3B(255, 205, 112));
+        _waveTimerLabel->setPosition(Vec2(origin.x + visibleSize.width / 2, topPanelTop - 92.0f * s));
         _waveTimerLabel->setVisible(false);
-        this->addChild(_waveTimerLabel, 10);
+        this->addChild(_waveTimerLabel, 12);
     }
 
     _topHintLabel = Label::createWithSystemFont(
@@ -1011,7 +1011,7 @@ bool GameScene::init()
         16.0f * s);
     _topHintLabel->setColor(Color3B(255, 245, 180));
     _topHintLabel->setPosition(Vec2(origin.x + visibleSize.width / 2,
-        origin.y + 86.0f * s));
+        origin.y + 128.0f * s));
     this->addChild(_topHintLabel, 20);
 
     // --- Input ---
@@ -1126,10 +1126,16 @@ void GameScene::update(float dt)
         _pendingAfterBattle = false;
         if (_goToMainMenu)
         {
-            // Story mode all 3 levels cleared → main menu
+            // Story mode all 3 levels cleared -> final result screen.
             _goToMainMenu = false;
+            int kills = _waveManager ? _waveManager->getKillCount() : 0;
+            int progress = _isEndlessMode ? _completedDdlCount : static_cast<int>(_assignmentProgress);
+            int score = calculateScore();
+            auto victoryScene = VictoryScene::createScene(m_survivalTime, kills, progress, score);
             Director::getInstance()->replaceScene(
-                TransitionFade::create(0.8f, MainMenuScene::createScene(), Color3B::BLACK));
+                TransitionFade::create(0.8f,
+                    victoryScene ? victoryScene : MainMenuScene::createScene(),
+                    Color3B::BLACK));
         }
         else
         {
@@ -3473,12 +3479,11 @@ void GameScene::showPauseMenu()
     swallow->onTouchBegan = [](Touch*, Event*) { return true; };
     _eventDispatcher->addEventListenerWithSceneGraphPriority(swallow, _pauseLayer);
 
-    const float panelW = visibleSize.width * 0.84f;
-    const float panelH = visibleSize.height * 0.72f;
-    const float gap = panelW * 0.04f;
-    const float leftW = panelW * 0.35f;
-    const float rightW = panelW - leftW - gap;
-    const float contentBottom = origin.y + visibleSize.height * 0.18f;
+    const float panelW = visibleSize.width * 0.90f;
+    const float panelH = visibleSize.height * 0.66f;
+    const float gap = 0.0f;
+    const float leftW = panelW * 0.42f;
+    const float contentBottom = origin.y + visibleSize.height * 0.19f;
     const float contentLeft = cx - panelW * 0.5f;
 
     auto content = Node::create();
@@ -3489,7 +3494,7 @@ void GameScene::showPauseMenu()
     buildPauseStatsPanel(content, Vec2(0.0f, 0.0f), s);
     buildPauseWeaponPanel(content, Vec2(leftW + gap, 0.0f), s);
 
-    const Size titleBounds(460.0f * s, 118.0f * s);
+    const Size titleBounds(920.0f * s, 236.0f * s);
     auto titleSprite = createFittedSprite("art/ui/pause_title.png", titleBounds);
     if (titleSprite)
     {
@@ -3497,7 +3502,7 @@ void GameScene::showPauseMenu()
         titleNode->setContentSize(titleBounds);
         titleNode->addChild(titleSprite);
         titleNode->setPosition(Vec2(cx - titleBounds.width * 0.5f,
-            contentBottom + panelH - titleBounds.height * 0.46f));
+            origin.y + visibleSize.height - titleBounds.height * 0.92f));
         _pauseLayer->addChild(titleNode, 50);
     }
     else
@@ -3540,38 +3545,38 @@ void GameScene::buildPauseStatsPanel(Node* parent, const Vec2& pos, float s)
 {
     auto* lm = LanguageManager::getInstance();
     const Size contentSize = parent->getContentSize();
-    const float panelW = contentSize.width * 0.35f;
+    const float panelW = contentSize.width * 0.42f;
     const float panelH = contentSize.height;
-    const float pad = 22.0f * s;
+    const float pad = 18.0f * s;
 
-    auto panel = createPausePanel(Size(panelW, panelH));
-    panel->setPosition(pos);
-    parent->addChild(panel, 20);
+    const float attrImageAspectH = 941.0f / 1672.0f;
+    const float boxH = std::min(panelH * 0.58f, panelW * attrImageAspectH);
+    const Size boxSize(panelW, boxH);
+    const float boxY = pos.y;
+    auto box = Node::create();
+    box->setContentSize(boxSize);
+    box->setPosition(Vec2(pos.x, boxY));
+    auto boxSprite = createFittedSprite("art/ui/pause/charactor.png", boxSize);
+    if (boxSprite)
+    {
+        boxSprite->setPosition(Vec2(boxSize.width * 0.5f, boxSize.height * 0.5f));
+        box->addChild(boxSprite, 0);
+    }
+    parent->addChild(box, 20);
 
-    const Size portraitBounds(panelW - pad * 2.0f, panelH * 0.34f);
-    auto portraitBox = LayerColor::create(Color4B(8, 18, 33, 190),
-        portraitBounds.width, portraitBounds.height);
-    portraitBox->setPosition(Vec2(pos.x + pad, pos.y + panelH - portraitBounds.height - pad));
-    parent->addChild(portraitBox, 21);
+    const Size portraitBounds(panelW * 0.62f, panelH - boxH);
 
     std::string portraitPath = m_player ? getMoodPlayerImagePath(m_player->getCurrentMood()) : "";
     if (portraitPath.empty())
         portraitPath = AssetPaths::resolve("art/characters/character1.png");
-    auto portrait = createFittedSprite(portraitPath, Size(portraitBounds.width * 0.92f,
-        portraitBounds.height * 0.92f));
+    auto portrait = createFittedSprite(portraitPath, Size(portraitBounds.width,
+        portraitBounds.height * 0.94f));
     if (portrait)
     {
         portrait->setPosition(Vec2(pos.x + panelW * 0.5f,
-            portraitBox->getPositionY() + portraitBounds.height * 0.5f));
+            boxY + boxH + portraitBounds.height * 0.48f));
         parent->addChild(portrait, 30);
     }
-
-    const Size titleSize(panelW - pad * 2.0f, 46.0f * s);
-    auto title = createPauseSectionTitle(textByLanguage("Character Stats", u8"角色属性"),
-        titleSize, 22.0f * s);
-    title->setPosition(Vec2(pos.x + pad,
-        portraitBox->getPositionY() - 18.0f * s - titleSize.height));
-    parent->addChild(title, 30);
 
     std::vector<std::pair<std::string, std::string>> rows;
     if (m_player)
@@ -3589,15 +3594,17 @@ void GameScene::buildPauseStatsPanel(Node* parent, const Vec2& pos, float s)
             textByLanguage("None", u8"无") });
     }
 
-    const float rowH = 38.0f * s;
-    float y = title->getPositionY() - 16.0f * s - rowH;
-    for (const auto& row : rows)
+    const float contentTop = boxH * 0.64f;
+    const float contentBottom = boxH * 0.18f;
+    const float rowStep = rows.empty() ? 0.0f : (contentTop - contentBottom) / rows.size();
+    const float rowH = std::max(28.0f * s, rowStep * 0.88f);
+    for (int i = 0; i < static_cast<int>(rows.size()); ++i)
     {
+        const auto& row = rows[i];
         auto rowNode = createPauseInfoRow(row.first, row.second,
             Size(panelW - pad * 2.0f, rowH), 16.0f * s);
-        rowNode->setPosition(Vec2(pos.x + pad, y));
-        parent->addChild(rowNode, 30);
-        y -= rowH + 8.0f * s;
+        rowNode->setPosition(Vec2(pad, contentTop - (i + 1) * rowStep + (rowStep - rowH) * 0.5f));
+        box->addChild(rowNode, 4);
     }
 }
 
@@ -3606,17 +3613,14 @@ void GameScene::buildPauseWeaponPanel(Node* parent, const Vec2& pos, float s)
     auto* lm = LanguageManager::getInstance();
     auto options = getWeaponOptions();
     const Size contentSize = parent->getContentSize();
-    const float leftW = contentSize.width * 0.35f;
-    const float gap = contentSize.width * 0.04f;
-    const float panelW = contentSize.width - leftW - gap;
+    const float leftW = contentSize.width * 0.42f;
+    const float gap = 0.0f;
+    const float backpackW = contentSize.width * 0.29f;
+    const float equipW = contentSize.width - leftW - backpackW - gap;
     const float panelH = contentSize.height;
-    const float pad = 22.0f * s;
-    const float rowH = 50.0f * s;
+    const float pad = 18.0f * s;
+    const float rowH = 48.0f * s;
     const float iconSz = 34.0f * s;
-
-    auto panel = createPausePanel(Size(panelW, panelH));
-    panel->setPosition(pos);
-    parent->addChild(panel, 20);
 
     auto itemInfo = [&](int weaponId, std::string& name, std::string& imgPath) {
         name = textByLanguage("Unequipped", u8"未装备");
@@ -3632,41 +3636,24 @@ void GameScene::buildPauseWeaponPanel(Node* parent, const Vec2& pos, float s)
         }
     };
 
-    const Size titleSize(panelW - pad * 2.0f, 44.0f * s);
-    float yTop = pos.y + panelH - pad;
-    auto eqTitle = createPauseSectionTitle(lm->getString("equipped"),
-        titleSize, 22.0f * s);
-    eqTitle->setPosition(Vec2(pos.x + pad, yTop - titleSize.height));
-    parent->addChild(eqTitle, 30);
+    auto backpackBox = Node::create();
+    backpackBox->setContentSize(Size(backpackW, panelH));
+    backpackBox->setPosition(pos);
+    auto backpackSprite = createFittedSprite("art/ui/pause/backage.png", Size(backpackW, panelH));
+    if (backpackSprite)
+        backpackBox->addChild(backpackSprite, 0);
+    parent->addChild(backpackBox, 20);
 
-    for (int i = 0; i < 2; ++i)
-    {
-        int weaponId = (i < (int)_weaponLoadoutIds.size()) ? _weaponLoadoutIds[i] : -1;
-        std::string name;
-        std::string imgPath;
-        itemInfo(weaponId, name, imgPath);
-        auto row = createPauseItemRow("[" + std::to_string(i + 1) + "]", name, imgPath,
-            Size(panelW - pad * 2.0f, rowH), iconSz, 16.0f * s);
-        row->setPosition(Vec2(pos.x + pad,
-            eqTitle->getPositionY() - 14.0f * s - (i + 1) * rowH - i * 8.0f * s));
-        parent->addChild(row, 30);
-    }
-
-    const float backpackTitleY = pos.y + panelH * 0.54f;
-    auto bpTitle = createPauseSectionTitle(lm->getString("backpack"),
-        titleSize, 22.0f * s);
-    bpTitle->setPosition(Vec2(pos.x + pad, backpackTitleY));
-    parent->addChild(bpTitle, 30);
-
-    const float scrollH = backpackTitleY - pos.y - pad - 14.0f * s;
+    const float backpackTopOffset = (rowH + 8.0f * s) * 1.2f;
+    const float scrollH = panelH - 142.0f * s - backpackTopOffset;
     auto scroll = ui::ScrollView::create();
     scroll->setDirection(ui::ScrollView::Direction::VERTICAL);
     scroll->setBounceEnabled(true);
-    scroll->setContentSize(Size(panelW - pad * 2.0f, scrollH));
-    scroll->setInnerContainerSize(Size(panelW - pad * 2.0f,
-        std::max(scrollH, (rowH + 8.0f * s) * 4.0f)));
-    scroll->setPosition(Vec2(pos.x + pad, pos.y + pad));
-    parent->addChild(scroll, 30);
+    scroll->setContentSize(Size(backpackW - pad * 2.0f, scrollH));
+    scroll->setInnerContainerSize(Size(backpackW - pad * 2.0f,
+        std::max(scrollH, (rowH + 8.0f * s) * std::max(4, (int)_backpackWeaponIds.size()))));
+    scroll->setPosition(Vec2(pad, 34.0f * s));
+    backpackBox->addChild(scroll, 30);
 
     const Size innerSize = scroll->getInnerContainerSize();
     for (int i = 0; i < std::max(4, (int)_backpackWeaponIds.size()); ++i)
@@ -3676,9 +3663,32 @@ void GameScene::buildPauseWeaponPanel(Node* parent, const Vec2& pos, float s)
         std::string imgPath;
         itemInfo(weaponId, name, imgPath);
         auto row = createPauseItemRow("", name, imgPath,
-            Size(panelW - pad * 2.0f, rowH), iconSz, 16.0f * s);
+            Size(backpackW - pad * 2.0f, rowH), iconSz, 15.0f * s);
         row->setPosition(Vec2(0.0f, innerSize.height - (i + 1) * rowH - i * 8.0f * s));
         scroll->addChild(row);
+    }
+
+    auto equipBox = Node::create();
+    equipBox->setContentSize(Size(equipW, panelH));
+    equipBox->setPosition(Vec2(pos.x + backpackW + gap, pos.y));
+    auto equipSprite = createFittedSprite("art/ui/pause/have_equiped.png", Size(equipW, panelH));
+    if (equipSprite)
+        equipBox->addChild(equipSprite, 0);
+    parent->addChild(equipBox, 20);
+
+    const float eqContentTop = panelH - 142.0f * s;
+
+    for (int i = 0; i < 2; ++i)
+    {
+        int weaponId = (i < (int)_weaponLoadoutIds.size()) ? _weaponLoadoutIds[i] : -1;
+        std::string name;
+        std::string imgPath;
+        itemInfo(weaponId, name, imgPath);
+        auto row = createPauseItemRow("", name, imgPath,
+            Size(equipW - pad * 2.0f, rowH), iconSz, 15.0f * s);
+        row->setPosition(Vec2(pad,
+            eqContentTop - (i + 1) * rowH - i * 12.0f * s));
+        equipBox->addChild(row, 30);
     }
 }
 

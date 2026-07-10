@@ -2,10 +2,10 @@
 	"artifacts" : 
 	[
 		{
-			"path" : "bin/DDL_Defenders/MinSizeRel/DDL_Defenders.exe"
+			"path" : "bin/DDL_Defenders/Release/DDL_Defenders.exe"
 		},
 		{
-			"path" : "bin/DDL_Defenders/MinSizeRel/DDL_Defenders.pdb"
+			"path" : "bin/DDL_Defenders/Release/DDL_Defenders.pdb"
 		}
 	],
 	"backtrace" : 1,
@@ -318,7 +318,7 @@
 			"compileCommandFragments" : 
 			[
 				{
-					"fragment" : "/DWIN32 /D_WINDOWS /W3 /GR /EHsc /MD /O1 /Ob1 /DNDEBUG"
+					"fragment" : "/DWIN32 /D_WINDOWS /W3 /GR /EHsc /MD /O2 /Ob2 /DNDEBUG"
 				},
 				{
 					"backtrace" : 45,
@@ -616,7 +616,7 @@
 				71,
 				72,
 				73,
-				145
+				163
 			]
 		},
 		{
@@ -878,19 +878,11 @@
 	[
 		{
 			"backtrace" : 2,
+			"id" : "ext_convertUTF::@205c2f0e44a3b06b9b59"
+		},
+		{
+			"backtrace" : 2,
 			"id" : "external::@62470bbe2074d04a1904"
-		},
-		{
-			"backtrace" : 2,
-			"id" : "ext_recast::@49aedbc985f97720d891"
-		},
-		{
-			"backtrace" : 2,
-			"id" : "ext_tinyxml2::@fd6ab661f4ee25a21ef0"
-		},
-		{
-			"backtrace" : 2,
-			"id" : "ext_edtaa3func::@f3d42e550923b89477b0"
 		},
 		{
 			"backtrace" : 2,
@@ -898,11 +890,7 @@
 		},
 		{
 			"backtrace" : 2,
-			"id" : "ext_clipper::@33abc919e86db66c28b8"
-		},
-		{
-			"backtrace" : 44,
-			"id" : "SYNC_RESOURCE-DDL_Defenders::@6890427a1f51a3e7e1df"
+			"id" : "ext_tinyxml2::@fd6ab661f4ee25a21ef0"
 		},
 		{
 			"backtrace" : 2,
@@ -910,19 +898,31 @@
 		},
 		{
 			"backtrace" : 2,
-			"id" : "ext_convertUTF::@205c2f0e44a3b06b9b59"
-		},
-		{
-			"backtrace" : 2,
-			"id" : "ext_poly2tri::@ce0bfd23a4070be0c5de"
+			"id" : "ext_recast::@49aedbc985f97720d891"
 		},
 		{
 			"backtrace" : 2,
 			"id" : "ext_xxtea::@95546a4b2abc077b0042"
 		},
 		{
+			"backtrace" : 44,
+			"id" : "SYNC_RESOURCE-DDL_Defenders::@6890427a1f51a3e7e1df"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "ext_clipper::@33abc919e86db66c28b8"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "ext_edtaa3func::@f3d42e550923b89477b0"
+		},
+		{
 			"backtrace" : 2,
 			"id" : "ext_md5::@82bef7d6fa8c2aa61808"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "ext_poly2tri::@ce0bfd23a4070be0c5de"
 		},
 		{
 			"backtrace" : 2,
@@ -938,7 +938,7 @@
 		"commandFragments" : 
 		[
 			{
-				"fragment" : "/DWIN32 /D_WINDOWS /W3 /GR /EHsc /MD /O1 /Ob1 /DNDEBUG",
+				"fragment" : "/DWIN32 /D_WINDOWS /W3 /GR /EHsc /MD /O2 /Ob2 /DNDEBUG",
 				"role" : "flags"
 			},
 			{
@@ -947,12 +947,12 @@
 			},
 			{
 				"backtrace" : 2,
-				"fragment" : "lib\\MinSizeRel\\cocos2d.lib",
+				"fragment" : "lib\\Release\\cocos2d.lib",
 				"role" : "libraries"
 			},
 			{
 				"backtrace" : 4,
-				"fragment" : "lib\\MinSizeRel\\external.lib",
+				"fragment" : "lib\\Release\\external.lib",
 				"role" : "libraries"
 			},
 			{
@@ -972,7 +972,7 @@
 			},
 			{
 				"backtrace" : 9,
-				"fragment" : "lib\\MinSizeRel\\ext_recast.lib",
+				"fragment" : "lib\\Release\\ext_recast.lib",
 				"role" : "libraries"
 			},
 			{
@@ -1012,42 +1012,42 @@
 			},
 			{
 				"backtrace" : 17,
-				"fragment" : "lib\\MinSizeRel\\ext_tinyxml2.lib",
+				"fragment" : "lib\\Release\\ext_tinyxml2.lib",
 				"role" : "libraries"
 			},
 			{
 				"backtrace" : 18,
-				"fragment" : "lib\\MinSizeRel\\ext_xxhash.lib",
+				"fragment" : "lib\\Release\\ext_xxhash.lib",
 				"role" : "libraries"
 			},
 			{
 				"backtrace" : 19,
-				"fragment" : "lib\\MinSizeRel\\ext_xxtea.lib",
+				"fragment" : "lib\\Release\\ext_xxtea.lib",
 				"role" : "libraries"
 			},
 			{
 				"backtrace" : 20,
-				"fragment" : "lib\\MinSizeRel\\ext_clipper.lib",
+				"fragment" : "lib\\Release\\ext_clipper.lib",
 				"role" : "libraries"
 			},
 			{
 				"backtrace" : 21,
-				"fragment" : "lib\\MinSizeRel\\ext_edtaa3func.lib",
+				"fragment" : "lib\\Release\\ext_edtaa3func.lib",
 				"role" : "libraries"
 			},
 			{
 				"backtrace" : 22,
-				"fragment" : "lib\\MinSizeRel\\ext_convertUTF.lib",
+				"fragment" : "lib\\Release\\ext_convertUTF.lib",
 				"role" : "libraries"
 			},
 			{
 				"backtrace" : 23,
-				"fragment" : "lib\\MinSizeRel\\ext_poly2tri.lib",
+				"fragment" : "lib\\Release\\ext_poly2tri.lib",
 				"role" : "libraries"
 			},
 			{
 				"backtrace" : 24,
-				"fragment" : "lib\\MinSizeRel\\ext_md5.lib",
+				"fragment" : "lib\\Release\\ext_md5.lib",
 				"role" : "libraries"
 			},
 			{
@@ -1107,7 +1107,7 @@
 			},
 			{
 				"backtrace" : 33,
-				"fragment" : "lib\\MinSizeRel\\ext_unzip.lib",
+				"fragment" : "lib\\Release\\ext_unzip.lib",
 				"role" : "libraries"
 			},
 			{
@@ -1296,7 +1296,8 @@
 			[
 				75,
 				76,
-				77
+				77,
+				145
 			]
 		},
 		{
@@ -1358,6 +1359,18 @@
 				106,
 				107,
 				108,
+				113,
+				114,
+				115,
+				116,
+				117,
+				118
+			]
+		},
+		{
+			"name" : "Resources\\art\\ui\\pause",
+			"sourceIndexes" : 
+			[
 				109,
 				110,
 				111,
@@ -1365,72 +1378,95 @@
 			]
 		},
 		{
-			"name" : "Resources\\art\\ui\\upgrade",
+			"name" : "Resources\\art\\ui\\settings\\_backup_before_trim",
 			"sourceIndexes" : 
 			[
-				113,
-				114,
-				115,
-				116,
-				117,
-				118,
-				119
-			]
-		},
-		{
-			"name" : "Resources\\audio",
-			"sourceIndexes" : 
-			[
+				119,
 				120,
 				121,
 				122,
-				123,
+				123
+			]
+		},
+		{
+			"name" : "Resources\\art\\ui\\settings",
+			"sourceIndexes" : 
+			[
 				124,
-				125
-			]
-		},
-		{
-			"name" : "Resources\\fonts",
-			"sourceIndexes" : 
-			[
+				125,
 				126,
-				127
+				127,
+				128,
+				129
 			]
 		},
 		{
-			"name" : "Resources\\res",
+			"name" : "Resources\\art\\ui\\upgrade",
 			"sourceIndexes" : 
 			[
-				128
-			]
-		},
-		{
-			"name" : "Resources\\weapon",
-			"sourceIndexes" : 
-			[
-				129,
 				130,
 				131,
 				132,
 				133,
 				134,
 				135,
-				136,
+				136
+			]
+		},
+		{
+			"name" : "Resources\\audio",
+			"sourceIndexes" : 
+			[
 				137,
 				138,
 				139,
 				140,
 				141,
-				142,
+				142
+			]
+		},
+		{
+			"name" : "Resources\\fonts",
+			"sourceIndexes" : 
+			[
 				143,
 				144
+			]
+		},
+		{
+			"name" : "Resources\\res",
+			"sourceIndexes" : 
+			[
+				146
+			]
+		},
+		{
+			"name" : "Resources\\weapon",
+			"sourceIndexes" : 
+			[
+				147,
+				148,
+				149,
+				150,
+				151,
+				152,
+				153,
+				154,
+				155,
+				156,
+				157,
+				158,
+				159,
+				160,
+				161,
+				162
 			]
 		},
 		{
 			"name" : "Source Files",
 			"sourceIndexes" : 
 			[
-				145
+				163
 			]
 		}
 	],
@@ -1969,7 +2005,17 @@
 		},
 		{
 			"backtrace" : 1,
-			"path" : "Resources/art/ui/leaderboard_panel.png",
+			"path" : "Resources/art/ui/final_fail.jpg",
+			"sourceGroupIndex" : 14
+		},
+		{
+			"backtrace" : 1,
+			"path" : "Resources/art/ui/final_success.png",
+			"sourceGroupIndex" : 14
+		},
+		{
+			"backtrace" : 1,
+			"path" : "Resources/art/ui/final_success_at_high_score.png",
 			"sourceGroupIndex" : 14
 		},
 		{
@@ -2009,6 +2055,26 @@
 		},
 		{
 			"backtrace" : 1,
+			"path" : "Resources/art/ui/pause/backage.png",
+			"sourceGroupIndex" : 15
+		},
+		{
+			"backtrace" : 1,
+			"path" : "Resources/art/ui/pause/block.png",
+			"sourceGroupIndex" : 15
+		},
+		{
+			"backtrace" : 1,
+			"path" : "Resources/art/ui/pause/charactor.png",
+			"sourceGroupIndex" : 15
+		},
+		{
+			"backtrace" : 1,
+			"path" : "Resources/art/ui/pause/have_equiped.png",
+			"sourceGroupIndex" : 15
+		},
+		{
+			"backtrace" : 1,
 			"path" : "Resources/art/ui/pause_back_to_menu.png",
 			"sourceGroupIndex" : 14
 		},
@@ -2039,169 +2105,229 @@
 		},
 		{
 			"backtrace" : 1,
+			"path" : "Resources/art/ui/settings/_backup_before_trim/block_detail.png",
+			"sourceGroupIndex" : 16
+		},
+		{
+			"backtrace" : 1,
+			"path" : "Resources/art/ui/settings/_backup_before_trim/block_title.png",
+			"sourceGroupIndex" : 16
+		},
+		{
+			"backtrace" : 1,
+			"path" : "Resources/art/ui/settings/_backup_before_trim/left_botton.png",
+			"sourceGroupIndex" : 16
+		},
+		{
+			"backtrace" : 1,
+			"path" : "Resources/art/ui/settings/_backup_before_trim/right_botton.png",
+			"sourceGroupIndex" : 16
+		},
+		{
+			"backtrace" : 1,
+			"path" : "Resources/art/ui/settings/_backup_before_trim/ui_panel_main.png",
+			"sourceGroupIndex" : 16
+		},
+		{
+			"backtrace" : 1,
+			"path" : "Resources/art/ui/settings/background.png",
+			"sourceGroupIndex" : 17
+		},
+		{
+			"backtrace" : 1,
+			"path" : "Resources/art/ui/settings/block_detail.png",
+			"sourceGroupIndex" : 17
+		},
+		{
+			"backtrace" : 1,
+			"path" : "Resources/art/ui/settings/block_title.png",
+			"sourceGroupIndex" : 17
+		},
+		{
+			"backtrace" : 1,
+			"path" : "Resources/art/ui/settings/left_botton.png",
+			"sourceGroupIndex" : 17
+		},
+		{
+			"backtrace" : 1,
+			"path" : "Resources/art/ui/settings/right_botton.png",
+			"sourceGroupIndex" : 17
+		},
+		{
+			"backtrace" : 1,
+			"path" : "Resources/art/ui/settings/ui_panel_main.png",
+			"sourceGroupIndex" : 17
+		},
+		{
+			"backtrace" : 1,
 			"path" : "Resources/art/ui/upgrade/attribute_upgrade_bar.png",
-			"sourceGroupIndex" : 15
-		},
-		{
-			"backtrace" : 1,
-			"path" : "Resources/art/ui/upgrade/button_large.png",
-			"sourceGroupIndex" : 15
-		},
-		{
-			"backtrace" : 1,
-			"path" : "Resources/art/ui/upgrade/ui_panel_main.png",
-			"sourceGroupIndex" : 15
-		},
-		{
-			"backtrace" : 1,
-			"path" : "Resources/art/ui/upgrade/ui_title_attribute.png",
-			"sourceGroupIndex" : 15
-		},
-		{
-			"backtrace" : 1,
-			"path" : "Resources/art/ui/upgrade/ui_title_weapon.png",
-			"sourceGroupIndex" : 15
-		},
-		{
-			"backtrace" : 1,
-			"path" : "Resources/art/ui/upgrade/weapon_slot_normal.png",
-			"sourceGroupIndex" : 15
-		},
-		{
-			"backtrace" : 1,
-			"path" : "Resources/art/ui/upgrade/weapon_slot_selected.png",
-			"sourceGroupIndex" : 15
-		},
-		{
-			"backtrace" : 1,
-			"path" : "Resources/audio/button_click.mp3",
-			"sourceGroupIndex" : 16
-		},
-		{
-			"backtrace" : 1,
-			"path" : "Resources/audio/game_bgm.mp3",
-			"sourceGroupIndex" : 16
-		},
-		{
-			"backtrace" : 1,
-			"path" : "Resources/audio/monster_hit.mp3",
-			"sourceGroupIndex" : 16
-		},
-		{
-			"backtrace" : 1,
-			"path" : "Resources/audio/sfx_reward_pickup.mp3",
-			"sourceGroupIndex" : 16
-		},
-		{
-			"backtrace" : 1,
-			"path" : "Resources/audio/sfx_upgrade_selected.mp3",
-			"sourceGroupIndex" : 16
-		},
-		{
-			"backtrace" : 1,
-			"path" : "Resources/audio/start_bgm.mp3",
-			"sourceGroupIndex" : 16
-		},
-		{
-			"backtrace" : 1,
-			"path" : "Resources/fonts/Marker Felt.ttf",
-			"sourceGroupIndex" : 17
-		},
-		{
-			"backtrace" : 1,
-			"path" : "Resources/fonts/arial.ttf",
-			"sourceGroupIndex" : 17
-		},
-		{
-			"backtrace" : 1,
-			"path" : "Resources/res/.gitkeep",
 			"sourceGroupIndex" : 18
 		},
 		{
 			"backtrace" : 1,
-			"path" : "Resources/weapon/coffee_blast.png",
+			"path" : "Resources/art/ui/upgrade/button_large.png",
+			"sourceGroupIndex" : 18
+		},
+		{
+			"backtrace" : 1,
+			"path" : "Resources/art/ui/upgrade/ui_panel_main.png",
+			"sourceGroupIndex" : 18
+		},
+		{
+			"backtrace" : 1,
+			"path" : "Resources/art/ui/upgrade/ui_title_attribute.png",
+			"sourceGroupIndex" : 18
+		},
+		{
+			"backtrace" : 1,
+			"path" : "Resources/art/ui/upgrade/ui_title_weapon.png",
+			"sourceGroupIndex" : 18
+		},
+		{
+			"backtrace" : 1,
+			"path" : "Resources/art/ui/upgrade/weapon_slot_normal.png",
+			"sourceGroupIndex" : 18
+		},
+		{
+			"backtrace" : 1,
+			"path" : "Resources/art/ui/upgrade/weapon_slot_selected.png",
+			"sourceGroupIndex" : 18
+		},
+		{
+			"backtrace" : 1,
+			"path" : "Resources/audio/button_click.mp3",
 			"sourceGroupIndex" : 19
+		},
+		{
+			"backtrace" : 1,
+			"path" : "Resources/audio/game_bgm.mp3",
+			"sourceGroupIndex" : 19
+		},
+		{
+			"backtrace" : 1,
+			"path" : "Resources/audio/monster_hit.mp3",
+			"sourceGroupIndex" : 19
+		},
+		{
+			"backtrace" : 1,
+			"path" : "Resources/audio/sfx_reward_pickup.mp3",
+			"sourceGroupIndex" : 19
+		},
+		{
+			"backtrace" : 1,
+			"path" : "Resources/audio/sfx_upgrade_selected.mp3",
+			"sourceGroupIndex" : 19
+		},
+		{
+			"backtrace" : 1,
+			"path" : "Resources/audio/start_bgm.mp3",
+			"sourceGroupIndex" : 19
+		},
+		{
+			"backtrace" : 1,
+			"path" : "Resources/fonts/Marker Felt.ttf",
+			"sourceGroupIndex" : 20
+		},
+		{
+			"backtrace" : 1,
+			"path" : "Resources/fonts/arial.ttf",
+			"sourceGroupIndex" : 20
+		},
+		{
+			"backtrace" : 1,
+			"path" : "Resources/highlight arrow.png",
+			"sourceGroupIndex" : 9
+		},
+		{
+			"backtrace" : 1,
+			"path" : "Resources/res/.gitkeep",
+			"sourceGroupIndex" : 21
+		},
+		{
+			"backtrace" : 1,
+			"path" : "Resources/weapon/coffee_blast.png",
+			"sourceGroupIndex" : 22
 		},
 		{
 			"backtrace" : 1,
 			"path" : "Resources/weapon/coffee_blast_sprite.png",
-			"sourceGroupIndex" : 19
+			"sourceGroupIndex" : 22
 		},
 		{
 			"backtrace" : 1,
 			"path" : "Resources/weapon/coffee_bullet_sprite.png",
-			"sourceGroupIndex" : 19
+			"sourceGroupIndex" : 22
 		},
 		{
 			"backtrace" : 1,
 			"path" : "Resources/weapon/coffee_gun.png",
-			"sourceGroupIndex" : 19
+			"sourceGroupIndex" : 22
 		},
 		{
 			"backtrace" : 1,
 			"path" : "Resources/weapon/coffee_gun_sprite.png",
-			"sourceGroupIndex" : 19
+			"sourceGroupIndex" : 22
 		},
 		{
 			"backtrace" : 1,
 			"path" : "Resources/weapon/coffee_laser.png",
-			"sourceGroupIndex" : 19
+			"sourceGroupIndex" : 22
 		},
 		{
 			"backtrace" : 1,
 			"path" : "Resources/weapon/desk_lamp_laser.png",
-			"sourceGroupIndex" : 19
+			"sourceGroupIndex" : 22
 		},
 		{
 			"backtrace" : 1,
 			"path" : "Resources/weapon/desk_lamp_laser_sprite.png",
-			"sourceGroupIndex" : 19
+			"sourceGroupIndex" : 22
 		},
 		{
 			"backtrace" : 1,
 			"path" : "Resources/weapon/desk_lamp_weapon_sprite.png",
-			"sourceGroupIndex" : 19
+			"sourceGroupIndex" : 22
 		},
 		{
 			"backtrace" : 1,
 			"path" : "Resources/weapon/focus_orb.png",
-			"sourceGroupIndex" : 19
+			"sourceGroupIndex" : 22
 		},
 		{
 			"backtrace" : 1,
 			"path" : "Resources/weapon/focus_orb_sprite.png",
-			"sourceGroupIndex" : 19
+			"sourceGroupIndex" : 22
 		},
 		{
 			"backtrace" : 1,
 			"path" : "Resources/weapon/keyboard_wave.png",
-			"sourceGroupIndex" : 19
+			"sourceGroupIndex" : 22
 		},
 		{
 			"backtrace" : 1,
 			"path" : "Resources/weapon/keyboard_wave_sprite.png",
-			"sourceGroupIndex" : 19
+			"sourceGroupIndex" : 22
 		},
 		{
 			"backtrace" : 1,
 			"path" : "Resources/weapon/keyboard_weap_bolt_sprite.png",
-			"sourceGroupIndex" : 19
+			"sourceGroupIndex" : 22
 		},
 		{
 			"backtrace" : 1,
 			"path" : "Resources/weapon/keyboard_weapon.png",
-			"sourceGroupIndex" : 19
+			"sourceGroupIndex" : 22
 		},
 		{
 			"backtrace" : 1,
 			"path" : "Resources/weapon/keyboard_weapon_sprite.png",
-			"sourceGroupIndex" : 19
+			"sourceGroupIndex" : 22
 		},
 		{
 			"backtrace" : 2,
 			"compileGroupIndex" : 0,
 			"path" : "cocos2d/cocos/precheader.cpp",
-			"sourceGroupIndex" : 20
+			"sourceGroupIndex" : 23
 		}
 	],
 	"type" : "EXECUTABLE"

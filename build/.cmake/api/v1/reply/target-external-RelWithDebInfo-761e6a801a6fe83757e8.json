@@ -12,7 +12,7 @@
 	"artifacts" : 
 	[
 		{
-			"path" : "lib/MinSizeRel/external.lib"
+			"path" : "lib/RelWithDebInfo/external.lib"
 		}
 	],
 	"backtrace" : 1,
@@ -41,19 +41,7 @@
 			{
 				"command" : 1,
 				"file" : 0,
-				"line" : 42,
-				"parent" : 0
-			},
-			{
-				"command" : 1,
-				"file" : 0,
-				"line" : 71,
-				"parent" : 0
-			},
-			{
-				"command" : 1,
-				"file" : 0,
-				"line" : 87,
+				"line" : 91,
 				"parent" : 0
 			},
 			{
@@ -65,19 +53,13 @@
 			{
 				"command" : 1,
 				"file" : 0,
-				"line" : 83,
+				"line" : 71,
 				"parent" : 0
 			},
 			{
 				"command" : 1,
 				"file" : 0,
-				"line" : 91,
-				"parent" : 0
-			},
-			{
-				"command" : 1,
-				"file" : 0,
-				"line" : 95,
+				"line" : 42,
 				"parent" : 0
 			},
 			{
@@ -89,7 +71,25 @@
 			{
 				"command" : 1,
 				"file" : 0,
+				"line" : 83,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 87,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
 				"line" : 100,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 95,
 				"parent" : 0
 			},
 			{
@@ -190,7 +190,7 @@
 			"compileCommandFragments" : 
 			[
 				{
-					"fragment" : "/DWIN32 /D_WINDOWS /W3 /GR /EHsc /MD /O1 /Ob1 /DNDEBUG"
+					"fragment" : "/DWIN32 /D_WINDOWS /W3 /GR /EHsc /MD /Zi /O2 /Ob1 /DNDEBUG"
 				}
 			],
 			"defines" : 
@@ -203,39 +203,39 @@
 			"includes" : 
 			[
 				{
-					"backtrace" : 2,
+					"backtrace" : 5,
 					"path" : "D:/DDL_defenders/cocos2d/external/recast/.."
 				},
 				{
-					"backtrace" : 3,
+					"backtrace" : 4,
 					"path" : "D:/DDL_defenders/cocos2d/external/tinyxml2/."
 				},
 				{
-					"backtrace" : 5,
+					"backtrace" : 3,
 					"path" : "D:/DDL_defenders/cocos2d/external/xxhash/."
 				},
 				{
-					"backtrace" : 9,
+					"backtrace" : 6,
 					"path" : "D:/DDL_defenders/cocos2d/external/xxtea/."
 				},
 				{
-					"backtrace" : 6,
+					"backtrace" : 7,
 					"path" : "D:/DDL_defenders/cocos2d/external/clipper/."
 				},
 				{
-					"backtrace" : 4,
+					"backtrace" : 8,
 					"path" : "D:/DDL_defenders/cocos2d/external/edtaa3func/."
 				},
 				{
-					"backtrace" : 7,
+					"backtrace" : 2,
 					"path" : "D:/DDL_defenders/cocos2d/external/ConvertUTF/."
 				},
 				{
-					"backtrace" : 8,
+					"backtrace" : 10,
 					"path" : "D:/DDL_defenders/cocos2d/external/poly2tri/.."
 				},
 				{
-					"backtrace" : 10,
+					"backtrace" : 9,
 					"path" : "D:/DDL_defenders/cocos2d/external/md5/.."
 				},
 				{
@@ -357,39 +357,39 @@
 	[
 		{
 			"backtrace" : 2,
-			"id" : "ext_recast::@49aedbc985f97720d891"
-		},
-		{
-			"backtrace" : 3,
-			"id" : "ext_tinyxml2::@fd6ab661f4ee25a21ef0"
-		},
-		{
-			"backtrace" : 4,
-			"id" : "ext_edtaa3func::@f3d42e550923b89477b0"
-		},
-		{
-			"backtrace" : 5,
-			"id" : "ext_xxhash::@11e20b8b9139209a045a"
-		},
-		{
-			"backtrace" : 6,
-			"id" : "ext_clipper::@33abc919e86db66c28b8"
-		},
-		{
-			"backtrace" : 7,
 			"id" : "ext_convertUTF::@205c2f0e44a3b06b9b59"
 		},
 		{
-			"backtrace" : 8,
-			"id" : "ext_poly2tri::@ce0bfd23a4070be0c5de"
+			"backtrace" : 3,
+			"id" : "ext_xxhash::@11e20b8b9139209a045a"
 		},
 		{
-			"backtrace" : 9,
+			"backtrace" : 4,
+			"id" : "ext_tinyxml2::@fd6ab661f4ee25a21ef0"
+		},
+		{
+			"backtrace" : 5,
+			"id" : "ext_recast::@49aedbc985f97720d891"
+		},
+		{
+			"backtrace" : 6,
 			"id" : "ext_xxtea::@95546a4b2abc077b0042"
 		},
 		{
-			"backtrace" : 10,
+			"backtrace" : 7,
+			"id" : "ext_clipper::@33abc919e86db66c28b8"
+		},
+		{
+			"backtrace" : 8,
+			"id" : "ext_edtaa3func::@f3d42e550923b89477b0"
+		},
+		{
+			"backtrace" : 9,
 			"id" : "ext_md5::@82bef7d6fa8c2aa61808"
+		},
+		{
+			"backtrace" : 10,
+			"id" : "ext_poly2tri::@ce0bfd23a4070be0c5de"
 		},
 		{
 			"backtrace" : 11,

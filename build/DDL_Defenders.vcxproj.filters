@@ -300,7 +300,13 @@
     <ClInclude Include="D:\DDL_defenders\Resources\art\ui\equipment_panel.png">
       <Filter>Resources\art\ui</Filter>
     </ClInclude>
-    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\leaderboard_panel.png">
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\final_fail.jpg">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\final_success.png">
+      <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\final_success_at_high_score.png">
       <Filter>Resources\art\ui</Filter>
     </ClInclude>
     <ClInclude Include="D:\DDL_defenders\Resources\art\ui\main_menu_background.png">
@@ -324,6 +330,18 @@
     <ClInclude Include="D:\DDL_defenders\Resources\art\ui\menu_story.png">
       <Filter>Resources\art\ui</Filter>
     </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\pause\backage.png">
+      <Filter>Resources\art\ui\pause</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\pause\block.png">
+      <Filter>Resources\art\ui\pause</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\pause\charactor.png">
+      <Filter>Resources\art\ui\pause</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\pause\have_equiped.png">
+      <Filter>Resources\art\ui\pause</Filter>
+    </ClInclude>
     <ClInclude Include="D:\DDL_defenders\Resources\art\ui\pause_back_to_menu.png">
       <Filter>Resources\art\ui</Filter>
     </ClInclude>
@@ -341,6 +359,39 @@
     </ClInclude>
     <ClInclude Include="D:\DDL_defenders\Resources\art\ui\pause_title.png">
       <Filter>Resources\art\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\settings\_backup_before_trim\block_detail.png">
+      <Filter>Resources\art\ui\settings\_backup_before_trim</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\settings\_backup_before_trim\block_title.png">
+      <Filter>Resources\art\ui\settings\_backup_before_trim</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\settings\_backup_before_trim\left_botton.png">
+      <Filter>Resources\art\ui\settings\_backup_before_trim</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\settings\_backup_before_trim\right_botton.png">
+      <Filter>Resources\art\ui\settings\_backup_before_trim</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\settings\_backup_before_trim\ui_panel_main.png">
+      <Filter>Resources\art\ui\settings\_backup_before_trim</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\settings\background.png">
+      <Filter>Resources\art\ui\settings</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\settings\block_detail.png">
+      <Filter>Resources\art\ui\settings</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\settings\block_title.png">
+      <Filter>Resources\art\ui\settings</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\settings\left_botton.png">
+      <Filter>Resources\art\ui\settings</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\settings\right_botton.png">
+      <Filter>Resources\art\ui\settings</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\art\ui\settings\ui_panel_main.png">
+      <Filter>Resources\art\ui\settings</Filter>
     </ClInclude>
     <ClInclude Include="D:\DDL_defenders\Resources\art\ui\upgrade\attribute_upgrade_bar.png">
       <Filter>Resources\art\ui\upgrade</Filter>
@@ -386,6 +437,9 @@
     </ClInclude>
     <ClInclude Include="D:\DDL_defenders\Resources\fonts\arial.ttf">
       <Filter>Resources\fonts</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\DDL_defenders\Resources\highlight arrow.png">
+      <Filter>Resources</Filter>
     </ClInclude>
     <ClInclude Include="D:\DDL_defenders\Resources\res\.gitkeep">
       <Filter>Resources\res</Filter>
@@ -468,6 +522,15 @@
     </Filter>
     <Filter Include="Resources\art\ui">
       <UniqueIdentifier>{C62A8028-4D1A-3549-9AE0-D4A47EB11CC0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources\art\ui\pause">
+      <UniqueIdentifier>{8EFBB36C-5442-37F1-809F-A5F28634361F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources\art\ui\settings">
+      <UniqueIdentifier>{CA5343D6-1B35-3445-B2C9-E904F06DC80C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources\art\ui\settings\_backup_before_trim">
+      <UniqueIdentifier>{D3059E70-52CD-37D9-B096-F721B0007D7F}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resources\art\ui\upgrade">
       <UniqueIdentifier>{F296FFFE-5EE4-33ED-A07E-F84123A4DD40}</UniqueIdentifier>

@@ -12,7 +12,7 @@
 	"artifacts" : 
 	[
 		{
-			"path" : "lib/Release/cocos2d.lib"
+			"path" : "lib/RelWithDebInfo/cocos2d.lib"
 		}
 	],
 	"backtrace" : 1,
@@ -101,7 +101,7 @@
 			"compileCommandFragments" : 
 			[
 				{
-					"fragment" : "/DWIN32 /D_WINDOWS /W3 /GR /EHsc /MD /O2 /Ob2 /DNDEBUG"
+					"fragment" : "/DWIN32 /D_WINDOWS /W3 /GR /EHsc /MD /Zi /O2 /Ob1 /DNDEBUG"
 				},
 				{
 					"fragment" : "/Yuprecheader.h /FIprecheader.h"
@@ -847,7 +847,7 @@
 			"compileCommandFragments" : 
 			[
 				{
-					"fragment" : "/DWIN32 /D_WINDOWS /W3 /GR /EHsc /MD /O2 /Ob2 /DNDEBUG"
+					"fragment" : "/DWIN32 /D_WINDOWS /W3 /GR /EHsc /MD /Zi /O2 /Ob1 /DNDEBUG"
 				},
 				{
 					"fragment" : "/Yuprecheader.h /FIprecheader.h"
@@ -1076,19 +1076,11 @@
 	[
 		{
 			"backtrace" : 2,
+			"id" : "ext_convertUTF::@205c2f0e44a3b06b9b59"
+		},
+		{
+			"backtrace" : 2,
 			"id" : "external::@62470bbe2074d04a1904"
-		},
-		{
-			"backtrace" : 2,
-			"id" : "ext_recast::@49aedbc985f97720d891"
-		},
-		{
-			"backtrace" : 2,
-			"id" : "ext_tinyxml2::@fd6ab661f4ee25a21ef0"
-		},
-		{
-			"backtrace" : 2,
-			"id" : "ext_edtaa3func::@f3d42e550923b89477b0"
 		},
 		{
 			"backtrace" : 2,
@@ -1096,15 +1088,11 @@
 		},
 		{
 			"backtrace" : 2,
-			"id" : "ext_clipper::@33abc919e86db66c28b8"
+			"id" : "ext_tinyxml2::@fd6ab661f4ee25a21ef0"
 		},
 		{
 			"backtrace" : 2,
-			"id" : "ext_convertUTF::@205c2f0e44a3b06b9b59"
-		},
-		{
-			"backtrace" : 2,
-			"id" : "ext_poly2tri::@ce0bfd23a4070be0c5de"
+			"id" : "ext_recast::@49aedbc985f97720d891"
 		},
 		{
 			"backtrace" : 2,
@@ -1112,7 +1100,19 @@
 		},
 		{
 			"backtrace" : 2,
+			"id" : "ext_clipper::@33abc919e86db66c28b8"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "ext_edtaa3func::@f3d42e550923b89477b0"
+		},
+		{
+			"backtrace" : 2,
 			"id" : "ext_md5::@82bef7d6fa8c2aa61808"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "ext_poly2tri::@ce0bfd23a4070be0c5de"
 		},
 		{
 			"backtrace" : 2,
