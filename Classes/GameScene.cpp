@@ -897,6 +897,28 @@ bool GameScene::init()
         _environmentLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
         _environmentLabel->setPosition(Vec2(contentLeft, panelTop - 104.0f * s));
         this->addChild(_environmentLabel, 10);
+
+        if (!_isEndlessMode)
+        {
+            _taskLabel = Label::createWithSystemFont(
+                textByLanguage("Level Task: --", u8"关卡任务: --"), "Arial", 16.0f * s);
+            _taskLabel->setColor(Color3B(246, 228, 137));
+            _taskLabel->setAnchorPoint(Vec2(0.0f, 0.5f));
+            _taskLabel->setPosition(Vec2(contentLeft, panelTop - 134.0f * s));
+            this->addChild(_taskLabel, 10);
+
+            _taskBarMaxWidth = 230.0f * s;
+            const float taskBarHeight = 8.0f * s;
+            _taskBarBg = LayerColor::create(Color4B(38, 40, 56, 210),
+                _taskBarMaxWidth, taskBarHeight);
+            _taskBarBg->setPosition(Vec2(contentLeft, panelTop - 160.0f * s));
+            this->addChild(_taskBarBg, 9);
+
+            _taskBarFill = LayerColor::create(Color4B(80, 205, 235, 255),
+                _taskBarMaxWidth, taskBarHeight);
+            _taskBarFill->setPosition(_taskBarBg->getPosition());
+            this->addChild(_taskBarFill, 10);
+        }
     }
 
     _weaponSlotNodes.clear();
