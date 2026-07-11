@@ -25,7 +25,7 @@ bool CoffeeLaser::initCoffeeLaser(Player* owner)
     // 咖啡激光伤害更高，但冷却更长。
     if (!initWeapon(
         "CoffeeLaser",     // 武器名字
-        "weapon/coffee_gun_sprite.png", // 武器本体
+        "weapon/coffee_bullet_sprite.png", // 武器本体
         owner,             // 武器所属玩家
         35,                // 攻击力
         1.20f              // 冷却时间

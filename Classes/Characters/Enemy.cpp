@@ -193,18 +193,16 @@ void Enemy::updateEnemy(float dt)
     // --- Knockback processing ---
     if (_isKnockedBack)
     {
-        // Apply acceleration toward player to counter the knockback
-        if (_targetPlayer && _targetPlayer->isRoleAlive())
-        {
-            cocos2d::Vec2 toPlayer = _targetPlayer->getPosition() - getPosition();
-            toPlayer.normalize();
-            _knockbackVelocity += toPlayer * _knockbackAccelMag * dt;
-        }
+        // Decelerate in direction opposite to bullet (anti-knockback)
+        // Enemy does NOT move toward player during this phase
+        cocos2d::Vec2 decelDir = -_knockbackDir;
+        _knockbackVelocity += decelDir * _knockbackAccelMag * dt;
 
         // Apply knockback velocity
         setPosition(getPosition() + _knockbackVelocity * dt);
 
-        // Knockback ends when velocity reverses relative to original direction
+        // Knockback ends when velocity in knockback direction reaches 0
+        // After this, normal movement toward player resumes
         if (_knockbackVelocity.dot(_knockbackDir) <= 0.0f)
         {
             _isKnockedBack = false;

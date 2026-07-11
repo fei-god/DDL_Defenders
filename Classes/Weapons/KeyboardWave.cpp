@@ -24,7 +24,7 @@ bool KeyboardWave::initKeyboardWave(Player* owner)
 {
     if (!initWeapon(
         "KeyboardWave",    // 武器名字
-        "weapon/keyboard_weapon_sprite.png", // 武器本体
+        "weapon/keyboard_wave_sprite.png", // 武器本体
         owner,             // 武器所属玩家
         26,                // 攻击力
         0.42f              // 冷却时间
