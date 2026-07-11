@@ -22,6 +22,8 @@ public:
     virtual void playAttackEffect() override;
 
     virtual void die() override;
+    virtual void takeDamage(int damage) override;
+    virtual void takeDamage(int damage, DamageType damageType, Role* attacker = nullptr) override;
 
     bool isEnraged() const;
 

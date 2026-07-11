@@ -159,6 +159,18 @@ void Enemy::takeDamage(int damage, DamageType damageType, Role* attacker)
     playHitEffect();
 }
 
+void Enemy::applyKnockback(const cocos2d::Vec2& bulletDir)
+{
+    // Don't stack knockbacks — wait for previous one to finish
+    if (_isKnockedBack) return;
+
+    float spd = getSpeed();
+    _isKnockedBack = true;
+    _knockbackDir = bulletDir;
+    _knockbackVelocity = bulletDir * spd * 4.0f;     // 4× max speed in bullet dir
+    _knockbackAccelMag = spd * 8.0f;                 // enough to cancel 4× speed in 0.5s
+}
+
 void Enemy::die()
 {
     if (!isRoleAlive()) return;
@@ -177,6 +189,30 @@ void Enemy::updateEnemy(float dt)
 {
     if (!isRoleAlive() || !isObjectActive())
         return;
+
+    // --- Knockback processing ---
+    if (_isKnockedBack)
+    {
+        // Apply acceleration toward player to counter the knockback
+        if (_targetPlayer && _targetPlayer->isRoleAlive())
+        {
+            cocos2d::Vec2 toPlayer = _targetPlayer->getPosition() - getPosition();
+            toPlayer.normalize();
+            _knockbackVelocity += toPlayer * _knockbackAccelMag * dt;
+        }
+
+        // Apply knockback velocity
+        setPosition(getPosition() + _knockbackVelocity * dt);
+
+        // Knockback ends when velocity reverses relative to original direction
+        if (_knockbackVelocity.dot(_knockbackDir) <= 0.0f)
+        {
+            _isKnockedBack = false;
+            _knockbackVelocity = cocos2d::Vec2::ZERO;
+        }
+
+        return; // skip normal movement while in knockback
+    }
 
     if (hurtCooldownTimer > 0.0f)
     {

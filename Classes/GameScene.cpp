@@ -1023,7 +1023,7 @@ bool GameScene::init()
     _enemyContactDamageCooldown = 0.0f;
     _lowHpMoodTimer = 0.0f;
     _freezeTimer = 0.0f;
-    _rewardSpawnTimer = 9.0f;
+    _rewardSpawnTimer = 27.0f;
     _currentPlayerMoodImage.clear();
     _lastUiLanguageIndex = LanguageManager::getInstance()->getLanguageIndex();
     _isPaused = false;
@@ -1167,7 +1167,7 @@ void GameScene::update(float dt)
     // Don't process game logic while paused
     if (_isPaused) return;
 
-    // --- Victory delay: freeze gameplay, count down to scene transition ---
+    // --- Victory delay: count down to scene transition (gameplay continues normally) ---
     if (_victoryDelayActive)
     {
         _victoryDelayTimer -= dt;
@@ -1185,7 +1185,6 @@ void GameScene::update(float dt)
             _pendingAfterBattle = true;
             _pendingWave = 0;
         }
-        return;
     }
 
     // --- Level Intro (blocks gameplay during countdown; never active in Hub) ---
@@ -2823,7 +2822,7 @@ void GameScene::spawnRewardForEnemy(Enemy* enemy)
     bool isBoss = name.find("Thesis") != std::string::npos ||
         name.find("Boss") != std::string::npos;
 
-    if (!isBoss && CCRANDOM_0_1() > 0.42f)
+    if (!isBoss && CCRANDOM_0_1() > 0.14f)
     {
         return;
     }
@@ -2832,7 +2831,11 @@ void GameScene::spawnRewardForEnemy(Enemy* enemy)
         name.find("Thesis") != std::string::npos ||
         name.find("Boss") != std::string::npos)
     {
-        spawnReward(RewardType::Pen, pos);
+        // Halve Pen drop rate (50% chance after passing the base drop gate)
+        if (CCRANDOM_0_1() < 0.5f)
+        {
+            spawnReward(RewardType::Pen, pos);
+        }
     }
     else if (name.find("Phone") != std::string::npos)
     {
@@ -2843,7 +2846,7 @@ void GameScene::spawnRewardForEnemy(Enemy* enemy)
         spawnReward(RewardType::Coffee, pos);
     }
 
-    if (CCRANDOM_0_1() < (isBoss ? 0.24f : 0.06f))
+    if (CCRANDOM_0_1() < (isBoss ? 0.08f : 0.02f))
     {
         spawnReward(RewardType::FreezeDevice, pos + Vec2(28.0f, 12.0f));
     }
@@ -2947,7 +2950,7 @@ void GameScene::updateRewards(float dt)
         Vec2 pos(70.0f + CCRANDOM_0_1() * (_worldSize.width - 140.0f),
             70.0f + CCRANDOM_0_1() * (_worldSize.height - 140.0f));
         spawnReward(type, pos);
-        _rewardSpawnTimer = 11.0f + CCRANDOM_0_1() * 7.0f;
+        _rewardSpawnTimer = 33.0f + CCRANDOM_0_1() * 21.0f;
     }
 
     Rect playerBox = m_player->getCollisionBox();
@@ -3605,16 +3608,39 @@ void GameScene::buildPauseStatsPanel(Node* parent, const Vec2& pos, float s)
 
     const Size portraitBounds(panelW * 0.62f, panelH - boxH);
 
-    std::string portraitPath = m_player ? getMoodPlayerImagePath(m_player->getCurrentMood()) : "";
-    if (portraitPath.empty())
-        portraitPath = AssetPaths::resolve("art/characters/character1.png");
-    auto portrait = createFittedSprite(portraitPath, Size(portraitBounds.width,
-        portraitBounds.height * 0.94f));
-    if (portrait)
+    // Animated character portrait using character1/character2 with 0.25s toggle
     {
-        portrait->setPosition(Vec2(pos.x + panelW * 0.5f,
-            boxY + boxH + portraitBounds.height * 0.48f));
-        parent->addChild(portrait, 30);
+        std::string charPath1 = AssetPaths::resolve("art/characters/character1.png");
+        std::string charPath2 = AssetPaths::resolve("art/characters/character2.png");
+        auto sprite1 = createFittedSprite(charPath1, Size(portraitBounds.width,
+            portraitBounds.height * 0.94f));
+        auto sprite2 = createFittedSprite(charPath2, Size(portraitBounds.width,
+            portraitBounds.height * 0.94f));
+        if (sprite1 && sprite2)
+        {
+            sprite1->setPosition(Vec2(pos.x + panelW * 0.5f,
+                boxY + boxH + portraitBounds.height * 0.48f));
+            sprite2->setPosition(sprite1->getPosition());
+            sprite1->setVisible(true);
+            sprite2->setVisible(false);
+            parent->addChild(sprite1, 30);
+            parent->addChild(sprite2, 30);
+
+            // Idle animation: toggle between frame 1 and 2 every 0.25s
+            auto toggle1 = CallFunc::create([sprite1, sprite2]() {
+                sprite1->setVisible(true);
+                sprite2->setVisible(false);
+            });
+            auto delay1 = DelayTime::create(0.25f);
+            auto toggle2 = CallFunc::create([sprite1, sprite2]() {
+                sprite1->setVisible(false);
+                sprite2->setVisible(true);
+            });
+            auto delay2 = DelayTime::create(0.25f);
+            auto seq = Sequence::create(toggle1, delay1, toggle2, delay2, nullptr);
+            auto repeat = RepeatForever::create(seq);
+            sprite1->runAction(repeat);
+        }
     }
 
     std::vector<std::pair<std::string, std::string>> rows;

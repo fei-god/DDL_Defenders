@@ -56,6 +56,7 @@ public:
 	void markHit();
 	bool hasHitObject(GameObject* object) const;
 	void recordHitObject(GameObject* object);
+	cocos2d::Vec2 getDirection() const { return _direction; }
 
 private:
 	cocos2d::Vec2 _direction;

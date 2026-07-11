@@ -9,8 +9,6 @@ public:
     static cocos2d::Scene* createScene();
 
     virtual bool init() override;
-    virtual void onEnter() override;
-    virtual void onExit() override;
 
     void onStoryModeClicked(cocos2d::Ref* sender);
     void onEndlessClicked(cocos2d::Ref* sender);

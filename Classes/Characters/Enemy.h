@@ -100,6 +100,10 @@ public:
     // Clean up dead projectiles
     void cleanupProjectiles();
 
+    // --- Knockback System ---
+    void applyKnockback(const cocos2d::Vec2& bulletDir);
+    bool isInKnockback() const { return _isKnockedBack; }
+
 protected:
     Player* _targetPlayer;
     int _attackDamage;
@@ -122,6 +126,12 @@ protected:
     std::vector<EnemyProjectile> _projectiles;
     float _projectileCooldown;
     float _projectileCooldownMax;
+
+    // Knockback state
+    bool _isKnockedBack = false;
+    cocos2d::Vec2 _knockbackVelocity;
+    cocos2d::Vec2 _knockbackDir;       // original knockback direction for CD detection
+    float _knockbackAccelMag;          // |a| = 4×speed
 };
 
 #endif

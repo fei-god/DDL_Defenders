@@ -123,6 +123,13 @@ void CollisionManager::checkBulletEnemyCollision(
 
             bool wasAlive = enemy->isRoleAlive();
             enemy->takeDamage(finalDamage);
+
+            // Knockback: non-boss enemies hit by bullet weapons
+            if (!enemy->isDead() && !enemy->hasTag("Boss"))
+            {
+                enemy->applyKnockback(bullet->getDirection());
+            }
+
             if (wasAlive)
             {
                 if (enemy->isDead()) AudioManager::getInstance()->playEnemyDie();

@@ -449,3 +449,27 @@ void BossMonster::die()
     auto removeBoss = RemoveSelf::create();
     this->runAction(Sequence::create(delay, delayedBurst, fadeOut, dieCallback, removeBoss, nullptr));
 }
+
+void BossMonster::takeDamage(int damage)
+{
+    takeDamage(damage, DamageType::Normal, nullptr);
+}
+
+void BossMonster::takeDamage(int damage, DamageType damageType, Role* attacker)
+{
+    // Bosses use real HP-based damage instead of the hit-count system
+    if (!isAlive || !isObjectActive() || damage <= 0 || !canTakeDamage())
+        return;
+
+    setHp(getHp() - damage);
+
+    if (getHp() <= 0)
+    {
+        setHp(0);
+        die();
+        return;
+    }
+
+    hurtCooldownTimer = hurtCooldown;
+    playHitEffect();
+}

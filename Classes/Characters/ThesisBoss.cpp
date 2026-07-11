@@ -57,6 +57,11 @@ bool ThesisBoss::initThesisBoss(const std::string& imagePath,
     setObjectName("ThesisBoss");
     addTag("Boss");
     addTag("Thesis");
+
+    // Thesis Boss HP × 5
+    setMaxHp(getMaxHp() * 5);
+    setHp(getHp() * 5);
+
     return true;
 }
 
