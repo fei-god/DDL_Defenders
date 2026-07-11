@@ -495,17 +495,14 @@ void StoryModeScene::showLoadView(float s)
                 24.0f * s, Color3B(238, 215, 172), CC_CALLBACK_1(StoryModeScene::onSaveLoadClicked, this));
             loadBtn->setTag(i);  // display index
 
-            // Delete button (only for manual saves)
+            // Delete button (always visible for all save types)
             Vector<MenuItem*> btnItems;
             btnItems.pushBack(loadBtn);
 
-            if (save.type == 1)  // manual save can be deleted
-            {
-                auto delBtn = createStoryButton("X", Size(46.0f * s, 46.0f * s),
-                    24.0f * s, Color3B(255, 160, 140), CC_CALLBACK_1(StoryModeScene::onSaveDeleteClicked, this));
-                delBtn->setTag(i);
-                btnItems.pushBack(delBtn);
-            }
+            auto delBtn = createStoryButton("X", Size(46.0f * s, 46.0f * s),
+                24.0f * s, Color3B(255, 160, 140), CC_CALLBACK_1(StoryModeScene::onSaveDeleteClicked, this));
+            delBtn->setTag(i);
+            btnItems.pushBack(delBtn);
 
             auto btnMenu = Menu::createWithArray(btnItems);
             btnMenu->setPosition(Vec2(cx + cardW * 0.5f - 76.0f * s, cardY));

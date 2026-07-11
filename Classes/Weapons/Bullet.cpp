@@ -223,7 +223,19 @@ void Bullet::markHit()
 
 bool Bullet::hasHitObject(GameObject* object) const
 {
-    return std::find(_hitObjects.begin(), _hitObjects.end(), object) != _hitObjects.end();
+    if (object == nullptr) return false;
+
+    // Defensive cleanup: remove destroyed/stale entries on access
+    auto& self = const_cast<Bullet*>(this)->_hitObjects;
+    for (auto it = self.begin(); it != self.end(); )
+    {
+        if (*it == nullptr || (*it)->isMarkedForDestroy())
+            it = self.erase(it);
+        else
+            ++it;
+    }
+
+    return std::find(self.begin(), self.end(), object) != self.end();
 }
 
 void Bullet::recordHitObject(GameObject* object)

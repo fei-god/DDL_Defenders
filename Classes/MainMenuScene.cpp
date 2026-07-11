@@ -148,7 +148,6 @@ bool MainMenuScene::init()
     if (!Scene::init()) return false;
 
     AudioManager::getInstance()->preloadAll();
-    AudioManager::getInstance()->playMenuBGM();
 
     auto visibleSize = Director::getInstance()->getVisibleSize();
     Vec2 origin = Director::getInstance()->getVisibleOrigin();
@@ -289,6 +288,18 @@ bool MainMenuScene::init()
     _eventDispatcher->addEventListenerWithSceneGraphPriority(touchListener, this);
 
     return true;
+}
+
+void MainMenuScene::onEnter()
+{
+    Scene::onEnter();
+    AudioManager::getInstance()->playMenuBGM();
+}
+
+void MainMenuScene::onExit()
+{
+    AudioManager::getInstance()->stopBGM();
+    Scene::onExit();
 }
 
 // ---------------------------------------------------------------------------

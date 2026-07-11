@@ -565,6 +565,7 @@ bool GameScene::init()
     _isBossScene = (_sceneId == 3);
     _levelNumber = ud->getIntegerForKey("selected_level", 1);
     if (_levelNumber < 1) _levelNumber = 1;
+    if (_levelNumber > 3) _levelNumber = 3;
     _ddlTimeLimit = 999.0f;
     _ddlTimeRemaining = _ddlTimeLimit;
     _completedDdlCount = 0;
@@ -798,13 +799,13 @@ bool GameScene::init()
                         _waveManager->startWave(wave + 1);
                     });
                 }
-                else if (_sceneId == 2) // Classroom: 4 waves
+                else if (_sceneId == 2) // Classroom: 6 waves
                 {
                     _waveManager->setAllowedTypes({0, 1}); // Sleepy + DDL
-                    _waveManager->setTotalWaves(4);
+                    _waveManager->setTotalWaves(6);
                     _waveManager->setWaveDuration(25.0f);
                     _waveManager->setWaveTimerExpiredCallback([this](int wave) {
-                        if (wave < 4) {
+                        if (wave < 6) {
                             _waveManager->startWave(wave + 1);
                         } else {
                             _waveManager->stopSpawn();
@@ -1095,6 +1096,20 @@ void GameScene::update(float dt)
         }
     }
 
+    // --- Deferred scene transitions (safer than mid-update replaceScene) ---
+    if (_pendingRestart)
+    {
+        _pendingRestart = false;
+        Director::getInstance()->replaceScene(GameScene::createScene());
+        return;
+    }
+    if (_pendingTitle)
+    {
+        _pendingTitle = false;
+        Director::getInstance()->replaceScene(MainMenuScene::createScene());
+        return;
+    }
+
     // --- Death check ---
     if (!_isGameOver && m_player && !m_player->isRoleAlive())
     {
@@ -1184,6 +1199,14 @@ void GameScene::update(float dt)
         updateUI(m_player);
         updateSurvivalTime(dt); // keep timer running during intro
         return;
+    }
+
+    // Input cooldown: prevent held-key carryover across scene transitions
+    if (_inputCooldownTimer > 0.0f)
+    {
+        _inputCooldownTimer -= dt;
+        _keyW = _keyA = _keyS = _keyD = false;
+        _moveDirection = Vec2::ZERO;
     }
 
     // ===================================================================
@@ -1297,6 +1320,16 @@ void GameScene::update(float dt)
     auto visibleSize = Director::getInstance()->getVisibleSize();
     float visibleRadius = std::min(visibleSize.width, visibleSize.height) * 0.5f / _worldScale;
 
+    // Re-bind enemy list every frame (vector may reallocate on push_back)
+    if (_waveManager && !_weapons.empty())
+    {
+        auto* enemyList = &_waveManager->getAliveEnemies();
+        for (auto* weapon : _weapons)
+        {
+            if (weapon) weapon->bindBattleData(enemyList, &_bullets, _bulletLayer);
+        }
+    }
+
     for (auto* weapon : _weapons)
     {
         if (weapon)
@@ -1378,9 +1411,9 @@ void GameScene::update(float dt)
             int kills = _waveManager->getKillCount();
             if (_sceneId == 1 && m_survivalTime >= 90.0f && kills >= 10)
                 goToVictory(); // Library: survive 90s + kill 10
-            else if (_sceneId == 2 && _waveManager->getCurrentWave() >= 4
+            else if (_sceneId == 2 && _waveManager->getCurrentWave() >= 6
                      && !_waveManager->isWaveActive())
-                goToVictory(); // Classroom: 4 waves done + all enemies cleared
+                goToVictory(); // Classroom: 6 waves done + all enemies cleared
             else if (_sceneId == 3 && _thesisProgress >= 100.0f)
                 goToVictory(); // Office: boss defeated
         }
@@ -1892,6 +1925,8 @@ void GameScene::initSceneConfig()
     _isBossScene = (_sceneId == 3);
     _levelNumber = ud->getIntegerForKey("selected_level", 1);
     if (_levelNumber < 1) _levelNumber = 1;
+    if (_levelNumber > 3) _levelNumber = 3;
+
 
     _ddlTimeLimit = 999.0f;
     _ddlTimeRemaining = _ddlTimeLimit;
@@ -2076,8 +2111,6 @@ void GameScene::initInputListeners()
                     if (nextScene < 1) nextScene = 1;
                     if (nextScene > 3) nextScene = 3;
                     ud->setIntegerForKey("selected_scene", nextScene);
-                    ud->setIntegerForKey("selected_level", _levelNumber + 1);
-                    StoryModeScene::addAutoSave(_levelNumber + 1);
                 }
                 else
                 {
@@ -3379,13 +3412,20 @@ void GameScene::goToVictory()
     if (_waveManager && (_sceneId == 1 || _sceneId == 3))
     {
         auto& enemies = _waveManager->getAliveEnemies();
+        // Copy alive enemies first to avoid use-after-free during iteration
+        std::vector<Enemy*> toClear;
+        toClear.reserve(enemies.size());
         for (auto* enemy : enemies)
         {
             if (enemy && enemy->isRoleAlive())
-            {
+                toClear.push_back(enemy);
+        }
+        for (auto* enemy : toClear)
+        {
+            if (enemy && enemy->isRoleAlive())
                 enemy->die();
+            if (enemy)
                 enemy->removeFromParent();
-            }
         }
         enemies.clear();
     }
@@ -3402,12 +3442,14 @@ void GameScene::goToVictory()
             // Keep save at level 3 (don't unlock level 4)
             int nextLevel = 3;
             ud->setIntegerForKey("unlocked_level", nextLevel);
+            ud->setIntegerForKey("selected_level", nextLevel);
             StoryModeScene::addAutoSave(nextLevel);
         }
         else
         {
-            int nextLevel = _levelNumber + 1;
+            int nextLevel = std::min(_levelNumber + 1, 3);
             ud->setIntegerForKey("unlocked_level", nextLevel);
+            ud->setIntegerForKey("selected_level", nextLevel);
             StoryModeScene::addAutoSave(nextLevel);
         }
     }
@@ -3746,7 +3788,7 @@ void GameScene::onPauseResumeClicked(Ref*)
 
 void GameScene::onPauseRestartClicked(Ref*)
 {
-    Director::getInstance()->replaceScene(GameScene::createScene());
+    _pendingRestart = true;
 }
 
 void GameScene::onPauseSettingsClicked(Ref*)
@@ -3757,7 +3799,7 @@ void GameScene::onPauseSettingsClicked(Ref*)
 
 void GameScene::onPauseTitleClicked(Ref*)
 {
-    Director::getInstance()->replaceScene(MainMenuScene::createScene());
+    _pendingTitle = true;
 }
 
 void GameScene::onPauseSaveClicked(Ref*)

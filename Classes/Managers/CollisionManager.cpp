@@ -160,7 +160,7 @@ void CollisionManager::clearInactiveBullets(std::vector<Bullet*>& bullets)
 
                 if (bullet->isExpired() || !bullet->isObjectActive())
                 {
-                    bullet->removeFromParent();
+                    // Parent removal is handled by BulletPool::reclaimInactive()
                     return true;
                 }
 

@@ -211,6 +211,8 @@ private:
     bool _isVictory;
     bool _isEndlessMode;
     bool _pendingAfterBattle = false;
+    bool _pendingRestart = false;
+    bool _pendingTitle = false;
     int _pendingWave = -1;
     int _sceneId = 0;            // 0=hub, 1=library, 2=classroom, 3=office
     bool _isHubScene = false;
@@ -232,6 +234,7 @@ private:
     float _victoryDelayTimer = 0.0f;
     bool _victoryDelayActive = false;
     bool _goToMainMenu = false;  // story mode all 3 levels cleared
+    float _inputCooldownTimer = 0.2f;  // prevent held-key carryover after scene transition
     // DDL Pressure (endless mode)
     float _ddlPressure = 0.0f;
     cocos2d::LayerColor* _vignetteLayer = nullptr;
